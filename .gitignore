@@ -60,3 +60,9 @@ target/
 
 # pyenv python configuration file
 .python-version
+
+
+#eclipse stuff
+.project
+.pydevproject
+.settings/

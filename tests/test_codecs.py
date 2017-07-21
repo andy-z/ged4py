@@ -21,8 +21,8 @@ class TestCodecs(unittest.TestCase):
 
     def test_000_lookup(self):
         """Test lookup."""
-        self.assertIsNotNone(codecs.lookup("ansel"))
-        self.assertIsNotNone(codecs.lookup("ANSEL"))
+        self.assertTrue(codecs.lookup("ansel") is not None)
+        self.assertTrue(codecs.lookup("ANSEL") is not None)
 
     def test_001_encode(self):
         """Test encode()."""
@@ -57,8 +57,7 @@ class TestCodecs(unittest.TestCase):
     def test_003_encerrors(self):
         """Test encoding errors"""
 
-        with self.assertRaises(UnicodeEncodeError):
-            res = codecs.encode(u"Привет", 'ansel', 'strict')
+        self.assertRaises(UnicodeEncodeError, codecs.encode, u"Привет", 'ansel', 'strict')
 
         res = codecs.encode(u"Привет Andy", 'ansel', 'ignore')
         self.assertEqual(res, b" Andy")
@@ -68,8 +67,7 @@ class TestCodecs(unittest.TestCase):
     def test_004_decerrors(self):
         """Test decoding errors"""
 
-        with self.assertRaises(UnicodeDecodeError):
-            res = codecs.decode(b"\xa1\xa2\xd0\xd1", 'ansel', 'strict')
+        self.assertRaises(UnicodeDecodeError, codecs.decode, b"\xa1\xa2\xd0\xd1", 'ansel', 'strict')
 
         res = codecs.decode(b"\xa1\xa2\xd0\xd1", 'ansel', 'ignore')
         self.assertEqual(res, u"ŁØ")
