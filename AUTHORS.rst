@@ -5,7 +5,7 @@ Credits
 Development Lead
 ----------------
 
-* Andy Salnikov <a_salnikov@yahoo.com>
+* Andy Salnikov <ged4py@py-dev.com>
 
 Contributors
 ------------

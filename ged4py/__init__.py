@@ -3,5 +3,5 @@
 """Top-level package for GEDCOM parser for Python."""
 
 __author__ = """Andy Salnikov"""
-__email__ = 'a_salnikov@yahoo.com'
+__email__ = 'ged4py@py-dev.com'
 __version__ = '0.1.0'

@@ -28,7 +28,7 @@ setup(
     long_description=readme + '\n\n' + history,
 
     author="Andy Salnikov",
-    author_email='a_salnikov@yahoo.com',
+    author_email='ged4py@py-dev.com',
     url='https://github.com/andy-z/ged4py',
     license="MIT License",
 
