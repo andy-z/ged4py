@@ -214,7 +214,7 @@ ansel_decoding_table = (
     u'\x9d'  # 0x9D -> <control>
     u'\x9e'  # 0x9E -> <control>
     u'\x9f'  # 0x9F -> <control>
-    u'\xa0'  # 0xA0 -> NO-BREAK SPACE
+    u'\ufffe'  # 0xA0 ->
     u'\u0141'  # 0xA1 -> Latin Capital Letter L with Stroke
     u'\xD8'  # 0xA2 -> Latin Capital Letter O with Stroke
     u'\u0110'  # 0xA3 -> Latin Capital Letter D with Stroke
@@ -241,11 +241,11 @@ ansel_decoding_table = (
     u'\u0131'  # 0xB8 -> Latin Small Letter Dotless I
     u'\xA3'  # 0xB9 -> Pound Sign
     u'\xF0'  # 0xBA -> Latin Small Letter Eth
-    u'\xBB'  # 0xBB -> Right-Pointing Double Angle Quotation Mark
+    u'\ufffe'  # 0xBB ->
     u'\u01A1'  # 0xBC -> Latin Small Letter O with Horn
     u'\u01B0'  # 0xBD -> Latin Small Letter U with Horn
-    u'\u25A1'  # 0xBE -> White Square
-    u'\u25A0'  # 0xBF -> Black Square
+    u'\u25A1'  # 0xBE -> White Square (GEDCOM extension?)
+    u'\u25A0'  # 0xBF -> Black Square (GEDCOM extension?)
     u'\xB0'  # 0xC0 -> Degree Sign
     u'\u2113'  # 0xC1 -> Script Small L
     u'\u2117'  # 0xC2 -> Sound Recording Copyright
@@ -306,7 +306,7 @@ ansel_decoding_table = (
     u'\u032E'  # 0xF9 -> Combining Breve Below
     u'\uFE22'  # 0xFA -> COMBINING DOUBLE TILDE LEFT HALF
     u'\uFE23'  # 0xFB -> COMBINING DOUBLE TILDE RIGHT HALF
-    u'\u0338'  # 0xFC -> Combining Long Solidus Overlay
+    u'\u0338'  # 0xFC -> Combining Long Solidus Overlay  (GEDCOM extension?)
     u'\ufffe'  # 0xFD ->
     u'\u0313'  # 0xFE ->Combining Comma Above
     u'\ufffe'  # 0xFF ->

@@ -21,7 +21,7 @@ GEDCOM parser for Python
 Implementation of the GEDCOM parser in Python
 
 
-* Free software: BSD license
+* Free software: MIT license
 * Documentation: https://ged4py.readthedocs.io.
 
 
