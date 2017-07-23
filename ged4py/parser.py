@@ -80,11 +80,11 @@ def readlines(file, errors="strict"):
             elif len(words) >= 3 and words[0] == "1" and words[1] == "CHAR":
                 new_codec = _get_codec(words[2])
                 if new_codec is None:
-                    raise CodecError("Unknown codec name {}".format(words[2]))
+                    raise CodecError("Unknown codec name {0}".format(words[2]))
                 if ini_codec is None:
                     codec = new_codec
                 elif new_codec != ini_codec:
-                    raise CodecError("CHAR codec {} is different from BOM "
-                                     "codec {}".format(words[2], ini_codec))
+                    raise CodecError("CHAR codec {0} is different from BOM "
+                                     "codec {1}".format(words[2], ini_codec))
 
         yield line
