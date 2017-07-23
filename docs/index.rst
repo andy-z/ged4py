@@ -1,5 +1,5 @@
-Welcome to GEDCOM parser for Python's documentation!
-======================================
+Welcome to GED4PY's documentation!
+==================================
 
 Contents:
 
@@ -10,6 +10,7 @@ Contents:
    installation
    usage
    modules
+   techinfo
    contributing
    authors
    history
