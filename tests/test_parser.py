@@ -25,7 +25,12 @@ class TestParser(unittest.TestCase):
 
         file = io.BytesIO(b"0 HEAD")
         codec = parser._guess_initial_codec(file)
-        self.assertIsNone(codec)
+        self.assertTrue(codec is None)
+        self.assertEqual(file.tell(), 0)
+
+        file = io.BytesIO(b"0")
+        codec = parser._guess_initial_codec(file)
+        self.assertTrue(codec is None)
         self.assertEqual(file.tell(), 0)
 
         file = io.BytesIO(b"\xef\xbb\xbf0 HEAD")
@@ -39,6 +44,11 @@ class TestParser(unittest.TestCase):
         self.assertEqual(file.tell(), 2)
 
         file = io.BytesIO(b"\xfe\xff0 HEAD")
+        codec = parser._guess_initial_codec(file)
+        self.assertEqual(codec, "utf-16-be")
+        self.assertEqual(file.tell(), 2)
+
+        file = io.BytesIO(b"\xfe\xff")
         codec = parser._guess_initial_codec(file)
         self.assertEqual(codec, "utf-16-be")
         self.assertEqual(file.tell(), 2)

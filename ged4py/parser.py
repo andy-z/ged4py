@@ -32,15 +32,17 @@ def _guess_initial_codec(file):
         return codecs.lookup('utf-8').name
     elif len(lead) >= 2 and lead[:2] == codecs.BOM_UTF16_BE:
         # need to backup one character
-        file.seek(-1, os.SEEK_CUR)
+        if len(lead) == 3:
+            file.seek(-1, os.SEEK_CUR)
         return codecs.lookup('utf_16_be').name
     elif len(lead) >= 2 and lead[:2] == codecs.BOM_UTF16_LE:
         # need to backup one character
-        file.seek(-1, os.SEEK_CUR)
+        if len(lead) == 3:
+            file.seek(-1, os.SEEK_CUR)
         return codecs.lookup('utf_16_le').name
     else:
         # no BOM, rewind
-        file.seek(-3, os.SEEK_CUR)
+        file.seek(-len(lead), os.SEEK_CUR)
         return None
 
 
