@@ -5,7 +5,21 @@
 from __future__ import print_function, absolute_import, division
 
 import codecs
+import collections
 import os
+import re
+
+_re_gedcom_line = re.compile(r"""
+        ^
+        [ ]*(?P<level>\d+)                       # integer level number
+        (?:[ ](?P<xref>@[A-Z-a-z0-9][^@]*@))?    # optional @xref@
+        [ ](?P<tag>[A-Z-a-z0-9]+)                # tag name
+        (?:[ ](?P<value>.*))?                    # optional value
+        $
+""", re.X)
+
+# tuple class for gedcom_line grammar
+gedcom_line = collections.namedtuple("gedcom_line", "level xref_id tag value")
 
 
 class ParserError(Exception):
@@ -58,6 +72,13 @@ def _get_codec(name):
 
 def readlines(file, errors="strict"):
     """Generator method for lines in file.
+
+    Iterates over lines in input file returning each line as a string.
+    This method determines file encoding based on either BOM record or
+    contents of the ``CHAR`` record.
+
+    `errors` parameter controls error handling behavior during string
+    decoding, accepts same values as standard `codecs.decode` method.
     """
 
     # try to determine initial codec
@@ -90,3 +111,44 @@ def readlines(file, errors="strict"):
                                      "codec {1}".format(words[2], ini_codec))
 
         yield line
+
+
+def gedcom_lines(input, errors="strict", filename="<input>"):
+    """Generator method for "gedcom lines".
+
+    GEDCOM line grammar is defined in Chapter 1 of GEDCOM standard, it
+    consists if the level number, optional reference ID, tag name, and
+    optional value separated by spaces.
+
+    This method iterates over all lines in input file and converts each line
+    into `gedcom_line` structure which is a named tuple with these fields:
+    - 0: level - (`int`) level number
+    - 1: xref_id - (`str` or `None`) reference ID
+    - 2: tag - (`str`) tag name
+    - 3: value - (`str` or `None`) value
+
+    `input` parameter can be either file object or iterator over lines
+    (e.g. one returned by readlines() method in this module).
+
+    `errors` parameter controls error handling behavior during string
+    decoding, accepts same values as standard `codecs.decode` method.
+    This parameter is used only if `input` is a file object.
+
+    `filename` is used for generating diagnostics only.
+    """
+
+    if hasattr(input, "readline"):
+        # has to wrap raw file into "readlines" to handle codecs
+        input = readlines(input, errors)
+
+    for lineno, line in enumerate(input, 1):
+
+        match = _re_gedcom_line.match(line)
+        if not match:
+            raise ParserError("Invalid syntax at line "
+                              "{0}:{1}".format(filename, lineno))
+
+        yield gedcom_line(level=int(match.group('level')),
+                          xref_id=match.group('xref'),
+                          tag=match.group('tag'),
+                          value=match.group('value'))

@@ -7,7 +7,7 @@ import codecs
 import unittest
 
 # import of `codecs` is enough to register new codec
-import ged4py.codecs
+import ged4py.codecs  # noqa: F401
 
 
 class TestCodecs(unittest.TestCase):
@@ -45,9 +45,11 @@ class TestCodecs(unittest.TestCase):
         res = codecs.decode(b"Aabcd0123$%", 'ansel')
         self.assertEqual(res, u"Aabcd0123$%")
 
-        res = codecs.decode(b"\xa1\xa2\xa3\xa4\xa5\xa6\xa9\xaa\xac\xad", 'ansel')
+        res = codecs.decode(b"\xa1\xa2\xa3\xa4\xa5\xa6\xa9\xaa\xac\xad",
+                            'ansel')
         self.assertEqual(res, u"ŁØĐÞÆŒ♭®ƠƯ")
-        res = codecs.decode(b"\xb1\xb2\xb3\xb4\xb5\xb6\xb8\xb9\xba\xbc\xbd", 'ansel')
+        res = codecs.decode(b"\xb1\xb2\xb3\xb4\xb5\xb6\xb8\xb9\xba\xbc\xbd",
+                            'ansel')
         self.assertEqual(res, u"łøđþæœı£ðơư")
         res = codecs.decode(b"\xc0\xc1\xc2\xc3\xc4\xc5\xc6", 'ansel')
         self.assertEqual(res, u"°ℓ℗©♯¿¡")
@@ -57,7 +59,8 @@ class TestCodecs(unittest.TestCase):
     def test_003_encerrors(self):
         """Test encoding errors"""
 
-        self.assertRaises(UnicodeEncodeError, codecs.encode, u"Привет", 'ansel', 'strict')
+        self.assertRaises(UnicodeEncodeError, codecs.encode, u"Привет",
+                          'ansel', 'strict')
 
         res = codecs.encode(u"Привет Andy", 'ansel', 'ignore')
         self.assertEqual(res, b" Andy")
@@ -67,7 +70,8 @@ class TestCodecs(unittest.TestCase):
     def test_004_decerrors(self):
         """Test decoding errors"""
 
-        self.assertRaises(UnicodeDecodeError, codecs.decode, b"\xa1\xa2\xd0\xd1", 'ansel', 'strict')
+        self.assertRaises(UnicodeDecodeError, codecs.decode,
+                          b"\xa1\xa2\xd0\xd1", 'ansel', 'strict')
 
         res = codecs.decode(b"\xa1\xa2\xd0\xd1", 'ansel', 'ignore')
         self.assertEqual(res, u"ŁØ")

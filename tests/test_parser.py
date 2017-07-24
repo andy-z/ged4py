@@ -3,7 +3,6 @@
 
 """Tests for `ged4py.codecs` module."""
 
-import codecs
 import unittest
 import io
 
@@ -98,7 +97,6 @@ class TestParser(unittest.TestCase):
         lines = list(parser.readlines(file))
         self.assertEqual(lines, ["0 HEAD"])
 
-
     def test_003_codec_exceptions(self):
         """Test codecs-related exceptions."""
 
@@ -117,8 +115,8 @@ class TestParser(unittest.TestCase):
         iter = parser.readlines(file)
         self.assertRaises(UnicodeDecodeError, list, iter)
 
-    def test_003_codec_errors(self):
-        """Test codec error hadling."""
+    def test_004_codec_errors(self):
+        """Test codec error handling."""
 
         file = io.BytesIO(b"0 HEAD\n0 OK \xc7")
         iter = parser.readlines(file, 'strict')
@@ -131,3 +129,47 @@ class TestParser(unittest.TestCase):
         file = io.BytesIO(b"0 HEAD\n0 OK \xc7")
         iter = parser.readlines(file, 'replace')
         self.assertEqual(list(iter), ["0 HEAD", u"0 OK \ufffd"])
+
+    def test_005_gedcom_lines(self):
+        """Test gedcom_lines method"""
+
+        # simple content
+        file = io.BytesIO(b"0 HEAD\n1 SOUR PIF PAF\n0 @i1@ INDI\n0 TRLR")
+        lines = list(parser.gedcom_lines(file))
+        expect = [parser.gedcom_line(level=0, xref_id=None, tag="HEAD", value=None),
+                  parser.gedcom_line(level=1, xref_id=None, tag="SOUR", value="PIF PAF"),
+                  parser.gedcom_line(level=0, xref_id="@i1@", tag="INDI", value=None),
+                  parser.gedcom_line(level=0, xref_id=None, tag="TRLR", value=None)]
+        self.assertEqual(lines, expect)
+
+        # same but using iterator instead of file
+        file = io.BytesIO(b"0 HEAD\n1 SOUR PIF PAF\n0 @i1@ INDI\n0 TRLR")
+        iter = parser.readlines(file)
+        lines = list(parser.gedcom_lines(iter))
+        self.assertEqual(lines, expect)
+
+        # file and Unicode characters
+        file = io.BytesIO(b"0 HEAD\n1 CHAR UTF-8\n0 OK \xc2\xb5")
+        lines = list(parser.gedcom_lines(file))
+        expect = [parser.gedcom_line(level=0, xref_id=None, tag="HEAD", value=None),
+                  parser.gedcom_line(level=1, xref_id=None, tag="CHAR", value="UTF-8"),
+                  parser.gedcom_line(level=0, xref_id=None, tag="OK", value=u"\u00b5")]
+        self.assertEqual(lines, expect)
+
+    def test_006_gedcom_lines_errors(self):
+        """Test gedcom_lines method"""
+
+        # tag name is only letters and digits
+        file = io.BytesIO(b"0 H@EAD")
+        iter = parser.gedcom_lines(file)
+        self.assertRaises(parser.ParserError, list, iter)
+
+        # xref must start with letter or digit
+        file = io.BytesIO(b"0 @!ref@ HEAD")
+        iter = parser.gedcom_lines(file)
+        self.assertRaises(parser.ParserError, list, iter)
+
+        # level must be a number
+        file = io.BytesIO(b"X HEAD")
+        iter = parser.gedcom_lines(file)
+        self.assertRaises(parser.ParserError, list, iter)
