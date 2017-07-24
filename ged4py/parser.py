@@ -23,10 +23,14 @@ gedcom_line = collections.namedtuple("gedcom_line", "level xref_id tag value")
 
 
 class ParserError(Exception):
+    """Class for exceptions raised for parsing errors.
+    """
     pass
 
 
 class CodecError(ParserError):
+    """Class for exceptions raised for codec-related errors.
+    """
     pass
 
 
@@ -77,8 +81,17 @@ def readlines(file, errors="strict"):
     This method determines file encoding based on either BOM record or
     contents of the ``CHAR`` record.
 
-    `errors` parameter controls error handling behavior during string
-    decoding, accepts same values as standard `codecs.decode` method.
+    :param file: File or file-like object, must support `read()`,
+        `readline()`, and `seek()`. `read()` and `readline()`
+        must return bytes (file must be open in binary mode)
+    :param str errors: Controls error handling behavior during string
+        decoding, accepts same values as standard `codecs.decode` method.
+    :returns: Iterator for lines in file, string are decode and returned
+        as UNICODE strings.
+    :raises: :py:class:`CodecError` when codec name in file is unknown or
+        when codec name in file contradicts codec determined from BOM.
+    :raises: :py:class:`UnicodeDecodeError` when codec fails to decode
+        input lines and `errors` is set to "strict" (default).
     """
 
     # try to determine initial codec
@@ -114,27 +127,27 @@ def readlines(file, errors="strict"):
 
 
 def gedcom_lines(input, errors="strict", filename="<input>"):
-    """Generator method for "gedcom lines".
+    """Generator method for *gedcom lines*.
 
     GEDCOM line grammar is defined in Chapter 1 of GEDCOM standard, it
     consists if the level number, optional reference ID, tag name, and
-    optional value separated by spaces.
+    optional value separated by spaces. Chaper 1 is pure grammar level,
+    it does not assign any semantics to tags or levels. Consequently
+    this method does not perform any operations on the lines other than
+    returning the lines in their order in file.
 
-    This method iterates over all lines in input file and converts each line
-    into `gedcom_line` structure which is a named tuple with these fields:
-    - 0: level - (`int`) level number
-    - 1: xref_id - (`str` or `None`) reference ID
-    - 2: tag - (`str`) tag name
-    - 3: value - (`str` or `None`) value
+    This method iterates over all lines in input file and converts each
+    line into :py:class:`gedcom_line` class.
 
-    `input` parameter can be either file object or iterator over lines
-    (e.g. one returned by readlines() method in this module).
-
-    `errors` parameter controls error handling behavior during string
-    decoding, accepts same values as standard `codecs.decode` method.
-    This parameter is used only if `input` is a file object.
-
-    `filename` is used for generating diagnostics only.
+    :param input: Either file object or iterator over lines (e.g. one
+        returned by :py:func:`readlines` method in this module).
+    :param str errors: Controls error handling behavior during string
+        decoding, accepts same values as standard `codecs.decode` method.
+        This parameter is used only if `input` is a file object.
+    :param str filename: Name of the file, it is only used for generating
+        diagnostics.
+    :returns: Iterator for gedcom_lines.
+    :raises: :py:class:`ParserError` when lines have incorrect syntax.
     """
 
     if hasattr(input, "readline"):
