@@ -6,8 +6,9 @@ from __future__ import print_function, absolute_import, division
 
 import codecs
 import collections
-import os
 import re
+
+from .detail.io import check_bom
 
 _re_gedcom_line = re.compile(r"""
         ^
@@ -34,36 +35,6 @@ class CodecError(ParserError):
     pass
 
 
-def _guess_initial_codec(file):
-    """Determines initial codec to use for parsing.
-
-    If file starts with BOM record encoded with UTF-8 or UTF-16(BE/LE)
-    then corresponding encoding name is returned, otherwise None is returned.
-    In both cases file current position is set to after-BOM bytes. The file
-    must be open in binary mode.
-    """
-
-    # try to read first three bytes
-    lead = file.read(3)
-    if len(lead) == 3 and lead == codecs.BOM_UTF8:
-        # UTF-8, position is already OK, use canonical name
-        return codecs.lookup('utf-8').name
-    elif len(lead) >= 2 and lead[:2] == codecs.BOM_UTF16_BE:
-        # need to backup one character
-        if len(lead) == 3:
-            file.seek(-1, os.SEEK_CUR)
-        return codecs.lookup('utf_16_be').name
-    elif len(lead) >= 2 and lead[:2] == codecs.BOM_UTF16_LE:
-        # need to backup one character
-        if len(lead) == 3:
-            file.seek(-1, os.SEEK_CUR)
-        return codecs.lookup('utf_16_le').name
-    else:
-        # no BOM, rewind
-        file.seek(-len(lead), os.SEEK_CUR)
-        return None
-
-
 def _get_codec(name):
     """Takes GEDCOM codec name and returns Python codec name
     """
@@ -82,7 +53,7 @@ def readlines(file, errors="strict"):
     contents of the ``CHAR`` record.
 
     :param file: File or file-like object, must support `read()`,
-        `readline()`, and `seek()`. `read()` and `readline()`
+        `readline()`, `tell()` and `seek()`. `read()` and `readline()`
         must return bytes (file must be open in binary mode)
     :param str errors: Controls error handling behavior during string
         decoding, accepts same values as standard `codecs.decode` method.
@@ -95,7 +66,7 @@ def readlines(file, errors="strict"):
     """
 
     # try to determine initial codec
-    ini_codec = _guess_initial_codec(file)
+    ini_codec = check_bom(file)
     codec = ini_codec or 'ansel'
 
     update_codec = True

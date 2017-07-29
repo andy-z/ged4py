@@ -8,6 +8,7 @@ import io
 
 
 from ged4py import parser
+from ged4py.detail.io import check_bom
 
 
 class TestParser(unittest.TestCase):
@@ -20,35 +21,35 @@ class TestParser(unittest.TestCase):
         """Tear down test fixtures, if any."""
 
     def test_000_guess_initial_codec(self):
-        """Test _guess_initial_codec()."""
+        """Test detail.check_bom()."""
 
         file = io.BytesIO(b"0 HEAD")
-        codec = parser._guess_initial_codec(file)
+        codec = check_bom(file)
         self.assertTrue(codec is None)
         self.assertEqual(file.tell(), 0)
 
         file = io.BytesIO(b"0")
-        codec = parser._guess_initial_codec(file)
+        codec = check_bom(file)
         self.assertTrue(codec is None)
         self.assertEqual(file.tell(), 0)
 
         file = io.BytesIO(b"\xef\xbb\xbf0 HEAD")
-        codec = parser._guess_initial_codec(file)
+        codec = check_bom(file)
         self.assertEqual(codec, "utf-8")
         self.assertEqual(file.tell(), 3)
 
         file = io.BytesIO(b"\xff\xfe0 HEAD")
-        codec = parser._guess_initial_codec(file)
+        codec = check_bom(file)
         self.assertEqual(codec, "utf-16-le")
         self.assertEqual(file.tell(), 2)
 
         file = io.BytesIO(b"\xfe\xff0 HEAD")
-        codec = parser._guess_initial_codec(file)
+        codec = check_bom(file)
         self.assertEqual(codec, "utf-16-be")
         self.assertEqual(file.tell(), 2)
 
         file = io.BytesIO(b"\xfe\xff")
-        codec = parser._guess_initial_codec(file)
+        codec = check_bom(file)
         self.assertEqual(codec, "utf-16-be")
         self.assertEqual(file.tell(), 2)
 
