@@ -82,6 +82,10 @@ class TestParser(unittest.TestCase):
         file = io.BytesIO(b"\xef\xbb\xbf0 HEAD\n1 CHAR UTF-8\n0 TRLR")
         self.assertEqual(parser.guess_codec(file), "utf-8-sig")
 
+        # CR-LF
+        file = io.BytesIO(b"\xef\xbb\xbf0 HEAD\r\n1 CHAR UTF-8\r\n0 TRLR")
+        self.assertEqual(parser.guess_codec(file), "utf-8-sig")
+
 #         UTF-16 is broken
 #         # utf-16-le
 #         file = io.BytesIO(b"\xff\xfe0\0 \0H\0E\0A\0D\n\0\x31\0 \0C\0H\0A\0R\0 \0U\0T\0F\0-\01\06\0")
@@ -137,6 +141,14 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(file.tell(), 0)
                 self.assertEqual(list(file.readlines()), ["0 HEAD\n", "1 CHAR UTF-8\n", "0 TRLR"])
 
+        # CR-LF
+        data = b"\xef\xbb\xbf0 HEAD\r\n1 CHAR UTF-8\r\n0 TRLR"
+        with _temp_file(data) as fname:
+            with parser.open(fname) as file:
+                self.assertEqual(file.encoding, "utf-8-sig")
+                self.assertEqual(file.tell(), 0)
+                self.assertEqual(list(file.readlines()), ["0 HEAD\n", "1 CHAR UTF-8\n", "0 TRLR"])
+
     def test_005_open_errors(self):
         """Test open() method."""
 
@@ -186,15 +198,13 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(lines, expect)
 
         # Unicode and BOM
-        data = b"\xef\xbb\xbf0 HEAD\n1 CHAR UTF-8\n0 OK \xc2\xb5"
+        data = b"\xef\xbb\xbf0 HEAD\r\n1 CHAR UTF-8\r\n0 OK \xc2\xb5"
         with _temp_file(data) as fname:
             with parser.open(fname) as file:
                 lines = list(parser.gedcom_lines(file))
-                # in 2.6 offset is messed up (off by -1)
-                doff = -1 if sys.hexversion & 0xFFFF0000 == 0x02060000 else 0
                 expect = [parser.gedcom_line(level=0, xref_id=None, tag="HEAD", value=None, offset=0),
-                          parser.gedcom_line(level=1, xref_id=None, tag="CHAR", value="UTF-8", offset=10 + doff),
-                          parser.gedcom_line(level=0, xref_id=None, tag="OK", value=u"\u00b5", offset=23 + doff)]
+                          parser.gedcom_line(level=1, xref_id=None, tag="CHAR", value="UTF-8", offset=11),
+                          parser.gedcom_line(level=0, xref_id=None, tag="OK", value=u"\u00b5", offset=25)]
                 self.assertEqual(lines, expect)
 
     def test_007_gedcom_lines_errors(self):
