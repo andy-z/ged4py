@@ -1,6 +1,8 @@
 """Internal module for I/O related methods.
 """
 
+from __future__ import print_function, absolute_import, division
+
 import codecs
 import os
 
@@ -33,3 +35,28 @@ def check_bom(file):
         # no BOM, rewind
         file.seek(-len(lead), os.SEEK_CUR)
         return None
+
+
+def guess_lineno(file):
+    """Guess current line number in a file.
+
+    Guessing is done in a very crude way - scanning file from beginning
+    until current offset and counting newlines. Only meant to be used in
+    exceptional cases - generating line number for error message.
+    """
+    offset = file.tell()
+    file.seek(0)
+    startpos = 0
+    lineno = 1
+    # looks like file.read() return bytes in python3
+    # so I need more complicated algorithm here
+    while True:
+        line = file.readline()
+        if not line:
+            break
+        endpos = file.tell()
+        if startpos <= offset < endpos:
+            break
+        lineno += 1
+    file.seek(offset)
+    return lineno
