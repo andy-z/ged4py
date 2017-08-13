@@ -236,25 +236,54 @@ class GedcomReader(object):
                 yield self.read_record(offset)
 
     def read_record(self, offset):
-        stack = {}
+        """Read next complete record from a file starting at given position.
+
+        Reads the record at given position and all its sub-records. Stops
+        reading at EOF or next record with the same or higher (smaller) level
+        number. File position after return from this method is not specified,
+        re-position file if you want to read other records.
+
+        Parameters
+        ----------
+        offset : int
+            Position in file to start reading from.
+
+        Returns
+        -------
+        `gedcom_rec` instance or None if offset points past EOF.
+
+        Raises
+        ------
+        `ParserError` if `offsets` does not point to the beginning of a
+        record or for any parsing errors.
+        """
+        stack = []  # stores per-level current records
         reclevel = None
         self.file.seek(offset)
         for gline in gedcom_lines(self.file, self._fname):
             level = gline.level
             if reclevel is None:
+                # this is the first record, remember its level
                 reclevel = level
             elif level <= reclevel:
+                # stop at the record of the same or higher (smaller) level
                 break
+            # extend stack to fit this level
+            stack.extend([None] * (level + 1 - len(stack)))
+
             rec = gedcom_rec(level=level, xref_id=gline.xref_id,
                              tag=gline.tag, value=gline.value,
                              sub_records=[], offset=gline.offset)
-            parents = stack.get(level-1)
-            if parents:
-                parents[-1].sub_records.append(rec)
-            level_recs = stack.setdefault(gline.level, [])
-            level_recs.append(rec)
 
-        return stack.get(reclevel, [None])[-1]
+            # add to parent's sub-records list
+            parent = stack[level - 1] if level > 0 else None
+            if parent:
+                parent.sub_records.append(rec)
+
+            # store as current record at this level
+            stack[level] = rec
+
+        return stack[reclevel] if stack else None
 
     def __enter__(self):
         return self
