@@ -249,6 +249,44 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(subd.value, "D")
                 self.assertEqual(len(subd.sub_records), 0)
 
+        data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n1 NOTE A\n2 CONC B\n2 CONT C\n2 CONC D"
+        with _temp_file(data) as fname:
+            with parser.GedcomReader(fname) as reader:
+
+                rec = reader.read_record(20)
+                self.assertEqual(rec.level, 0)
+                self.assertEqual(rec.tag, "INDI")
+                self.assertEqual(rec.value, "A")
+                self.assertEqual(len(rec.sub_records), 1)
+
+                note = rec.sub_records[0]
+                self.assertEqual(note.level, 1)
+                self.assertEqual(note.tag, "NOTE")
+                self.assertEqual(note.value, "AB\nCD")
+                self.assertEqual(len(note.sub_records), 0)
+
+        # Space-aware concatenation
+        data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n1 NOTE\n2 CONC B\n2 CONT C\n2 CONC  D"
+        with _temp_file(data) as fname:
+            with parser.GedcomReader(fname) as reader:
+
+                note = reader.read_record(29)
+                self.assertEqual(note.level, 1)
+                self.assertEqual(note.tag, "NOTE")
+                self.assertEqual(note.value, "B\nC D")
+                self.assertEqual(len(note.sub_records), 0)
+
+        # BLOB
+        data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n1 BLOB\n2 CONT A\n2 CONT B"
+        with _temp_file(data) as fname:
+            with parser.GedcomReader(fname) as reader:
+
+                note = reader.read_record(29)
+                self.assertEqual(note.level, 1)
+                self.assertEqual(note.tag, "BLOB")
+                self.assertIsNone(note.value)
+                self.assertEqual(len(note.sub_records), 0)
+
     def test_011_read_record_errors(self):
         """Test read_record method"""
 
@@ -263,7 +301,7 @@ class TestParser(unittest.TestCase):
                 # Random location
                 self.assertRaises(parser.ParserError, reader.read_record, 26)
 
-    def test_020_read_record_errors(self):
+    def test_020_records0(self):
         """Test records0 method"""
 
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n1 SUBA A\n1 SUBB B\n2 SUBC C\n1 SUBD D\n0 STOP"

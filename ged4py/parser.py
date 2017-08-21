@@ -24,10 +24,32 @@ _re_gedcom_line = re.compile(r"""
 gedcom_line = collections.namedtuple("gedcom_line",
                                      "level xref_id tag value offset")
 
-# tuple class for gedcom_line grammar
-gedcom_rec = collections.namedtuple("gedcom_rec",
-                                    "level xref_id tag value "
-                                    "sub_records offset")
+
+class gedcom_rec(object):
+    """Class representing a parsed GEDCOM record.
+
+    Attributes
+    ----------
+    level : int
+        Record level number
+    xref_id : str
+        Record reference ID, possibly empty.
+    tag : str
+        Tag name
+    value : str
+        Record value, possibly empty
+    sub_records : list
+        List of subordinate records, possibly empty
+    offset : int
+        Record location in a file
+    """
+    def __init__(self, level, xref_id, tag, value, sub_records, offset):
+        self.level = level
+        self.xref_id = xref_id
+        self.tag = tag
+        self.value = value
+        self.sub_records = sub_records
+        self.offset = offset
 
 
 class ParserError(Exception):
@@ -268,22 +290,61 @@ class GedcomReader(object):
             elif level <= reclevel:
                 # stop at the record of the same or higher (smaller) level
                 break
-            # extend stack to fit this level
+
+            # extend stack to fit this level (and make parent levels if needed)
             stack.extend([None] * (level + 1 - len(stack)))
 
-            rec = gedcom_rec(level=level, xref_id=gline.xref_id,
-                             tag=gline.tag, value=gline.value,
-                             sub_records=[], offset=gline.offset)
-
-            # add to parent's sub-records list
             parent = stack[level - 1] if level > 0 else None
-            if parent:
-                parent.sub_records.append(rec)
+            rec = self._make_record(parent, gline)
 
             # store as current record at this level
-            stack[level] = rec
+            if rec:
+                stack[level] = rec
 
         return stack[reclevel] if stack else None
+
+    def _make_record(self, parent, gline):
+        """Process next record.
+
+        This method created new record from the line read from file if
+        needed and/or updates its parent record. If the parent record tag
+        is ``BLOB`` and new record tag is ``CONT`` then record is skipped
+        entirely and None is returned. Otherwise if new record tag is ``CONT``
+        or ``CONC`` its value is added to parent value. For all other tags
+        new record is made and it is added to parent sub_records attribute.
+
+        Parameters
+        ----------
+        parent : `gedcom_rec`
+            Parent record of the new record
+        gline : `gedcom_line`
+            Current parsed line
+
+        Returns
+        -------
+        `gedcom_rec` or None,
+        """
+
+        if parent and gline.tag in ("CONT", "CONC"):
+            # concatenate, only for non-BLOBs
+            if parent.tag != "BLOB":
+                # have to be careful concatenating empty/None values
+                value = gline.value
+                if gline.tag == "CONT":
+                    value = "\n" + (value or "")
+                if value is not None:
+                    parent.value = (parent.value or "") + value
+            return None
+
+        rec = gedcom_rec(level=gline.level, xref_id=gline.xref_id,
+                         tag=gline.tag, value=gline.value,
+                         sub_records=[], offset=gline.offset)
+
+        # add to parent's sub-records list
+        if parent:
+            parent.sub_records.append(rec)
+
+        return rec
 
     def __enter__(self):
         return self
