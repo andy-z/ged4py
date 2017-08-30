@@ -139,10 +139,17 @@ def gedcom_open(filename, encoding=None, errors="strict"):
     """
 
     if encoding is None:
-        with open(filename, 'rb') as gedfile:
-            encoding = guess_codec(gedfile, errors=errors)
-
-    return io.open(filename, 'rt', encoding=encoding, errors=errors)
+        raw = io.FileIO(filename)
+        buffer = io.BufferedReader(raw)
+        try:
+            encoding = guess_codec(buffer, errors=errors)
+            buffer.seek(0)
+        except:
+            buffer.close()
+            raise
+        return io.TextIOWrapper(buffer, encoding=encoding, errors=errors)
+    else:
+        return io.open(filename, 'rt', encoding=encoding, errors=errors)
 
 
 def gedcom_lines(input, filename="<input>"):
@@ -216,7 +223,14 @@ class Pointer(object):
 
 
 class GedcomReader(object):
-    """Main interface for reading GEDCOM files
+    """Main interface for reading GEDCOM files.
+
+    :param str fname: File name.
+    :param str encoding: If None (default) then file is analyzed using
+        `guess_codec()` method to determine correct codec. Otherwise
+        file is open using specified codec.
+    :param str errors: Controls error handling behavior during string
+        decoding, accepts same values as standard `codecs.decode` method.
     """
 
     def __init__(self, fname, encoding=None, errors="strict"):

@@ -35,7 +35,6 @@ setup(
     packages=find_packages(include=['ged4py']),
     entry_points={
         'console_scripts': [
-            'ged4py=ged4py.cli:main'
         ]
     },
     include_package_data=False,
