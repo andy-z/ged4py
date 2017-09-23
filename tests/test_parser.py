@@ -39,17 +39,17 @@ class TestParser(unittest.TestCase):
         """Test guess_codec()."""
 
         file = io.BytesIO(b"0 HEAD\n1 CHAR ASCII\n0 TRLR")
-        self.assertEqual(parser.guess_codec(file), "ascii")
+        self.assertEqual(parser.guess_codec(file), ("ascii", 0))
 
         file = io.BytesIO(b"0 HEAD\n1 CHAR UTF-8\n0 TRLR")
-        self.assertEqual(parser.guess_codec(file), "utf-8")
+        self.assertEqual(parser.guess_codec(file), ("utf-8", 0))
 
         file = io.BytesIO(b"\xef\xbb\xbf0 HEAD\n1 CHAR UTF-8\n0 TRLR")
-        self.assertEqual(parser.guess_codec(file), "utf-8-sig")
+        self.assertEqual(parser.guess_codec(file), ("utf-8", 3))
 
         # CR-LF
         file = io.BytesIO(b"\xef\xbb\xbf0 HEAD\r\n1 CHAR UTF-8\r\n0 TRLR")
-        self.assertEqual(parser.guess_codec(file), "utf-8-sig")
+        self.assertEqual(parser.guess_codec(file), ("utf-8", 3))
 
 #         UTF-16 is broken
 #         # utf-16-le
@@ -80,39 +80,46 @@ class TestParser(unittest.TestCase):
 
         data = b"0 HEAD\n1 CHAR ANSEL\n0 TRLR"
         with _temp_file(data) as fname:
-            with parser.gedcom_open(fname) as file:
-                self.assertEqual(file.encoding, "ansel")
-                self.assertEqual(file.tell(), 0)
-                self.assertEqual(list(file.readlines()), ["0 HEAD\n", "1 CHAR ANSEL\n", "0 TRLR"])
+            with parser.GedcomReader(fname) as reader:
+                self.assertEqual(reader._encoding, "ansel")
+                self.assertEqual(reader._bom_size, 0)
 
         data = b"0 HEAD\n1 CHAR ASCII\n0 TRLR"
         with _temp_file(data) as fname:
-            with parser.gedcom_open(fname) as file:
-                self.assertEqual(file.encoding, "ascii")
-                self.assertEqual(file.tell(), 0)
-                self.assertEqual(list(file.readlines()), ["0 HEAD\n", "1 CHAR ASCII\n", "0 TRLR"])
+            with parser.GedcomReader(fname) as reader:
+                self.assertEqual(reader._encoding, "ascii")
+                self.assertEqual(reader._bom_size, 0)
 
         data = b"0 HEAD\n1 CHAR UTF-8\n0 TRLR"
         with _temp_file(data) as fname:
-            with parser.gedcom_open(fname) as file:
-                self.assertEqual(file.encoding, "utf-8")
-                self.assertEqual(file.tell(), 0)
-                self.assertEqual(list(file.readlines()), ["0 HEAD\n", "1 CHAR UTF-8\n", "0 TRLR"])
+            with parser.GedcomReader(fname) as reader:
+                self.assertEqual(reader._encoding, "utf-8")
+                self.assertEqual(reader._bom_size, 0)
 
         data = b"\xef\xbb\xbf0 HEAD\n1 CHAR UTF-8\n0 TRLR"
         with _temp_file(data) as fname:
-            with parser.gedcom_open(fname) as file:
-                self.assertEqual(file.encoding, "utf-8-sig")
-                self.assertEqual(file.tell(), 0)
-                self.assertEqual(list(file.readlines()), ["0 HEAD\n", "1 CHAR UTF-8\n", "0 TRLR"])
+            with parser.GedcomReader(fname) as reader:
+                self.assertEqual(reader._encoding, "utf-8")
+                self.assertEqual(reader._bom_size, 3)
 
         # CR-LF
         data = b"\xef\xbb\xbf0 HEAD\r\n1 CHAR UTF-8\r\n0 TRLR"
         with _temp_file(data) as fname:
-            with parser.gedcom_open(fname) as file:
-                self.assertEqual(file.encoding, "utf-8-sig")
-                self.assertEqual(file.tell(), 0)
-                self.assertEqual(list(file.readlines()), ["0 HEAD\n", "1 CHAR UTF-8\n", "0 TRLR"])
+            with parser.GedcomReader(fname) as reader:
+                self.assertEqual(reader._encoding, "utf-8")
+                self.assertEqual(reader._bom_size, 3)
+
+        data = b"0 HEAD\n1 CHAR ASCII\n0 TRLR"
+        with io.BytesIO(data) as file:
+            with parser.GedcomReader(file) as reader:
+                self.assertEqual(reader._encoding, "ascii")
+                self.assertEqual(reader._bom_size, 0)
+
+        data = b"\xef\xbb\xbf0 HEAD\n1 CHAR UTF-8\n0 TRLR"
+        with io.BytesIO(data) as file:
+            with parser.GedcomReader(file) as reader:
+                self.assertEqual(reader._encoding, "utf-8")
+                self.assertEqual(reader._bom_size, 3)
 
     def test_005_open_errors(self):
         """Test gedcom_open() method."""
@@ -120,22 +127,22 @@ class TestParser(unittest.TestCase):
         # no HEAD
         data = b"\xef\xbb\xbf0 HDR\n1 CHAR ANSEL\n0 TRLR"
         with _temp_file(data) as fname:
-            self.assertRaises(parser.CodecError, parser.gedcom_open, fname)
+            self.assertRaises(parser.CodecError, parser.GedcomReader, fname)
 
         # no CHAR
         data = b"\xef\xbb\xbf0 HEAD\n1 NOCHAR ANSEL\n0 TRLR"
         with _temp_file(data) as fname:
-            self.assertRaises(parser.CodecError, parser.gedcom_open, fname)
+            self.assertRaises(parser.CodecError, parser.GedcomReader, fname)
 
         # unknown encoding
         data = b"\xef\xbb\xbf0 HEAD\n1 CHAR not-an-encoding\n0 TRLR"
         with _temp_file(data) as fname:
-            self.assertRaises(parser.CodecError, parser.gedcom_open, fname)
+            self.assertRaises(parser.CodecError, parser.GedcomReader, fname)
 
         # expect UTF-8
         data = b"\xef\xbb\xbf0 HEAD\n1 CHAR ANSEL\n0 TRLR"
         with _temp_file(data) as fname:
-            self.assertRaises(parser.CodecError, parser.gedcom_open, fname)
+            self.assertRaises(parser.CodecError, parser.GedcomReader, fname)
 
     def test_006_gedcom_lines(self):
         """Test gedcom_lines method"""
@@ -143,8 +150,8 @@ class TestParser(unittest.TestCase):
         # simple content
         data = b"0 HEAD\n1 CHAR ASCII\n1 SOUR PIF PAF\n0 @i1@ INDI\n0 TRLR"
         with _temp_file(data) as fname:
-            with parser.gedcom_open(fname) as file:
-                lines = list(parser.gedcom_lines(file))
+            with parser.GedcomReader(fname) as reader:
+                lines = list(reader.gedcom_lines(0))
                 expect = [parser.gedcom_line(level=0, xref_id=None, tag="HEAD", value=None, offset=0),
                           parser.gedcom_line(level=1, xref_id=None, tag="CHAR", value="ASCII", offset=7),
                           parser.gedcom_line(level=1, xref_id=None, tag="SOUR", value="PIF PAF", offset=20),
@@ -155,8 +162,8 @@ class TestParser(unittest.TestCase):
         # Unicode characters
         data = b"0 HEAD\n1 CHAR UTF-8\n0 OK \xc2\xb5"
         with _temp_file(data) as fname:
-            with parser.gedcom_open(fname) as file:
-                lines = list(parser.gedcom_lines(file))
+            with parser.GedcomReader(fname) as reader:
+                lines = list(reader.gedcom_lines(0))
                 expect = [parser.gedcom_line(level=0, xref_id=None, tag="HEAD", value=None, offset=0),
                           parser.gedcom_line(level=1, xref_id=None, tag="CHAR", value="UTF-8", offset=7),
                           parser.gedcom_line(level=0, xref_id=None, tag="OK", value=u"\u00b5", offset=20)]
@@ -165,9 +172,18 @@ class TestParser(unittest.TestCase):
         # Unicode and BOM
         data = b"\xef\xbb\xbf0 HEAD\r\n1 CHAR UTF-8\r\n0 OK \xc2\xb5"
         with _temp_file(data) as fname:
-            with parser.gedcom_open(fname) as file:
-                lines = list(parser.gedcom_lines(file))
-                expect = [parser.gedcom_line(level=0, xref_id=None, tag="HEAD", value=None, offset=0),
+            with parser.GedcomReader(fname) as reader:
+                lines = list(reader.gedcom_lines(3))
+                expect = [parser.gedcom_line(level=0, xref_id=None, tag="HEAD", value=None, offset=3),
+                          parser.gedcom_line(level=1, xref_id=None, tag="CHAR", value="UTF-8", offset=11),
+                          parser.gedcom_line(level=0, xref_id=None, tag="OK", value=u"\u00b5", offset=25)]
+                self.assertEqual(lines, expect)
+
+        data = b"\xef\xbb\xbf0 HEAD\r\n1 CHAR UTF-8\r\n0 OK \xc2\xb5"
+        with io.BytesIO(data) as file:
+            with parser.GedcomReader(file) as reader:
+                lines = list(reader.gedcom_lines(3))
+                expect = [parser.gedcom_line(level=0, xref_id=None, tag="HEAD", value=None, offset=3),
                           parser.gedcom_line(level=1, xref_id=None, tag="CHAR", value="UTF-8", offset=11),
                           parser.gedcom_line(level=0, xref_id=None, tag="OK", value=u"\u00b5", offset=25)]
                 self.assertEqual(lines, expect)
@@ -178,22 +194,22 @@ class TestParser(unittest.TestCase):
         # tag name is only letters and digits
         data = b"0 HEAD\n1 CHAR ASCII\n1 SO@UR PIF PAF"
         with _temp_file(data) as fname:
-            with parser.gedcom_open(fname) as file:
-                iter = parser.gedcom_lines(file)
+            with parser.GedcomReader(fname) as reader:
+                iter = reader.gedcom_lines(0)
                 self.assertRaises(parser.ParserError, list, iter)
 
         # xref must start with letter or digit
         data = b"0 HEAD\n1 CHAR ASCII\n1 @!ref@ SOUR PIF PAF"
         with _temp_file(data) as fname:
-            with parser.gedcom_open(fname) as file:
-                iter = parser.gedcom_lines(file)
+            with parser.GedcomReader(fname) as reader:
+                iter = reader.gedcom_lines(0)
                 self.assertRaises(parser.ParserError, list, iter)
 
         # level must be a number
         data = b"0 HEAD\n1 CHAR ASCII\nX SOUR PIF PAF"
         with _temp_file(data) as fname:
-            with parser.gedcom_open(fname) as file:
-                iter = parser.gedcom_lines(file)
+            with parser.GedcomReader(fname) as reader:
+                iter = reader.gedcom_lines(0)
                 self.assertRaises(parser.ParserError, list, iter)
 
     def test_010_read_record(self):
@@ -305,8 +321,8 @@ class TestParser(unittest.TestCase):
         """Test records0 method"""
 
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n1 SUBA A\n1 SUBB B\n2 SUBC C\n1 SUBD D\n0 STOP"
-        with _temp_file(data) as fname:
-            with parser.GedcomReader(fname) as reader:
+        with io.BytesIO(data) as file:
+            with parser.GedcomReader(file) as reader:
 
                 recs = list(reader.records0())
                 self.assertEqual(len(recs), 3)

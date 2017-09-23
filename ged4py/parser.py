@@ -7,15 +7,18 @@ from __future__ import print_function, absolute_import, division
 import codecs
 import collections
 import io
+import logging
 import re
 
 from .detail.io import check_bom, guess_lineno
+
+_log = logging.getLogger(__name__)
 
 _re_gedcom_line = re.compile(r"""
         ^
         [ ]*(?P<level>\d+)                       # integer level number
         (?:[ ](?P<xref>@[A-Z-a-z0-9][^@]*@))?    # optional @xref@
-        [ ](?P<tag>[A-Z-a-z0-9]+)                # tag name
+        [ ](?P<tag>[A-Z-a-z0-9_]+)               # tag name
         (?:[ ](?P<value>.*))?                    # optional value
         $
 """, re.X)
@@ -76,7 +79,7 @@ def guess_codec(file, errors="strict"):
     :param file: File object, must be open in binary mode.
     :param str errors: Controls error handling behavior during string
         decoding, accepts same values as standard `codecs.decode` method.
-    :returns: Name of the file codec.
+    :returns: Tuple (codec_name, bom_size)
     :raises: :py:class:`CodecError` when codec name in file is unknown or
         when codec name in file contradicts codec determined from BOM.
     :raises: :py:class:`UnicodeDecodeError` when codec fails to decode
@@ -85,6 +88,7 @@ def guess_codec(file, errors="strict"):
 
     # check BOM first
     bom_codec = check_bom(file)
+    bom_size = file.tell()
     codec = bom_codec or 'ansel'
 
     # scan header until CHAR or end of header
@@ -95,7 +99,7 @@ def guess_codec(file, errors="strict"):
             raise IOError("Unexpected EOF while reading GEDCOM header")
 
         line = codecs.decode(line, codec, errors)
-        line = line.lstrip().rstrip('\n')
+        line = line.lstrip().rstrip('\r\n')
 
         words = line.split()
 
@@ -114,83 +118,7 @@ def guess_codec(file, errors="strict"):
                                  "codec {1}".format(words[2], bom_codec))
             break
 
-    # If BOM record is there and codec is utf-8 then use utf-8-sig to strip BOM
-    if bom_codec == codecs.lookup('utf-8').name:
-        codec = codecs.lookup('utf-8-sig').name
-
-    return codec
-
-
-def gedcom_open(filename, encoding=None, errors="strict"):
-    """Open the file for reading in text mode.
-
-    :param str filename: Name of the file to open.
-    :param str encoding: If None (default) then file is analyzed using
-        `guess_codec()` method to determine correct codec. Otherwise
-        file is open using specified codec.
-    :param str errors: Controls error handling behavior during string
-        decoding, accepts same values as standard `codecs.decode` method.
-    :returns: File object open in text mode with correct encoding set,
-        this is likely to be a subclass of `io.TextIOBase`.
-    :raises: :py:class:`CodecError` when codec name in file is unknown or
-        when codec name in file contradicts codec determined from BOM.
-    :raises: :py:class:`UnicodeDecodeError` when codec fails to decode
-        input lines and `errors` is set to "strict" (default).
-    """
-
-    if encoding is None:
-        raw = io.FileIO(filename)
-        buffer = io.BufferedReader(raw)
-        try:
-            encoding = guess_codec(buffer, errors=errors)
-            buffer.seek(0)
-        except:
-            buffer.close()
-            raise
-        return io.TextIOWrapper(buffer, encoding=encoding, errors=errors)
-    else:
-        return io.open(filename, 'rt', encoding=encoding, errors=errors)
-
-
-def gedcom_lines(input, filename="<input>"):
-    """Generator method for *gedcom lines*.
-
-    GEDCOM line grammar is defined in Chapter 1 of GEDCOM standard, it
-    consists if the level number, optional reference ID, tag name, and
-    optional value separated by spaces. Chaper 1 is pure grammar level,
-    it does not assign any semantics to tags or levels. Consequently
-    this method does not perform any operations on the lines other than
-    returning the lines in their order in file.
-
-    This method iterates over all lines in input file and converts each
-    line into :py:class:`gedcom_line` class.
-
-    :param input: File object.
-    :param str filename: Name of the file, it is only used for generating
-        diagnostics.
-    :returns: Iterator for gedcom_lines.
-    :raises: :py:class:`ParserError` when lines have incorrect syntax.
-    """
-
-    while True:
-
-        offset = input.tell()
-        line = input.readline().rstrip('\n')
-        if not line:
-            break
-
-        match = _re_gedcom_line.match(line)
-        if not match:
-            input.seek(offset)
-            lineno = guess_lineno(input)
-            raise ParserError("Invalid syntax at line "
-                              "{0}({1}): `{2}'".format(filename, lineno, line))
-
-        yield gedcom_line(level=int(match.group('level')),
-                          xref_id=match.group('xref'),
-                          tag=match.group('tag'),
-                          value=match.group('value'),
-                          offset=offset)
+    return codec, bom_size
 
 
 class Pointer(object):
@@ -225,7 +153,8 @@ class Pointer(object):
 class GedcomReader(object):
     """Main interface for reading GEDCOM files.
 
-    :param str fname: File name.
+    :param str file: File name or file object open in binary mode, file must
+        be seekable.
     :param str encoding: If None (default) then file is analyzed using
         `guess_codec()` method to determine correct codec. Otherwise
         file is open using specified codec.
@@ -233,13 +162,30 @@ class GedcomReader(object):
         decoding, accepts same values as standard `codecs.decode` method.
     """
 
-    def __init__(self, fname, encoding=None, errors="strict"):
-        self._fname = fname
+    def __init__(self, file, encoding=None, errors="strict"):
+        self._encoding = encoding
+        self._errors = errors
+        self._bom_size = 0
         self._index0 = None   # list of level=0 record positions
         self._xref0 = None    # maps xref_id to level=0 record position
 
         # open the file
-        self.file = gedcom_open(fname, encoding=encoding, errors=errors)
+        if hasattr(file, 'read'):
+            # assume it is a file already
+            if hasattr(file, 'seekable'):
+                # check that it supports seek()
+                if not file.seekable():
+                    raise IOError("Input file does not support seek.")
+            self._file = file
+        else:
+            raw = io.FileIO(file)
+            self._file = io.BufferedReader(raw)
+
+        # check codec and BOM
+        encoding, self._bom_size = guess_codec(self._file, errors=self._errors)
+        self._file.seek(self._bom_size)
+        if not self._encoding:
+            self._encoding = encoding
 
     @property
     def index0(self):
@@ -254,20 +200,67 @@ class GedcomReader(object):
         return self._xref0
 
     def _init_index(self):
+        _log.debug("in _init_index")
         self._index0 = []
-        self._xref0 = []
+        self._xref0 = {}
         # scan whole file for level=0 records
-        self.file.seek(0)
-        for gline in gedcom_lines(self.file, self._fname):
+        for gline in self.gedcom_lines(self._bom_size):
+            _log.debug("  _init_index gline: %s", gline)
             if gline.level == 0:
                 self._index0.append((gline.offset, gline.tag))
                 if gline.xref_id:
                     self._xref0[gline.xref_id] = (gline.offset, gline.tag)
+            _log.debug("  _init_index gline: done proc")
+        _log.debug("_init_index done")
+
+    def gedcom_lines(self, offset):
+        """Generator method for *gedcom lines*.
+
+        GEDCOM line grammar is defined in Chapter 1 of GEDCOM standard, it
+        consists if the level number, optional reference ID, tag name, and
+        optional value separated by spaces. Chaper 1 is pure grammar level,
+        it does not assign any semantics to tags or levels. Consequently
+        this method does not perform any operations on the lines other than
+        returning the lines in their order in file.
+
+        This method iterates over all lines in input file and converts each
+        line into :py:class:`gedcom_line` class.
+
+        :param int offset: Position in the file to start reading.
+        :returns: Iterator for gedcom_lines.
+        :raises: :py:class:`ParserError` when lines have incorrect syntax.
+        """
+
+        self._file.seek(offset)
+
+        while True:
+
+            offset = self._file.tell()
+            line = self._file.readline()
+            if not line:
+                break
+            line = line.decode(self._encoding, self._errors)
+            line = line.rstrip('\r\n')
+
+            match = _re_gedcom_line.match(line)
+            if not match:
+                self._file.seek(offset)
+                lineno = guess_lineno(self._file)
+                raise ParserError("Invalid syntax at line "
+                                  "{0}: `{1}'".format(lineno, line))
+
+            yield gedcom_line(level=int(match.group('level')),
+                              xref_id=match.group('xref'),
+                              tag=match.group('tag'),
+                              value=match.group('value'),
+                              offset=offset)
 
     def records0(self, tag=None):
         """Iterator over all level=0 records.
         """
+        _log.debug("in records0")
         for offset, xtag in self.index0:
+            _log.debug("offset, xtag: %s, %s", offset, xtag)
             if tag is None or tag == xtag:
                 yield self.read_record(offset)
 
@@ -293,10 +286,11 @@ class GedcomReader(object):
         `ParserError` if `offsets` does not point to the beginning of a
         record or for any parsing errors.
         """
+        _log.debug("in read_record(%s)", offset)
         stack = []  # stores per-level current records
         reclevel = None
-        self.file.seek(offset)
-        for gline in gedcom_lines(self.file, self._fname):
+        for gline in self.gedcom_lines(offset):
+            _log.debug("    read_record, gline: %s", gline)
             level = gline.level
             if reclevel is None:
                 # this is the first record, remember its level
@@ -364,4 +358,4 @@ class GedcomReader(object):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.file.close()
+        self._file.close()
