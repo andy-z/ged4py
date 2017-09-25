@@ -11,6 +11,7 @@ import logging
 import re
 
 from .detail.io import check_bom, guess_lineno
+from . import model
 
 _log = logging.getLogger(__name__)
 
@@ -26,33 +27,6 @@ _re_gedcom_line = re.compile(r"""
 # tuple class for gedcom_line grammar
 gedcom_line = collections.namedtuple("gedcom_line",
                                      "level xref_id tag value offset")
-
-
-class gedcom_rec(object):
-    """Class representing a parsed GEDCOM record.
-
-    Attributes
-    ----------
-    level : int
-        Record level number
-    xref_id : str
-        Record reference ID, possibly empty.
-    tag : str
-        Tag name
-    value : str
-        Record value, possibly empty
-    sub_records : list
-        List of subordinate records, possibly empty
-    offset : int
-        Record location in a file
-    """
-    def __init__(self, level, xref_id, tag, value, sub_records, offset):
-        self.level = level
-        self.xref_id = xref_id
-        self.tag = tag
-        self.value = value
-        self.sub_records = sub_records
-        self.offset = offset
 
 
 class ParserError(Exception):
@@ -127,35 +101,6 @@ def guess_codec(file, errors="strict", require_char=False):
     return codec, bom_size
 
 
-class Pointer(object):
-    """Class representing a reference to a record in a GEDCOM file.
-
-    This class wraps a GEDCOM pointer and adds few useful methods to locate
-    and retrieve a pointed object. Instance of this class will be used in
-    place of the GEDCOM pointers in the objects created by parser.
-
-    Attributes
-    ----------
-    pointer : str
-        Value of the GEDCOM pointer (e.g. "@I1234@")
-    object : object
-        Pointed object
-    """
-
-    def __init__(self, pointer, registry):
-        self.pointer = pointer
-        self.registry = registry
-
-    @property
-    def object(self):
-        """Retrieve pointed object.
-        """
-        return self.registry.get(self.pointer)
-
-    def __str__(self):
-        return "Pointer({0})".format(self.pointer)
-
-
 class GedcomReader(object):
     """Main interface for reading GEDCOM files.
 
@@ -200,12 +145,17 @@ class GedcomReader(object):
 
     @property
     def index0(self):
+        """List of level=0 record positions and tag names.
+        """
         if self._index0 is None:
             self._init_index()
         return self._index0
 
     @property
     def xref0(self):
+        """Dictionary which maps xref_id to level=0 record position and
+        tag name.
+        """
         if self._xref0 is None:
             self._init_index()
         return self._xref0
@@ -290,7 +240,7 @@ class GedcomReader(object):
 
         Returns
         -------
-        `gedcom_rec` instance or None if offset points past EOF.
+        `model.Record` instance or None if offset points past EOF.
 
         Raises
         ------
@@ -334,14 +284,14 @@ class GedcomReader(object):
 
         Parameters
         ----------
-        parent : `gedcom_rec`
+        parent : `model.Record`
             Parent record of the new record
         gline : `gedcom_line`
             Current parsed line
 
         Returns
         -------
-        `gedcom_rec` or None,
+        `model.Record` or None
         """
 
         if parent and gline.tag in ("CONT", "CONC"):
@@ -355,9 +305,9 @@ class GedcomReader(object):
                     parent.value = (parent.value or "") + value
             return None
 
-        rec = gedcom_rec(level=gline.level, xref_id=gline.xref_id,
-                         tag=gline.tag, value=gline.value,
-                         sub_records=[], offset=gline.offset)
+        rec = model.make_record(level=gline.level, xref_id=gline.xref_id,
+                                tag=gline.tag, value=gline.value,
+                                sub_records=[], offset=gline.offset)
 
         # add to parent's sub-records list
         if parent:
