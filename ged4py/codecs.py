@@ -1,6 +1,6 @@
 """ Python Character Mapping for ANSEL (https://en.wikipedia.org/wiki/ANSEL).
 
-"""  # "
+"""
 
 from __future__ import print_function, absolute_import, division
 

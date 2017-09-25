@@ -67,7 +67,7 @@ class CodecError(ParserError):
     pass
 
 
-def guess_codec(file, errors="strict"):
+def guess_codec(file, errors="strict", require_char=False):
     """Look at file contents and guess its correct encoding.
 
     File must be open in binary mode and positioned at offset 0. If BOM
@@ -79,6 +79,9 @@ def guess_codec(file, errors="strict"):
     :param file: File object, must be open in binary mode.
     :param str errors: Controls error handling behavior during string
         decoding, accepts same values as standard `codecs.decode` method.
+    :param bool require_char: If True then exception is thrown if CHAR
+        record is not found in a header, if False and C?HAR is not in the
+        header then codec determined from BOM or "ansel" is returned.
     :returns: Tuple (codec_name, bom_size)
     :raises: :py:class:`CodecError` when codec name in file is unknown or
         when codec name in file contradicts codec determined from BOM.
@@ -105,7 +108,10 @@ def guess_codec(file, errors="strict"):
 
         if len(words) >= 2 and words[0] == "0" and words[1] != "HEAD":
             # past header but have not seen CHAR
-            raise CodecError("GEDCOM header does not have CHAR record")
+            if require_char:
+                raise CodecError("GEDCOM header does not have CHAR record")
+            else:
+                break
         elif len(words) >= 3 and words[0] == "1" and words[1] == "CHAR":
             try:
                 new_codec = codecs.lookup(words[2]).name
@@ -160,9 +166,13 @@ class GedcomReader(object):
         file is open using specified codec.
     :param str errors: Controls error handling behavior during string
         decoding, accepts same values as standard `codecs.decode` method.
+    :param bool require_char: If True then exception is thrown if CHAR
+        record is not found in a header, if False and C?HAR is not in the
+        header then codec determined from BOM or "ansel" is used.
     """
 
-    def __init__(self, file, encoding=None, errors="strict"):
+    def __init__(self, file, encoding=None, errors="strict",
+                 require_char=False):
         self._encoding = encoding
         self._errors = errors
         self._bom_size = 0
@@ -182,7 +192,8 @@ class GedcomReader(object):
             self._file = io.BufferedReader(raw)
 
         # check codec and BOM
-        encoding, self._bom_size = guess_codec(self._file, errors=self._errors)
+        encoding, self._bom_size = guess_codec(self._file, errors=self._errors,
+                                               require_char=require_char)
         self._file.seek(self._bom_size)
         if not self._encoding:
             self._encoding = encoding

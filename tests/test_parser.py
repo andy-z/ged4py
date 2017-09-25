@@ -121,18 +121,32 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(reader._encoding, "utf-8")
                 self.assertEqual(reader._bom_size, 3)
 
+        data = b"0 TRLR"
+        with _temp_file(data) as fname:
+            with parser.GedcomReader(fname) as reader:
+                self.assertEqual(reader._encoding, "ansel")
+                self.assertEqual(reader._bom_size, 0)
+
+        data = b"\xef\xbb\xbf0 TRLR"
+        with _temp_file(data) as fname:
+            with parser.GedcomReader(fname) as reader:
+                self.assertEqual(reader._encoding, "utf-8")
+                self.assertEqual(reader._bom_size, 3)
+
     def test_005_open_errors(self):
         """Test gedcom_open() method."""
 
         # no HEAD
         data = b"\xef\xbb\xbf0 HDR\n1 CHAR ANSEL\n0 TRLR"
         with _temp_file(data) as fname:
-            self.assertRaises(parser.CodecError, parser.GedcomReader, fname)
+            self.assertRaises(parser.CodecError, parser.GedcomReader, fname,
+                              require_char=True)
 
         # no CHAR
         data = b"\xef\xbb\xbf0 HEAD\n1 NOCHAR ANSEL\n0 TRLR"
         with _temp_file(data) as fname:
-            self.assertRaises(parser.CodecError, parser.GedcomReader, fname)
+            self.assertRaises(parser.CodecError, parser.GedcomReader, fname,
+                              require_char=True)
 
         # unknown encoding
         data = b"\xef\xbb\xbf0 HEAD\n1 CHAR not-an-encoding\n0 TRLR"
