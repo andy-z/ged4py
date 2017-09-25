@@ -43,10 +43,10 @@ class Record(object):
         n_sub = len(self.sub_records)
         if self.xref_id:
             fmt = "{0}(level={1.level}, xref_id={1.xref_id}, tag={1.tag}, " \
-                "value=\"{2!r}\", offset={1.offset}, #subrec={3})"
+                "value={2!r}, offset={1.offset}, #subrec={3})"
         else:
             fmt = "{0}(level={1.level}, tag={1.tag}, " \
-                "value=\"{2!r}\", offset={1.offset}, #subrec={3})"
+                "value={2!r}, offset={1.offset}, #subrec={3})"
         return fmt.format(self.__class__.__name__, self, value, n_sub)
 
 class Pointer(object):

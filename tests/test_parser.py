@@ -75,7 +75,7 @@ class TestParser(unittest.TestCase):
         file = io.BytesIO(b"0 HEAD\n0 OK \xc7")
         self.assertRaises(UnicodeDecodeError, parser.guess_codec, file)
 
-    def test_004_open(self):
+    def test_010_open(self):
         """Test gedcom_open() method."""
 
         data = b"0 HEAD\n1 CHAR ANSEL\n0 TRLR"
@@ -133,7 +133,7 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(reader._encoding, "utf-8")
                 self.assertEqual(reader._bom_size, 3)
 
-    def test_005_open_errors(self):
+    def test_011_open_errors(self):
         """Test gedcom_open() method."""
 
         # no HEAD
@@ -158,7 +158,25 @@ class TestParser(unittest.TestCase):
         with _temp_file(data) as fname:
             self.assertRaises(parser.CodecError, parser.GedcomReader, fname)
 
-    def test_006_gedcom_lines(self):
+    def test_015_init_index(self):
+        """Test _init_index() method."""
+
+        data = b"0 HEAD\n0 @i1@ INDI\n0 @i2@ INDI\n0 @i3@ INDI\n0 TRLR"
+        with _temp_file(data) as fname:
+            with parser.GedcomReader(fname) as reader:
+                self.assertTrue(reader._index0 is None)
+                self.assertTrue(reader._xref0 is None)
+                reader._init_index()
+                self.assertEqual(reader._index0, [(0, "HEAD"),
+                                                  (7, "INDI"),
+                                                  (19, "INDI"),
+                                                  (31, "INDI"),
+                                                  (43, "TRLR")])
+                self.assertEqual(reader._xref0, {"@i1@": (7, "INDI"),
+                                                 "@i2@": (19, "INDI"),
+                                                 "@i3@": (31, "INDI")})
+
+    def test_020_gedcom_lines(self):
         """Test gedcom_lines method"""
 
         # simple content
@@ -202,7 +220,7 @@ class TestParser(unittest.TestCase):
                           parser.gedcom_line(level=0, xref_id=None, tag="OK", value=u"\u00b5", offset=25)]
                 self.assertEqual(lines, expect)
 
-    def test_007_gedcom_lines_errors(self):
+    def test_021_gedcom_lines_errors(self):
         """Test gedcom_lines method"""
 
         # tag name is only letters and digits
@@ -226,7 +244,7 @@ class TestParser(unittest.TestCase):
                 iter = reader.gedcom_lines(0)
                 self.assertRaises(parser.ParserError, list, iter)
 
-    def test_010_read_record(self):
+    def test_030_read_record(self):
         """Test read_record method"""
 
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n0 INDI B"
@@ -317,7 +335,7 @@ class TestParser(unittest.TestCase):
                 self.assertIsNone(note.value)
                 self.assertEqual(len(note.sub_records), 0)
 
-    def test_011_read_record_errors(self):
+    def test_031_read_record_errors(self):
         """Test read_record method"""
 
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n0 INDI B"
@@ -331,7 +349,7 @@ class TestParser(unittest.TestCase):
                 # Random location
                 self.assertRaises(parser.ParserError, reader.read_record, 26)
 
-    def test_020_records0(self):
+    def test_040_records0(self):
         """Test records0 method"""
 
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n1 SUBA A\n1 SUBB B\n2 SUBC C\n1 SUBD D\n0 STOP"
