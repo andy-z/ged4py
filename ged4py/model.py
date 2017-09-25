@@ -56,12 +56,7 @@ class Pointer(object):
     and retrieve a pointed object. Instance of this class will be used in
     place of the GEDCOM pointers in the objects created by parser.
 
-    Attributes
-    ----------
-    pointer : str
-        Value of the GEDCOM pointer (e.g. "@I1234@")
-    object : object
-        Pointed object
+    :ivar str pointer: Value of the GEDCOM pointer (e.g. "@I1234@")
     """
 
     def __init__(self, pointer, registry):
@@ -84,11 +79,23 @@ class Name(Record):
     This class adds few convenience methods for name manipulation.
 
     Client code usually does not need to create instances of this class
-    directly, :py:method:`make_record` should be used instead.
+    directly, :py:meth:`make_record` should be used instead.
     """
 
     def __init__(self):
         Record.__init__(self)
+
+    @property
+    def type(self):
+        """Name type as defined in TYPE record. ``None`` if TYPE record is
+        missing, otherwise string, e.g. "aka", "birth", "immigrant",
+        "maiden", "married" (or anything else).
+        """
+        # +1 TYPE <NAME_TYPE> {0:1}
+        types = self.sub_tags("TYPE")
+        if types:
+            return types[0].value
+        return None
 
 
 _tag_class = dict(NAME=Name)

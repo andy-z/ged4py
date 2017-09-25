@@ -4,6 +4,8 @@
 
 from __future__ import print_function, absolute_import, division
 
+__all__ = ['GedcomReader', 'ParserError', 'CodecError']
+
 import codecs
 import collections
 import io
@@ -220,7 +222,7 @@ class GedcomReader(object):
         """Iterator over all level=0 records.
 
         :param str tag: If ``None`` is given (default) then return all level=0
-            records, otherwise return records with the given tag.
+            records, otherwise return level=0 records with the given tag.
         """
         _log.debug("in records0")
         for offset, xtag in self.index0:
@@ -236,19 +238,11 @@ class GedcomReader(object):
         number. File position after return from this method is not specified,
         re-position file if you want to read other records.
 
-        Parameters
-        ----------
-        offset : int
-            Position in file to start reading from.
-
-        Returns
-        -------
-        `model.Record` instance or None if offset points past EOF.
-
-        Raises
-        ------
-        `ParserError` if `offsets` does not point to the beginning of a
-        record or for any parsing errors.
+        :param int offset: Position in file to start reading from.
+        :return: :py:class:`model.Record` instance or None if offset points
+            past EOF.
+        :raises: :py:exc:`ParserError` if `offsets` does not point to the
+            beginning of a record or for any parsing errors.
         """
         _log.debug("in read_record(%s)", offset)
         stack = []  # stores per-level current records
