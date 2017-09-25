@@ -12,7 +12,7 @@ class Record(object):
     """Class representing a parsed GEDCOM record in a generic format.
 
     Client code usually does not need to create instances of this class
-    directly, :py:method:`make_record` should be used instead. If you create
+    directly, :py:meth:`make_record` should be used instead. If you create
     an instance of this class (or its subclass then you are responsible for
     filling its attributes.
 
@@ -36,6 +36,18 @@ class Record(object):
         """
         return [x for x in self.sub_records if x.tag == tag]
 
+    def __str__(self):
+        value = self.value
+        if value and len(value) > 32:
+            value = value[:32]
+        n_sub = len(self.sub_records)
+        if self.xref_id:
+            fmt = "{0}(level={1.level}, xref_id={1.xref_id}, tag={1.tag}, " \
+                "value=\"{2!r}\", offset={1.offset}, #subrec={3})"
+        else:
+            fmt = "{0}(level={1.level}, tag={1.tag}, " \
+                "value=\"{2!r}\", offset={1.offset}, #subrec={3})"
+        return fmt.format(self.__class__.__name__, self, value, n_sub)
 
 class Pointer(object):
     """Class representing a reference to a record in a GEDCOM file.

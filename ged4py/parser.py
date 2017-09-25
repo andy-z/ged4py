@@ -218,10 +218,13 @@ class GedcomReader(object):
 
     def records0(self, tag=None):
         """Iterator over all level=0 records.
+
+        :param str tag: If ``None`` is given (default) then return all level=0
+            records, otherwise return records with the given tag.
         """
         _log.debug("in records0")
         for offset, xtag in self.index0:
-            _log.debug("offset, xtag: %s, %s", offset, xtag)
+            _log.debug("    records0: offset, xtag: %s, %s", offset, xtag)
             if tag is None or tag == xtag:
                 yield self.read_record(offset)
 
@@ -265,6 +268,7 @@ class GedcomReader(object):
 
             parent = stack[level - 1] if level > 0 else None
             rec = self._make_record(parent, gline)
+            _log.debug("    read_record, rec: %s", rec)
 
             # store as current record at this level
             if rec:
