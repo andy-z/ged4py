@@ -10,7 +10,7 @@ import os
 import unittest
 
 
-from ged4py import parser
+from ged4py import model, parser
 
 
 @contextmanager
@@ -175,6 +175,29 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(reader._xref0, {"@i1@": (7, "INDI"),
                                                  "@i2@": (19, "INDI"),
                                                  "@i3@": (31, "INDI")})
+
+    def test_017_dialect(self):
+        """Test dialect property."""
+
+        data = b"0 HEAD\n0 TRLR"
+        with _temp_file(data) as fname:
+            with parser.GedcomReader(fname) as reader:
+                self.assertEqual(reader.dialect, model.DIALECT_DEFAULT)
+
+        data = b"0 HEAD\n1 SOUR MYHERITAGE\n0 TRLR"
+        with _temp_file(data) as fname:
+            with parser.GedcomReader(fname) as reader:
+                self.assertEqual(reader.dialect, model.DIALECT_MYHERITAGE)
+
+        data = b"0 HEAD\n1 SOUR ALTREE\n0 TRLR"
+        with _temp_file(data) as fname:
+            with parser.GedcomReader(fname) as reader:
+                self.assertEqual(reader.dialect, model.DIALECT_ALTREE)
+
+        data = b"0 HEAD\n1 SOUR XXX\n0 TRLR"
+        with _temp_file(data) as fname:
+            with parser.GedcomReader(fname) as reader:
+                self.assertEqual(reader.dialect, model.DIALECT_DEFAULT)
 
     def test_020_gedcom_lines(self):
         """Test gedcom_lines method"""
@@ -364,15 +387,62 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(rec.tag, "HEAD")
                 self.assertEqual(rec.value, None)
                 self.assertEqual(len(rec.sub_records), 1)
+                self.assertEqual(rec.dialect, model.DIALECT_DEFAULT)
 
                 rec = recs[1]
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "INDI")
                 self.assertEqual(rec.value, "A")
                 self.assertEqual(len(rec.sub_records), 3)
+                self.assertEqual(rec.dialect, model.DIALECT_DEFAULT)
 
                 rec = recs[2]
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "STOP")
                 self.assertEqual(rec.value, None)
                 self.assertEqual(len(rec.sub_records), 0)
+                self.assertEqual(rec.dialect, model.DIALECT_DEFAULT)
+
+    def test_041_header(self):
+        """Test header property."""
+
+        data = b"0 HEAD\n1 SOUR ALTREE\n0 TRLR"
+        with _temp_file(data) as fname:
+            with parser.GedcomReader(fname) as reader:
+                rec = reader.header
+                self.assertEqual(rec.level, 0)
+                self.assertEqual(rec.tag, "HEAD")
+                self.assertEqual(rec.value, None)
+                self.assertEqual(len(rec.sub_records), 1)
+                self.assertEqual(rec.dialect, model.DIALECT_DEFAULT)
+
+    def test_042_rec_dialect(self):
+        """Test records0 method"""
+
+        data = b"0 HEAD\n1 CHAR ASCII\n1 SOUR ALTREE\n0 INDI A\n1 SUBA A\n1 SUBB B\n2 SUBC C\n1 SUBD D\n0 STOP"
+        with io.BytesIO(data) as file:
+            with parser.GedcomReader(file) as reader:
+
+                recs = list(reader.records0())
+                self.assertEqual(len(recs), 3)
+
+                rec = recs[0]
+                self.assertEqual(rec.level, 0)
+                self.assertEqual(rec.tag, "HEAD")
+                self.assertEqual(rec.value, None)
+                self.assertEqual(len(rec.sub_records), 2)
+                self.assertEqual(rec.dialect, model.DIALECT_DEFAULT)
+
+                rec = recs[1]
+                self.assertEqual(rec.level, 0)
+                self.assertEqual(rec.tag, "INDI")
+                self.assertEqual(rec.value, "A")
+                self.assertEqual(len(rec.sub_records), 3)
+                self.assertEqual(rec.dialect, model.DIALECT_ALTREE)
+
+                rec = recs[2]
+                self.assertEqual(rec.level, 0)
+                self.assertEqual(rec.tag, "STOP")
+                self.assertEqual(rec.value, None)
+                self.assertEqual(len(rec.sub_records), 0)
+                self.assertEqual(rec.dialect, model.DIALECT_ALTREE)

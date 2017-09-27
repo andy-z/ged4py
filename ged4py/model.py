@@ -8,12 +8,21 @@ from __future__ import print_function, absolute_import, division
 __all__ = ['make_record', 'Record', 'Pointer', 'Name']
 
 
+# Even though the structure of GEDCOM file is more or less fixed,
+# interpretation of some data may vary depending on which application
+# produced GEDCOM file. Constants define different known dialect which
+# are handled by classes below.
+DIALECT_DEFAULT = 0
+DIALECT_MYHERITAGE = 1  # myheritage.com
+DIALECT_ALTREE = 2  # Agelong Tree (genery.com)
+
+
 class Record(object):
     """Class representing a parsed GEDCOM record in a generic format.
 
     Client code usually does not need to create instances of this class
     directly, :py:meth:`make_record` should be used instead. If you create
-    an instance of this class (or its subclass then you are responsible for
+    an instance of this class (or its subclass) then you are responsible for
     filling its attributes.
 
     :ivar int level: Record level number
@@ -30,9 +39,16 @@ class Record(object):
         self.value = None
         self.sub_records = None
         self.offset = None
+        self.dialect = None
+
+    def sub_tag(self, tag):
+        """Returns direct sub-record with given tag name or None.
+        """
+        recs = [x for x in self.sub_records if x.tag == tag]
+        return recs[0] if recs else None
 
     def sub_tags(self, tag):
-        """Returns list of direct sub-records with given tag name
+        """Returns list of direct sub-records with given tag name.
         """
         return [x for x in self.sub_records if x.tag == tag]
 
@@ -48,6 +64,7 @@ class Record(object):
             fmt = "{0}(level={1.level}, tag={1.tag}, " \
                 "value={2!r}, offset={1.offset}, #subrec={3})"
         return fmt.format(self.__class__.__name__, self, value, n_sub)
+
 
 class Pointer(object):
     """Class representing a reference to a record in a GEDCOM file.
@@ -92,16 +109,15 @@ class Name(Record):
         "maiden", "married" (or anything else).
         """
         # +1 TYPE <NAME_TYPE> {0:1}
-        types = self.sub_tags("TYPE")
-        if types:
-            return types[0].value
-        return None
+        rec = self.sub_tag("TYPE")
+        return rec.value if rec else None
 
 
+# maps tag names to record class
 _tag_class = dict(NAME=Name)
 
 
-def make_record(level, xref_id, tag, value, sub_records, offset):
+def make_record(level, xref_id, tag, value, sub_records, offset, dialect):
     """Create Record instance based on parameters.
 
     :param int level: Record level number.
@@ -111,6 +127,7 @@ def make_record(level, xref_id, tag, value, sub_records, offset):
     :param list sub_records: Initial list of subordinate records,
         possibly empty. List can be updated later.
     :param int offset: Record location in a file.
+    :param int dialect: One of DIALECT_* constants.
     :return: Instance of :py:class:`Record` (or one of its subclasses).
     """
 
@@ -122,4 +139,5 @@ def make_record(level, xref_id, tag, value, sub_records, offset):
     rec.value = value
     rec.sub_records = sub_records
     rec.offset = offset
+    rec.dialect = dialect
     return rec

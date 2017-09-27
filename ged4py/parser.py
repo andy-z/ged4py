@@ -125,6 +125,8 @@ class GedcomReader(object):
         self._bom_size = 0
         self._index0 = None   # list of level=0 record positions
         self._xref0 = None    # maps xref_id to level=0 record position
+        self._header = None
+        self._dialect = None
 
         # open the file
         if hasattr(file, 'read'):
@@ -139,8 +141,13 @@ class GedcomReader(object):
             self._file = io.BufferedReader(raw)
 
         # check codec and BOM
-        encoding, self._bom_size = guess_codec(self._file, errors=self._errors,
-                                               require_char=require_char)
+        try:
+            encoding, self._bom_size = guess_codec(self._file,
+                                                   errors=self._errors,
+                                                   require_char=require_char)
+        except:
+            self._file.close()
+            raise
         self._file.seek(self._bom_size)
         if not self._encoding:
             self._encoding = encoding
@@ -162,6 +169,14 @@ class GedcomReader(object):
             self._init_index()
         return self._xref0
 
+    @property
+    def header(self):
+        """Header record.
+        """
+        if self._index0 is None:
+            self._init_index()
+        return self._header
+
     def _init_index(self):
         _log.debug("in _init_index")
         self._index0 = []
@@ -174,7 +189,28 @@ class GedcomReader(object):
                 if gline.xref_id:
                     self._xref0[gline.xref_id] = (gline.offset, gline.tag)
             _log.debug("  _init_index gline: done proc")
+        if self._index0 and self._index0[0][1] == 'HEAD':
+            self._header = self.read_record(self._index0[0][0])
         _log.debug("_init_index done")
+
+    @property
+    def dialect(self):
+        """File dialect as one of model.DIALECT_* constants
+        """
+        if self._dialect is None:
+            self._dialect = model.DIALECT_DEFAULT
+            if self.header:
+                source = self.header.sub_tag("SOUR")
+                if source:
+                    if source.value == "MYHERITAGE":
+                        self._dialect = model.DIALECT_MYHERITAGE
+                    if source.value == "ALTREE":
+                        self._dialect = model.DIALECT_ALTREE
+        return self._dialect
+
+    @dialect.setter
+    def dialect(self, value):
+        self._dialect = value
 
     def gedcom_lines(self, offset):
         """Generator method for *gedcom lines*.
@@ -303,9 +339,14 @@ class GedcomReader(object):
                     parent.value = (parent.value or "") + value
             return None
 
+        # avoid infinite cycle
+        dialect = model.DIALECT_DEFAULT
+        if not (gline.level == 0 and gline.tag == "HEAD") and self._header:
+            dialect = self.dialect
         rec = model.make_record(level=gline.level, xref_id=gline.xref_id,
                                 tag=gline.tag, value=gline.value,
-                                sub_records=[], offset=gline.offset)
+                                sub_records=[], offset=gline.offset,
+                                dialect=dialect)
 
         # add to parent's sub-records list
         if parent:
