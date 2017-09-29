@@ -31,6 +31,7 @@ class Record(object):
     :ivar str value: Record value, possibly empty
     :ivar list sub_records: List of subordinate records, possibly empty
     :ivar int offset: Record location in a file
+    :ivar int dialect: GEDCOM source dialect, one of the DIALECT_* values
     """
     def __init__(self):
         self.level = None
@@ -113,8 +114,29 @@ class Name(Record):
         return rec.value if rec else None
 
 
+class Individual(Record):
+    """Representation of the NAME record.
+
+    This class adds few convenience methods for name manipulation.
+
+    Client code usually does not need to create instances of this class
+    directly, :py:meth:`make_record` should be used instead.
+    """
+
+    def __init__(self):
+        Record.__init__(self)
+
+    @property
+    def names(self):
+        """List of names (:py:class:`Name` instances).
+        """
+        # +1 <<PERSONAL_NAME_STRUCTURE>> {0:M}
+        return self.sub_tags("NAME")
+
+
 # maps tag names to record class
-_tag_class = dict(NAME=Name)
+_tag_class = dict(INDI=Individual,
+                  NAME=Name)
 
 
 def make_record(level, xref_id, tag, value, sub_records, offset, dialect):

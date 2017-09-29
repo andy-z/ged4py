@@ -262,7 +262,7 @@ class GedcomReader(object):
         """
         _log.debug("in records0")
         for offset, xtag in self.index0:
-            _log.debug("    records0: offset, xtag: %s, %s", offset, xtag)
+            _log.debug("    records0: offset: %s; xtag: %s", offset, xtag)
             if tag is None or tag == xtag:
                 yield self.read_record(offset)
 
