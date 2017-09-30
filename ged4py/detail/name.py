@@ -3,12 +3,6 @@
 
 from __future__ import print_function, absolute_import, division
 
-import re
-
-_re_name = re.compile(r"""([^/]*)           # part of given name - group 1
-                          (?:/([^/]*)/)?    # optional /surname/ - group 2
-                          ([^/]*)           # part of given name - group 3
-                       """, re.X)
 
 def split_name(name):
     """Extracts pieces of name from full name string.
