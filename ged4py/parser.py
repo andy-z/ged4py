@@ -22,7 +22,7 @@ _re_gedcom_line = re.compile(r"""
         [ ]*(?P<level>\d+)                       # integer level number
         (?:[ ]*(?P<xref>@[A-Z-a-z0-9][^@]*@))?    # optional @xref@
         [ ]*(?P<tag>[A-Z-a-z0-9_]+)               # tag name
-        (?:[ ]*(?P<value>.*))?                    # optional value
+        (?:[ ](?P<value>.*))?                    # optional value
         $
 """, re.X)
 
