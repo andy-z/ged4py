@@ -20,9 +20,9 @@ _log = logging.getLogger(__name__)
 _re_gedcom_line = re.compile(r"""
         ^
         [ ]*(?P<level>\d+)                       # integer level number
-        (?:[ ](?P<xref>@[A-Z-a-z0-9][^@]*@))?    # optional @xref@
-        [ ](?P<tag>[A-Z-a-z0-9_]+)               # tag name
-        (?:[ ](?P<value>.*))?                    # optional value
+        (?:[ ]*(?P<xref>@[A-Z-a-z0-9][^@]*@))?    # optional @xref@
+        [ ]*(?P<tag>[A-Z-a-z0-9_]+)               # tag name
+        (?:[ ]*(?P<value>.*))?                    # optional value
         $
 """, re.X)
 
@@ -238,7 +238,12 @@ class GedcomReader(object):
             line = self._file.readline()
             if not line:
                 break
-            line = line.decode(self._encoding, self._errors)
+            try:
+                line = line.decode(self._encoding, self._errors)
+            except UnicodeDecodeError as exc:
+                lineno = guess_lineno(self._file)
+                raise ParserError("Decode failure at "
+                                  "{0}: {1!r}: {2}".format(lineno, line, exc))
             line = line.rstrip('\r\n')
 
             match = _re_gedcom_line.match(line)

@@ -7,6 +7,9 @@ from __future__ import print_function, absolute_import, division
 
 __all__ = ['make_record', 'Record', 'Pointer', 'Name']
 
+import re
+
+from .detail.name import split_name
 
 # Even though the structure of GEDCOM file is more or less fixed,
 # interpretation of some data may vary depending on which application
@@ -100,8 +103,35 @@ class Name(Record):
     directly, :py:meth:`make_record` should be used instead.
     """
 
+    _surname_re = re.compile("(.*)\((.*)\)")
+
     def __init__(self):
         Record.__init__(self)
+        self._name_tuple = None
+        self._maiden = None
+
+    def _parse(self):
+        self._name_tuple = split_name(self.value)
+        if self.dialect in [DIALECT_ALTREE]:
+            # maiden name is part of surname (Surname (Maiden))
+            match = self._surname_re.match(self._name_tuple[1])
+            if match:
+                surname = match.group(1).strip()
+                self._name_tuple = (self._name_tuple[0],
+                                    surname,
+                                    self._name_tuple[2])
+                self._maiden = match.group(2).strip()
+        elif self.dialect in [DIALECT_MYHERITAGE]:
+            # married name is in a special tag _MARNM
+            surname = self.sub_tag("_MARNM")
+            if surname:
+                self._maiden = self._name_tuple[1]
+                self._name_tuple = (self._name_tuple[0],
+                                    surname,
+                                    self._name_tuple[2])
+        self.value = self._name_tuple
+        if self._maiden:
+            self.value += ("(" + self._maiden + ")",)
 
     @property
     def type(self):
@@ -112,6 +142,17 @@ class Name(Record):
         # +1 TYPE <NAME_TYPE> {0:1}
         rec = self.sub_tag("TYPE")
         return rec.value if rec else None
+
+    @property
+    def name_tuple(self):
+        if self._name_tuple is None:
+            self._parse()
+        return self._name_tuple
+
+    def __str__(self):
+        if self._name_tuple is None:
+            self._parse()
+        return Record.__str__(self)
 
 
 class Individual(Record):
