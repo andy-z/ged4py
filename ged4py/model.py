@@ -31,7 +31,9 @@ class Record(object):
     :ivar int level: Record level number
     :ivar str xref_id: Record reference ID, possibly empty.
     :ivar str tag: Tag name
-    :ivar str value: Record value, possibly empty
+    :ivar object value: Record value, possibly None, for many record types
+        value is a string or None, some subclasses can define different type
+        of record value.
     :ivar list sub_records: List of subordinate records, possibly empty
     :ivar int offset: Record location in a file
     :ivar int dialect: GEDCOM source dialect, one of the DIALECT_* values
@@ -66,8 +68,8 @@ class Record(object):
 
     def __str__(self):
         value = self.value
-        if value and len(value) > 32:
-            value = value[:32]
+        if isinstance(value, (type(""), type(u""))) and len(value) > 32:
+            value = value[:32] + "..."
         n_sub = len(self.sub_records)
         if self.xref_id:
             fmt = "{0}(level={1.level}, xref_id={1.xref_id}, tag={1.tag}, " \
@@ -105,7 +107,18 @@ class Pointer(object):
 class Name(Record):
     """Representation of the NAME record.
 
-    This class adds few convenience methods for name manipulation.
+    This class adds few convenience methods for name manipulation. It also
+    redefines the type of the `value` attribute, it's type is tuple.
+    Value tuple can contain 3 or 4 elements, if there are 4 elements then
+    last element is a maiden name. Second element of a tuple is surname,
+    first and third elements are pieces of the given name (this is determined
+    entirely by how name is represented in GEDCOM file). Any of the elements
+    can be empty string. Few examples:
+
+        ("John", "Smith", "")
+        ("Mary Joan", "Smith", "", "Ivanova")    # maiden name
+        ("", "Ivanov", "Ivan Ivanovich")
+        ("John", "Smith", "Jr.")
 
     Client code usually does not need to create instances of this class
     directly, :py:meth:`make_record` should be used instead.
@@ -133,13 +146,14 @@ class Name(Record):
             # married name is in a special tag _MARNM
             surname = self.sub_tag("_MARNM")
             if surname:
+                surname = surname.value
                 self.maiden = self.name_tuple[1]
                 self.name_tuple = (self.name_tuple[0],
                                    surname,
                                    self.name_tuple[2])
         self.value = self.name_tuple
         if self.maiden:
-            self.value += ("(" + self.maiden + ")",)
+            self.value += (self.maiden,)
 
     @property
     def type(self):
