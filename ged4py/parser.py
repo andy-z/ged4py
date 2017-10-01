@@ -17,7 +17,8 @@ from . import model
 
 _log = logging.getLogger(__name__)
 
-_re_gedcom_line = re.compile(r"""
+# records are bytes, regex is for bytes too
+_re_gedcom_line = re.compile(br"""
         ^
         [ ]*(?P<level>\d+)                       # integer level number
         (?:[ ]*(?P<xref>@[A-Z-a-z0-9][^@]*@))?    # optional @xref@
@@ -26,7 +27,12 @@ _re_gedcom_line = re.compile(r"""
         $
 """, re.X)
 
-# tuple class for gedcom_line grammar
+# tuple class for gedcom_line grammar:
+#   level: int
+#   xref_id: str, possibly empty or None
+#   tag: str, required, non-empty
+#   value: bytes, possibly empty or None
+#   offset: int
 gedcom_line = collections.namedtuple("gedcom_line",
                                      "level xref_id tag value offset")
 
@@ -73,24 +79,29 @@ def guess_codec(file, errors="strict", require_char=False):
     # scan header until CHAR or end of header
     while True:
 
+        # this stops at '\n'
         line = file.readline()
         if not line:
             raise IOError("Unexpected EOF while reading GEDCOM header")
 
-        line = codecs.decode(line, codec, errors)
-        line = line.lstrip().rstrip('\r\n')
+        # do not decode bytes to strings here, reason is that some
+        # stupid apps split CONC record at byte level (in middle of
+        # of multi-byte characters). This implies that we can only
+        # work with encodings that have ASCII as single-byte subset.
 
+        line = line.lstrip().rstrip(b"\r\n")
         words = line.split()
 
-        if len(words) >= 2 and words[0] == "0" and words[1] != "HEAD":
+        if len(words) >= 2 and words[0] == b"0" and words[1] != b"HEAD":
             # past header but have not seen CHAR
             if require_char:
                 raise CodecError("GEDCOM header does not have CHAR record")
             else:
                 break
-        elif len(words) >= 3 and words[0] == "1" and words[1] == "CHAR":
+        elif len(words) >= 3 and words[0] == b"1" and words[1] == b"CHAR":
             try:
-                new_codec = codecs.lookup(words[2]).name
+                encoding = words[2].decode(codec, errors)
+                new_codec = codecs.lookup(encoding).name
             except LookupError:
                 raise CodecError("Unknown codec name {0}".format(words[2]))
             if bom_codec is None:
@@ -235,16 +246,10 @@ class GedcomReader(object):
         while True:
 
             offset = self._file.tell()
-            line = self._file.readline()
+            line = self._file.readline()  # stops at \n
             if not line:
                 break
-            try:
-                line = line.decode(self._encoding, self._errors)
-            except UnicodeDecodeError as exc:
-                lineno = guess_lineno(self._file)
-                raise ParserError("Decode failure at "
-                                  "{0}: {1!r}: {2}".format(lineno, line, exc))
-            line = line.rstrip('\r\n')
+            line = line.lstrip().rstrip(b"\r\n")
 
             match = _re_gedcom_line.match(line)
             if not match:
@@ -253,9 +258,13 @@ class GedcomReader(object):
                 raise ParserError("Invalid syntax at line "
                                   "{0}: `{1}'".format(lineno, line))
 
+            xref_id = match.group('xref')
+            if xref_id:
+                xref_id = xref_id.decode(self._encoding, self._errors)
+            tag = match.group('tag').decode(self._encoding, self._errors)
             yield gedcom_line(level=int(match.group('level')),
-                              xref_id=match.group('xref'),
-                              tag=match.group('tag'),
+                              xref_id=xref_id,
+                              tag=tag,
                               value=match.group('value'),
                               offset=offset)
 
@@ -291,6 +300,7 @@ class GedcomReader(object):
         for gline in self.gedcom_lines(offset):
             _log.debug("    read_record, gline: %s", gline)
             level = gline.level
+
             if reclevel is None:
                 # this is the first record, remember its level
                 reclevel = level
@@ -298,16 +308,35 @@ class GedcomReader(object):
                 # stop at the record of the same or higher (smaller) level
                 break
 
+            # All previously seen records at this level and below can
+            # be finalized now
+            for rec in reversed(stack[level:]):
+                # decode bytes value into string
+                if rec:
+                    if rec.value is not None:
+                        rec.value = rec.value.decode(self._encoding,
+                                                     self._errors)
+                    rec.freeze()
+                    _log.debug("    read_record, rec: %s", rec)
+            del stack[level + 1:]
+
             # extend stack to fit this level (and make parent levels if needed)
             stack.extend([None] * (level + 1 - len(stack)))
 
+            # make Record out of it (it can be updated later)
             parent = stack[level - 1] if level > 0 else None
             rec = self._make_record(parent, gline)
-            _log.debug("    read_record, rec: %s", rec)
 
             # store as current record at this level
             if rec:
                 stack[level] = rec
+
+        for rec in reversed(stack[reclevel:]):
+            if rec:
+                if rec.value is not None:
+                    rec.value = rec.value.decode(self._encoding, self._errors)
+                rec.freeze()
+                _log.debug("    read_record, rec: %s", rec)
 
         return stack[reclevel] if stack else None
 
@@ -339,9 +368,9 @@ class GedcomReader(object):
                 # have to be careful concatenating empty/None values
                 value = gline.value
                 if gline.tag == "CONT":
-                    value = "\n" + (value or "")
+                    value = b"\n" + (value or b"")
                 if value is not None:
-                    parent.value = (parent.value or "") + value
+                    parent.value = (parent.value or b"") + value
             return None
 
         # avoid infinite cycle

@@ -15,9 +15,9 @@ from .detail.name import split_name
 # interpretation of some data may vary depending on which application
 # produced GEDCOM file. Constants define different known dialect which
 # are handled by classes below.
-DIALECT_DEFAULT = 0
-DIALECT_MYHERITAGE = 1  # myheritage.com
-DIALECT_ALTREE = 2  # Agelong Tree (genery.com)
+DIALECT_DEFAULT = "DEF"
+DIALECT_MYHERITAGE = "MYHER"  # myheritage.com
+DIALECT_ALTREE = "AGELONG"  # Agelong Tree (genery.com)
 
 
 class Record(object):
@@ -45,6 +45,11 @@ class Record(object):
         self.offset = None
         self.dialect = None
 
+    def freeze(self):
+        """Method called by parser when updates to this record finish.
+        """
+        pass
+
     def sub_tag(self, tag):
         """Returns direct sub-record with given tag name or None.
         """
@@ -55,6 +60,9 @@ class Record(object):
         """Returns list of direct sub-records with given tag name.
         """
         return [x for x in self.sub_records if x.tag == tag]
+
+    def __repr__(self):
+        return self.__str__()
 
     def __str__(self):
         value = self.value
@@ -107,31 +115,31 @@ class Name(Record):
 
     def __init__(self):
         Record.__init__(self)
-        self._name_tuple = None
-        self._maiden = None
+        self.name_tuple = None
+        self.maiden = None
 
-    def _parse(self):
-        self._name_tuple = split_name(self.value)
+    def freeze(self):
+        self.name_tuple = split_name(self.value)
         if self.dialect in [DIALECT_ALTREE]:
             # maiden name is part of surname (Surname (Maiden))
-            match = self._surname_re.match(self._name_tuple[1])
+            match = self._surname_re.match(self.name_tuple[1])
             if match:
                 surname = match.group(1).strip()
-                self._name_tuple = (self._name_tuple[0],
-                                    surname,
-                                    self._name_tuple[2])
-                self._maiden = match.group(2).strip()
+                self.name_tuple = (self.name_tuple[0],
+                                   surname,
+                                   self.name_tuple[2])
+                self.maiden = match.group(2).strip()
         elif self.dialect in [DIALECT_MYHERITAGE]:
             # married name is in a special tag _MARNM
             surname = self.sub_tag("_MARNM")
             if surname:
-                self._maiden = self._name_tuple[1]
-                self._name_tuple = (self._name_tuple[0],
-                                    surname,
-                                    self._name_tuple[2])
-        self.value = self._name_tuple
-        if self._maiden:
-            self.value += ("(" + self._maiden + ")",)
+                self.maiden = self.name_tuple[1]
+                self.name_tuple = (self.name_tuple[0],
+                                   surname,
+                                   self.name_tuple[2])
+        self.value = self.name_tuple
+        if self.maiden:
+            self.value += ("(" + self.maiden + ")",)
 
     @property
     def type(self):
@@ -143,15 +151,7 @@ class Name(Record):
         rec = self.sub_tag("TYPE")
         return rec.value if rec else None
 
-    @property
-    def name_tuple(self):
-        if self._name_tuple is None:
-            self._parse()
-        return self._name_tuple
-
     def __str__(self):
-        if self._name_tuple is None:
-            self._parse()
         return Record.__str__(self)
 
 
