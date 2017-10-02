@@ -5,7 +5,8 @@
 
 from __future__ import print_function, absolute_import, division
 
-__all__ = ['make_record', 'Record', 'Pointer', 'Name']
+__all__ = ['make_record', 'Record', 'Pointer', 'NameRec', 'Name',
+           'Individual']
 
 import re
 
@@ -18,6 +19,22 @@ from .detail.name import split_name
 DIALECT_DEFAULT = "DEF"
 DIALECT_MYHERITAGE = "MYHER"  # myheritage.com
 DIALECT_ALTREE = "AGELONG"  # Agelong Tree (genery.com)
+
+# Names/Individuals can be ordered differently, e.g. by surname first,
+# by given name first, or by maiden name first. This few constants define
+# different ordering options.
+ORDER_SURNAME_GIVEN = "last+first"
+ORDER_GIVEN_SURNAME = "first+last"
+ORDER_MAIDEN_GIVEN = "maiden+first"  # uses last name if no maiden name
+ORDER_GIVEN_MAIDEN = "first+maiden"  # uses last name if no maiden name
+
+# Names can be rendered in different formats
+FMT_DEFAULT = 0  # use GEDCOM name ordering: Joe /Smith/ Jr - > Joe Smith Jr
+FMT_GIVEN_FIRST = 0x1  # Jane Smith
+FMT_SURNAME_FIRST = 0x2  # Smith Jane
+FMT_COMMA = 0x4  # Smith, Jane -- only if surname is first
+FMT_MAIDEN = 0x8  # Jane Smith (Sawyer)   -- maiden name
+FMT_MAIDEN_ONLY = 0x10  # Jane Sawyer   -- maiden name only
 
 
 class Record(object):
@@ -36,7 +53,7 @@ class Record(object):
         of record value.
     :ivar list sub_records: List of subordinate records, possibly empty
     :ivar int offset: Record location in a file
-    :ivar int dialect: GEDCOM source dialect, one of the DIALECT_* values
+    :ivar dialect: GEDCOM source dialect, one of the DIALECT_* values
     """
     def __init__(self):
         self.level = None
@@ -49,8 +66,10 @@ class Record(object):
 
     def freeze(self):
         """Method called by parser when updates to this record finish.
+
+        :return: self
         """
-        pass
+        return self
 
     def sub_tag(self, tag):
         """Returns direct sub-record with given tag name or None.
@@ -104,7 +123,7 @@ class Pointer(object):
         return "Pointer({0})".format(self.pointer)
 
 
-class Name(Record):
+class NameRec(Record):
     """Representation of the NAME record.
 
     This class adds few convenience methods for name manipulation. It also
@@ -132,6 +151,10 @@ class Name(Record):
         self.maiden = None
 
     def freeze(self):
+        """Method called by parser when updates to this record finish.
+
+        :return: self
+        """
         self.name_tuple = split_name(self.value)
         if self.dialect in [DIALECT_ALTREE]:
             # maiden name is part of surname (Surname (Maiden))
@@ -154,6 +177,7 @@ class Name(Record):
         self.value = self.name_tuple
         if self.maiden:
             self.value += (self.maiden,)
+        return self
 
     @property
     def type(self):
@@ -169,10 +193,119 @@ class Name(Record):
         return Record.__str__(self)
 
 
-class Individual(Record):
-    """Representation of the NAME record.
+class Name(Record):
+    """Class representing summary of person names.
 
-    This class adds few convenience methods for name manipulation.
+    Person in GEDCOM can have multiple NAME records, e.g. "aka" name,
+    "maiden" name, etc. This class provides simple interface for accessing
+    info from all those records.
+
+    :param list names: List of NAME records (:py:class:`NameRec` instances).
+    :param dialect: One of DIALECT_* constants.
+    """
+
+    def __init__(self, names, dialect):
+        self._names = names
+        self._dialect = dialect
+        self._primary = None  # "primary" name record
+
+        if len(names) == 1:
+            self._primary = names[0]
+        else:
+            for name in names:
+                if not name.type:
+                    self._primary = name
+                    break
+
+    @property
+    def surname(self):
+        return self._primary.value[1]
+
+    @property
+    def given(self):
+        if self._primary.value[0] and self._primary.value[2]:
+            return self._primary.value[0] + ' ' + self._primary.value[2]
+        return self._primary.value[0] or self._primary.value[2]
+
+    @property
+    def maiden(self):
+        """Maiden last name, can be None"""
+        if self._dialect == DIALECT_DEFAULT:
+            # we expect it to be in a record with "maiden" type
+            for name in self._names:
+                if name.type == "maiden":
+                    return name.value[1]
+        else:
+            # rely on NamRec extracting it from other source
+            if self._primary:
+                return self._primary.maiden
+        return None
+
+    def order(self, order):
+        """Returns name order.
+
+        Returns a string that can be compared to other such strings from
+        different name.
+
+        :param order: One of the ORDER_* constants.
+        """
+        if order == ORDER_SURNAME_GIVEN:
+            return (self.surname, self.given)
+        elif order == ORDER_GIVEN_SURNAME:
+            return (self.given, self.surname)
+        elif order == ORDER_MAIDEN_GIVEN:
+            return (self.maiden or self.surname, self.given)
+        elif order == ORDER_GIVEN_MAIDEN:
+            return (self.given, self.maiden or self.surname)
+        else:
+            raise ValueError("unexpected order: {}".format(order))
+
+    def format(self, fmt):
+        """Format name for output.
+
+        :param int fmt: Bitmask of FMT_* flags.
+        :return: Formatted name representation.
+        """
+        surname = self.surname
+        if fmt & FMT_MAIDEN_ONLY:
+            surname = self.maiden or self.surname
+        elif fmt & FMT_MAIDEN:
+            if self.surname and self.maiden:
+                surname = "{} ({})".format(self.surname, self.maiden)
+            else:
+                surname = self.maiden or self.surname
+
+        if fmt & FMT_SURNAME_FIRST:
+            if surname and self.given and fmt & FMT_COMMA:
+                return surname + ', ' + self.given
+            if surname and self.given:
+                return surname + ' ' + self.given
+            else:
+                return self.given or surname
+        elif fmt & FMT_GIVEN_FIRST:
+            if surname and self.given:
+                return self.given + ' ' + surname
+            else:
+                return self.given or surname
+        else:
+            name = self._primary.value[0]
+            if surname:
+                if name:
+                    name += ' '
+                name += surname
+            if self._primary.value[2]:
+                if name:
+                    name += ' '
+                name += self._primary.value[2]
+            return name
+
+
+class Individual(Record):
+    """Representation of the INDI record.
+
+    INDI record represents a single person in GEDCOM. This class defines
+    few methods that may be useful for manipulating person records, such
+    as ordering, navigation, etc.
 
     Client code usually does not need to create instances of this class
     directly, :py:meth:`make_record` should be used instead.
@@ -183,15 +316,15 @@ class Individual(Record):
 
     @property
     def names(self):
-        """List of names (:py:class:`Name` instances).
+        """:py:class:`Names` instance.
         """
         # +1 <<PERSONAL_NAME_STRUCTURE>> {0:M}
-        return self.sub_tags("NAME")
+        return Name(self.sub_tags("NAME"), self.dialect)
 
 
 # maps tag names to record class
 _tag_class = dict(INDI=Individual,
-                  NAME=Name)
+                  NAME=NameRec)
 
 
 def make_record(level, xref_id, tag, value, sub_records, offset, dialect):
@@ -204,7 +337,7 @@ def make_record(level, xref_id, tag, value, sub_records, offset, dialect):
     :param list sub_records: Initial list of subordinate records,
         possibly empty. List can be updated later.
     :param int offset: Record location in a file.
-    :param int dialect: One of DIALECT_* constants.
+    :param dialect: One of DIALECT_* constants.
     :return: Instance of :py:class:`Record` (or one of its subclasses).
     """
 

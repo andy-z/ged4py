@@ -75,10 +75,10 @@ class TestModel(unittest.TestCase):
         self.assertTrue(rec.sub_tag("SUB") is None)
         self.assertEqual(rec.sub_tags("SUB"), [])
 
-    def test_010_name_default(self):
-        """Test Name class with default dialect."""
+    def test_010_namerec_default(self):
+        """Test NameRec class with default dialect."""
 
-        rec = model.Name()
+        rec = model.NameRec()
         rec.level = 1
         rec.tag = "NAME"
         rec.dialect = model.DIALECT_DEFAULT
@@ -118,10 +118,10 @@ class TestModel(unittest.TestCase):
         self.assertIsInstance(rec.value, tuple)
         self.assertEqual(rec.value, ("First", "Last (Maiden)", ""))
 
-    def test_011_name_altree(self):
-        """Test Name class with ALTREE dialect."""
+    def test_011_namerec_altree(self):
+        """Test NameRec class with ALTREE dialect."""
 
-        rec = model.Name()
+        rec = model.NameRec()
         rec.level = 1
         rec.tag = "NAME"
         rec.dialect = model.DIALECT_ALTREE
@@ -141,10 +141,10 @@ class TestModel(unittest.TestCase):
         self.assertIsInstance(rec.value, tuple)
         self.assertEqual(rec.value, ("First", "Last", "", "Maiden"))
 
-    def test_012_name_myher(self):
-        """Test Name class with MYHERITAGE dialect."""
+    def test_012_namerec_myher(self):
+        """Test NameRec class with MYHERITAGE dialect."""
 
-        rec = model.Name()
+        rec = model.NameRec()
         rec.level = 1
         rec.tag = "NAME"
         rec.dialect = model.DIALECT_MYHERITAGE
@@ -171,6 +171,52 @@ class TestModel(unittest.TestCase):
         self.assertIsInstance(rec.value, tuple)
         self.assertEqual(rec.value, ("First", "Last", "", "Maiden"))
 
+    def test_020_name_default(self):
+        """Test Name class with DEFAULT dialect."""
+
+        dialect = model.DIALECT_DEFAULT
+        names = [model.make_record(1, None, "NAME", "John /Smith/", [], 0, dialect).freeze()]
+        name = model.Name(names, dialect)
+
+        self.assertTrue(name._primary is names[0])
+        self.assertEqual(name.surname, "Smith")
+        self.assertEqual(name.given, "John")
+        self.assertTrue(name.maiden is None)
+
+        self.assertEqual(name.order(model.ORDER_SURNAME_GIVEN), ("Smith", "John"))
+        self.assertEqual(name.order(model.ORDER_GIVEN_SURNAME), ("John", "Smith"))
+        self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("Smith", "John"))
+        self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("John", "Smith"))
+
+        self.assertEqual(name.format(model.FMT_DEFAULT), ("John Smith"))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST), ("John Smith"))
+        self.assertEqual(name.format(model.FMT_SURNAME_FIRST), ("Smith John"))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_COMMA), ("John Smith"))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN), ("John Smith"))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN_ONLY), ("John Smith"))
+
+        name_type = model.make_record(2, None, "TYPE", "maiden", [], 0, dialect).freeze()
+        names = [model.make_record(1, None, "NAME", "/Sawyer/", [name_type], 0, dialect).freeze(),
+                 model.make_record(1, None, "NAME", "Jane /Smith/ A.", [], 0, dialect).freeze()]
+        name = model.Name(names, dialect)
+
+        self.assertTrue(name._primary is names[1])
+        self.assertEqual(name.surname, "Smith")
+        self.assertEqual(name.given, "Jane A.")
+        self.assertEqual(name.maiden, "Sawyer")
+
+        self.assertEqual(name.order(model.ORDER_SURNAME_GIVEN), ("Smith", "Jane A."))
+        self.assertEqual(name.order(model.ORDER_GIVEN_SURNAME), ("Jane A.", "Smith"))
+        self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("Sawyer", "Jane A."))
+        self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("Jane A.", "Sawyer"))
+
+        self.assertEqual(name.format(model.FMT_DEFAULT), ("Jane Smith A."))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST), ("Jane A. Smith"))
+        self.assertEqual(name.format(model.FMT_SURNAME_FIRST), ("Smith Jane A."))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_COMMA), ("Jane A. Smith"))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN), ("Jane A. Smith (Sawyer)"))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN_ONLY), ("Jane A. Sawyer"))
+
 
     def test_900_make_record(self):
         """Test make_record method()"""
@@ -190,7 +236,7 @@ class TestModel(unittest.TestCase):
         rec = model.make_record(1, None, "NAME", "Joe", [], 1000,
                                 model.DIALECT_ALTREE)
         rec.freeze()
-        self.assertTrue(type(rec) is model.Name)
+        self.assertTrue(type(rec) is model.NameRec)
         self.assertEqual(rec.level, 1)
         self.assertTrue(rec.xref_id is None)
         self.assertEqual(rec.tag, "NAME")

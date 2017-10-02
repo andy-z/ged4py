@@ -4,7 +4,7 @@
 
 from __future__ import print_function, absolute_import, division
 
-__all__ = ['GedcomReader', 'ParserError', 'CodecError']
+__all__ = ['GedcomReader', 'ParserError', 'CodecError', 'guess_codec']
 
 import codecs
 import collections
@@ -125,7 +125,7 @@ class GedcomReader(object):
     :param str errors: Controls error handling behavior during string
         decoding, accepts same values as standard `codecs.decode` method.
     :param bool require_char: If True then exception is thrown if CHAR
-        record is not found in a header, if False and C?HAR is not in the
+        record is not found in a header, if False and CHAR is not in the
         header then codec determined from BOM or "ansel" is used.
     """
 
