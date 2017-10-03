@@ -157,14 +157,22 @@ class NameRec(Record):
         """
         self.name_tuple = split_name(self.value)
         if self.dialect in [DIALECT_ALTREE]:
+            if self.name_tuple[1] == '?':
+                self.name_tuple = (self.name_tuple[0],
+                                   '',
+                                   self.name_tuple[2])
             # maiden name is part of surname (Surname (Maiden))
             match = self._surname_re.match(self.name_tuple[1])
             if match:
                 surname = match.group(1).strip()
+                if surname == '?':
+                    surname = ''
                 self.name_tuple = (self.name_tuple[0],
                                    surname,
                                    self.name_tuple[2])
                 self.maiden = match.group(2).strip()
+                if self.maiden == '?':
+                    self.maiden = None
         elif self.dialect in [DIALECT_MYHERITAGE]:
             # married name is in a special tag _MARNM
             surname = self.sub_tag("_MARNM")
@@ -193,7 +201,7 @@ class NameRec(Record):
         return Record.__str__(self)
 
 
-class Name(Record):
+class Name(object):
     """Class representing summary of person names.
 
     Person in GEDCOM can have multiple NAME records, e.g. "aka" name,
@@ -249,14 +257,20 @@ class Name(Record):
 
         :param order: One of the ORDER_* constants.
         """
-        if order == ORDER_SURNAME_GIVEN:
-            return (self.surname, self.given)
-        elif order == ORDER_GIVEN_SURNAME:
-            return (self.given, self.surname)
-        elif order == ORDER_MAIDEN_GIVEN:
-            return (self.maiden or self.surname, self.given)
-        elif order == ORDER_GIVEN_MAIDEN:
-            return (self.given, self.maiden or self.surname)
+        given = self.given
+        surname = self.surname
+        if order in (ORDER_MAIDEN_GIVEN, ORDER_GIVEN_MAIDEN):
+            surname = self.maiden or self.surname
+
+        # We are collating empty names to come after non-empty,
+        # so instead of empty we return "2" and add "1" as prefix to others
+        given = ("1" + given) if given else "2"
+        surname = ("1" + surname) if surname else "2"
+
+        if order in (ORDER_SURNAME_GIVEN, ORDER_MAIDEN_GIVEN):
+            return (surname, given)
+        elif order in (ORDER_GIVEN_SURNAME, ORDER_GIVEN_MAIDEN):
+            return (given, surname)
         else:
             raise ValueError("unexpected order: {}".format(order))
 
@@ -270,10 +284,11 @@ class Name(Record):
         if fmt & FMT_MAIDEN_ONLY:
             surname = self.maiden or self.surname
         elif fmt & FMT_MAIDEN:
-            if self.surname and self.maiden:
-                surname = "{} ({})".format(self.surname, self.maiden)
-            else:
-                surname = self.maiden or self.surname
+            surname = self.surname
+            if self.maiden:
+                if surname:
+                    surname += ' '
+                surname += "(" + self.maiden + ")"
 
         if fmt & FMT_SURNAME_FIRST:
             if surname and self.given and fmt & FMT_COMMA:
@@ -299,6 +314,10 @@ class Name(Record):
                 name += self._primary.value[2]
             return name
 
+    def __str__(self):
+        fmt = "{0}({1!r})"
+        return fmt.format(self.__class__.__name__, self.format(FMT_DEFAULT))
+
 
 class Individual(Record):
     """Representation of the INDI record.
@@ -315,8 +334,8 @@ class Individual(Record):
         Record.__init__(self)
 
     @property
-    def names(self):
-        """:py:class:`Names` instance.
+    def name(self):
+        """:py:class:`Name` instance.
         """
         # +1 <<PERSONAL_NAME_STRUCTURE>> {0:M}
         return Name(self.sub_tags("NAME"), self.dialect)

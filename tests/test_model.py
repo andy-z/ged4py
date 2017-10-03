@@ -183,17 +183,38 @@ class TestModel(unittest.TestCase):
         self.assertEqual(name.given, "John")
         self.assertTrue(name.maiden is None)
 
-        self.assertEqual(name.order(model.ORDER_SURNAME_GIVEN), ("Smith", "John"))
-        self.assertEqual(name.order(model.ORDER_GIVEN_SURNAME), ("John", "Smith"))
-        self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("Smith", "John"))
-        self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("John", "Smith"))
+        self.assertEqual(name.order(model.ORDER_SURNAME_GIVEN), ("1Smith", "1John"))
+        self.assertEqual(name.order(model.ORDER_GIVEN_SURNAME), ("1John", "1Smith"))
+        self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("1Smith", "1John"))
+        self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1John", "1Smith"))
 
         self.assertEqual(name.format(model.FMT_DEFAULT), ("John Smith"))
         self.assertEqual(name.format(model.FMT_GIVEN_FIRST), ("John Smith"))
         self.assertEqual(name.format(model.FMT_SURNAME_FIRST), ("Smith John"))
+        self.assertEqual(name.format(model.FMT_SURNAME_FIRST | model.FMT_COMMA), ("Smith, John"))
         self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_COMMA), ("John Smith"))
         self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN), ("John Smith"))
         self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN_ONLY), ("John Smith"))
+
+        names = [model.make_record(1, None, "NAME", "John", [], 0, dialect).freeze()]
+        name = model.Name(names, dialect)
+
+        self.assertTrue(name._primary is names[0])
+        self.assertEqual(name.surname, "")
+        self.assertEqual(name.given, "John")
+        self.assertTrue(name.maiden is None)
+
+        self.assertEqual(name.order(model.ORDER_SURNAME_GIVEN), ("2", "1John"))
+        self.assertEqual(name.order(model.ORDER_GIVEN_SURNAME), ("1John", "2"))
+        self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("2", "1John"))
+        self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1John", "2"))
+
+        self.assertEqual(name.format(model.FMT_DEFAULT), ("John"))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST), ("John"))
+        self.assertEqual(name.format(model.FMT_SURNAME_FIRST), ("John"))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_COMMA), ("John"))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN), ("John"))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN_ONLY), ("John"))
 
         name_type = model.make_record(2, None, "TYPE", "maiden", [], 0, dialect).freeze()
         names = [model.make_record(1, None, "NAME", "/Sawyer/", [name_type], 0, dialect).freeze(),
@@ -205,18 +226,90 @@ class TestModel(unittest.TestCase):
         self.assertEqual(name.given, "Jane A.")
         self.assertEqual(name.maiden, "Sawyer")
 
-        self.assertEqual(name.order(model.ORDER_SURNAME_GIVEN), ("Smith", "Jane A."))
-        self.assertEqual(name.order(model.ORDER_GIVEN_SURNAME), ("Jane A.", "Smith"))
-        self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("Sawyer", "Jane A."))
-        self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("Jane A.", "Sawyer"))
+        self.assertEqual(name.order(model.ORDER_SURNAME_GIVEN), ("1Smith", "1Jane A."))
+        self.assertEqual(name.order(model.ORDER_GIVEN_SURNAME), ("1Jane A.", "1Smith"))
+        self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("1Sawyer", "1Jane A."))
+        self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1Jane A.", "1Sawyer"))
 
         self.assertEqual(name.format(model.FMT_DEFAULT), ("Jane Smith A."))
         self.assertEqual(name.format(model.FMT_GIVEN_FIRST), ("Jane A. Smith"))
         self.assertEqual(name.format(model.FMT_SURNAME_FIRST), ("Smith Jane A."))
+        self.assertEqual(name.format(model.FMT_SURNAME_FIRST | model.FMT_COMMA), ("Smith, Jane A."))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_COMMA), ("Jane A. Smith"))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN), ("Jane A. Smith (Sawyer)"))
+        self.assertEqual(name.format(model.FMT_SURNAME_FIRST | model.FMT_COMMA | model.FMT_MAIDEN), ("Smith (Sawyer), Jane A."))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN_ONLY), ("Jane A. Sawyer"))
+
+    def test_021_name_altree(self):
+        """Test Name class with ALTREE dialect."""
+
+        dialect = model.DIALECT_ALTREE
+        names = [model.make_record(1, None, "NAME", "Jane /Smith (Sawyer)/ A.", [], 0, dialect).freeze()]
+        name = model.Name(names, dialect)
+
+        self.assertTrue(name._primary is names[0])
+        self.assertEqual(name.surname, "Smith")
+        self.assertEqual(name.given, "Jane A.")
+        self.assertEqual(name.maiden, "Sawyer")
+
+        self.assertEqual(name.order(model.ORDER_SURNAME_GIVEN), ("1Smith", "1Jane A."))
+        self.assertEqual(name.order(model.ORDER_GIVEN_SURNAME), ("1Jane A.", "1Smith"))
+        self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("1Sawyer", "1Jane A."))
+        self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1Jane A.", "1Sawyer"))
+
+        self.assertEqual(name.format(model.FMT_DEFAULT), ("Jane Smith A."))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST), ("Jane A. Smith"))
+        self.assertEqual(name.format(model.FMT_SURNAME_FIRST), ("Smith Jane A."))
+        self.assertEqual(name.format(model.FMT_SURNAME_FIRST | model.FMT_COMMA), ("Smith, Jane A."))
         self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_COMMA), ("Jane A. Smith"))
         self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN), ("Jane A. Smith (Sawyer)"))
         self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN_ONLY), ("Jane A. Sawyer"))
 
+        names = [model.make_record(1, None, "NAME", "Jane /?/ A.", [], 0, dialect).freeze()]
+        name = model.Name(names, dialect)
+
+        self.assertTrue(name._primary is names[0])
+        self.assertEqual(name.surname, "")
+        self.assertEqual(name.given, "Jane A.")
+        self.assertTrue(name.maiden is None)
+
+        self.assertEqual(name.order(model.ORDER_SURNAME_GIVEN), ("2", "1Jane A."))
+        self.assertEqual(name.order(model.ORDER_GIVEN_SURNAME), ("1Jane A.", "2"))
+        self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("2", "1Jane A."))
+        self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1Jane A.", "2"))
+
+        self.assertEqual(name.format(model.FMT_DEFAULT), ("Jane A."))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST), ("Jane A."))
+        self.assertEqual(name.format(model.FMT_SURNAME_FIRST), ("Jane A."))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_COMMA), ("Jane A."))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN), ("Jane A."))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN_ONLY), ("Jane A."))
+
+    def test_022_name_myher(self):
+        """Test Name class with MYHERITAGE dialect."""
+
+        dialect = model.DIALECT_MYHERITAGE
+        married = model.make_record(2, None, "_MARNM", "Smith", [], 0, dialect).freeze()
+        names = [model.make_record(1, None, "NAME", "Jane /Sawyer/ A.", [married], 0, dialect).freeze()]
+        name = model.Name(names, dialect)
+
+        self.assertTrue(name._primary is names[0])
+        self.assertEqual(name.surname, "Smith")
+        self.assertEqual(name.given, "Jane A.")
+        self.assertEqual(name.maiden, "Sawyer")
+
+        self.assertEqual(name.order(model.ORDER_SURNAME_GIVEN), ("1Smith", "1Jane A."))
+        self.assertEqual(name.order(model.ORDER_GIVEN_SURNAME), ("1Jane A.", "1Smith"))
+        self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("1Sawyer", "1Jane A."))
+        self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1Jane A.", "1Sawyer"))
+
+        self.assertEqual(name.format(model.FMT_DEFAULT), ("Jane Smith A."))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST), ("Jane A. Smith"))
+        self.assertEqual(name.format(model.FMT_SURNAME_FIRST), ("Smith Jane A."))
+        self.assertEqual(name.format(model.FMT_SURNAME_FIRST | model.FMT_COMMA), ("Smith, Jane A."))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_COMMA), ("Jane A. Smith"))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN), ("Jane A. Smith (Sawyer)"))
+        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN_ONLY), ("Jane A. Sawyer"))
 
     def test_900_make_record(self):
         """Test make_record method()"""
