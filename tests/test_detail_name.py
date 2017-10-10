@@ -8,7 +8,7 @@ import unittest
 from ged4py.detail.name import split_name
 
 
-class TestDetailIo(unittest.TestCase):
+class TestDetailName(unittest.TestCase):
     """Tests for `ged4py.detail.io` module."""
 
     def setUp(self):
