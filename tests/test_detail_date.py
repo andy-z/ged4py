@@ -5,7 +5,7 @@
 
 import unittest
 
-from ged4py.detail.date import CalendarDate
+from ged4py.detail.date import CalendarDate, DateValue
 
 
 class TestDetailName(unittest.TestCase):
@@ -32,13 +32,13 @@ class TestDetailName(unittest.TestCase):
         self.assertTrue(date.day is None)
         self.assertEqual(date.calendar, "GREGORIAN")
 
-        date = CalendarDate("5000", calendar="HERBEW")
+        date = CalendarDate("5000", calendar="HEBREW")
         self.assertEqual(date.year, "5000")
         self.assertTrue(date.month is None)
         self.assertTrue(date.day is None)
-        self.assertEqual(date.calendar, "HERBEW")
+        self.assertEqual(date.calendar, "HEBREW")
 
-    def test_001_cal_date_as_tuple(self):
+    def test_002_cal_date_as_tuple(self):
         """Test detail.date.CalendarDate class."""
 
         date = CalendarDate("2017", "OCT", 9, "GREGORIAN")
@@ -47,13 +47,13 @@ class TestDetailName(unittest.TestCase):
         date = CalendarDate("2017B.C.", "VENT", None, "FRENCH R")
         self.assertEqual(date.as_tuple, (2017, 5, 99))
 
-        date = CalendarDate("2017B.C.", "TSH", 22, "HERBEW")
+        date = CalendarDate("2017B.C.", "TSH", 22, "HEBREW")
         self.assertEqual(date.as_tuple, (2017, 0, 22))
 
         date = CalendarDate("5000")
         self.assertEqual(date.as_tuple, (5000, 99, 99))
 
-    def test_001_cal_date_cmp(self):
+    def test_003_cal_date_cmp(self):
         """Test detail.date.CalendarDate class."""
 
         self.assertTrue(CalendarDate("2016", "JAN", 1) < CalendarDate("2017", "JAN", 1))
@@ -72,3 +72,144 @@ class TestDetailName(unittest.TestCase):
         # missing month compares as "past" the last day of year, but before next year
         self.assertTrue(CalendarDate("2017") > CalendarDate("2017", "DEC", 31))
         self.assertTrue(CalendarDate("2017") < CalendarDate("2018", "JAN", 1))
+
+    def test_004_cal_date_fmt(self):
+        """Test detail.date.CalendarDate class."""
+        date = CalendarDate("2017", "OCT", 9, "GREGORIAN")
+        self.assertEqual(date.fmt(), "2017 OCT 9")
+
+        date = CalendarDate("2017B.C.", "OCT", None, None)
+        self.assertEqual(date.fmt(), "2017B.C. OCT")
+
+        date = CalendarDate("5000", calendar="HEBREW")
+        self.assertEqual(date.fmt(), "5000")
+
+    def test_010_date(self):
+        """Test detail.date.DateValue class."""
+
+        date = DateValue("$date", {})
+        self.assertEqual(date._tmpl, "$date")
+        self.assertEqual(date._kw, {})
+
+        date = DateValue("FROM $date1 TO $date2",
+                         {"date1": CalendarDate("2017"),
+                          "date2": CalendarDate("2020")})
+        self.assertEqual(date._tmpl, "FROM $date1 TO $date2")
+        self.assertEqual(date._kw, {"date1": CalendarDate("2017"),
+                                    "date2": CalendarDate("2020")})
+
+    def test_011_date_fmt(self):
+        """Test detail.date.DateValue class."""
+
+        date = DateValue("date", {})
+        self.assertEqual(date.fmt(), "date")
+
+        date = DateValue("FROM $date1 TO $date2",
+                         {"date1": CalendarDate("2017"),
+                          "date2": CalendarDate("2020")})
+        self.assertEqual(date.fmt(), "FROM 2017 TO 2020")
+
+        date = DateValue("BET $date1 AND $date2",
+                         {"date1": CalendarDate("2017", "JAN", 1),
+                          "date2": CalendarDate("2020", "FLOR", 20)})
+        self.assertEqual(date.fmt(), "BET 2017 JAN 1 AND 2020 FLOR 20")
+
+    def test_012_date_parse_period(self):
+        """Test detail.date.DateValue class."""
+
+        date = DateValue.parse("FROM 1967")
+        self.assertTrue(date is not None)
+        self.assertEqual(date._tmpl, "FROM $date")
+        self.assertEqual(date._kw, {"date": CalendarDate("1967")})
+
+        date = DateValue.parse("TO 1 JAN 2017")
+        self.assertTrue(date is not None)
+        self.assertEqual(date._tmpl, "TO $date")
+        self.assertEqual(date._kw, {"date": CalendarDate("2017", "JAN", 1)})
+
+        date = DateValue.parse("FROM 1920 TO 2000")
+        self.assertTrue(date is not None)
+        self.assertEqual(date._tmpl, "FROM $date1 TO $date2")
+        self.assertEqual(date._kw, {"date1": CalendarDate("1920"),
+                                    "date2": CalendarDate("2000")})
+
+        date = DateValue.parse("from mar 1920 to 1 apr 2000")
+        self.assertTrue(date is not None)
+        self.assertEqual(date._tmpl, "FROM $date1 TO $date2")
+        self.assertEqual(date._kw, {"date1": CalendarDate("1920", "MAR"),
+                                    "date2": CalendarDate("2000", "APR", 1)})
+
+    def test_013_date_parse_range(self):
+        """Test detail.date.DateValue class."""
+
+        date = DateValue.parse("BEF 1967A.D.")
+        self.assertTrue(date is not None)
+        self.assertEqual(date._tmpl, "BEFORE $date")
+        self.assertEqual(date._kw, {"date": CalendarDate("1967A.D.")})
+
+        date = DateValue.parse("AFT 1 JAN 2017")
+        self.assertTrue(date is not None)
+        self.assertEqual(date._tmpl, "AFTER $date")
+        self.assertEqual(date._kw, {"date": CalendarDate("2017", "JAN", 1)})
+
+        date = DateValue.parse("BET @#DJULIAN@ 1600 AND 2000")
+        self.assertTrue(date is not None)
+        self.assertEqual(date._tmpl, "BETWEEN $date1 AND $date2")
+        self.assertEqual(date._kw, {"date1": CalendarDate("1600"),
+                                    "date2": CalendarDate("2000")})
+
+        date = DateValue.parse("bet mar 1920 and apr 2000")
+        self.assertTrue(date is not None)
+        self.assertEqual(date._tmpl, "BETWEEN $date1 AND $date2")
+        self.assertEqual(date._kw, {"date1": CalendarDate("1920", "MAR"),
+                                    "date2": CalendarDate("2000", "APR")})
+
+    def test_014_date_parse_approx(self):
+        """Test detail.date.DateValue class."""
+
+        dates = {"500B.C." : CalendarDate("500B.C."),
+                 "@#DGREGORIAN@ JAN 2017" : CalendarDate("2017", "JAN"),
+                 "31 JAN 2017" : CalendarDate("2017", "JAN", 31)}
+
+        approx = {"ABT": "ABOUT", "CAL": "CALCULATED", "EST": "ESTIMATED"}
+
+        for appr, tmpl in approx.items():
+            for datestr, value in dates.items():
+
+                date = DateValue.parse(appr + " " + datestr)
+                self.assertTrue(date is not None)
+                self.assertEqual(date._tmpl, tmpl + " $date")
+                self.assertEqual(date._kw, {"date": value})
+
+    def test_015_date_parse_phrase(self):
+        """Test detail.date.DateValue class."""
+
+        date = DateValue.parse("(some phrase)")
+        self.assertTrue(date is not None)
+        self.assertEqual(date._tmpl, "($phrase)")
+        self.assertEqual(date._kw, {"phrase": "some phrase"})
+
+        date = DateValue.parse("INT 1967A.D. (some phrase)")
+        self.assertTrue(date is not None)
+        self.assertEqual(date._tmpl, "INTERPRETED $date ($phrase)")
+        self.assertEqual(date._kw, {"date": CalendarDate("1967A.D."),
+                                    "phrase": "some phrase"})
+
+        date = DateValue.parse("INT @#DGREGORIAN@ 1 JAN 2017 (some phrase)")
+        self.assertTrue(date is not None)
+        self.assertEqual(date._tmpl, "INTERPRETED $date ($phrase)")
+        self.assertEqual(date._kw, {"date": CalendarDate("2017", "JAN", 1),
+                                    "phrase": "some phrase"})
+
+    def test_016_date_parse_simple(self):
+        """Test detail.date.DateValue class."""
+
+        date = DateValue.parse("1967A.D.")
+        self.assertTrue(date is not None)
+        self.assertEqual(date._tmpl, "$date")
+        self.assertEqual(date._kw, {"date": CalendarDate("1967A.D.")})
+
+        date = DateValue.parse("@#DGREGORIAN@ 1 JAN 2017")
+        self.assertTrue(date is not None)
+        self.assertEqual(date._tmpl, "$date")
+        self.assertEqual(date._kw, {"date": CalendarDate("2017", "JAN", 1)})

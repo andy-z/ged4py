@@ -3,9 +3,80 @@
 
 from __future__ import print_function, absolute_import, division
 
-__all__ = ["CalendarDate"]
+__all__ = ["CalendarDate", "DateValue"]
 
 import re
+import string
+
+
+MONTHS_GREG = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG',
+               'SEP', 'OCT', 'NOV', 'DEC']
+MONTHS_HERB = ['TSH', 'CSH', 'KSL', 'TVT', 'SHV', 'ADR', 'ADS', 'NSN',
+               'IYR', 'SVN', 'TMZ', 'AAV', 'ELL']
+MONTHS_FREN = ['VEND', 'BRUM', 'FRIM', 'NIVO', 'PLUV', 'VENT', 'GERM',
+               'FLOR', 'PRAI', 'MESS', 'THER', 'FRUC', 'COMP']
+
+# DATE_VALUE := [
+#     <DATE> |
+#     <DATE_PERIOD> |
+#     <DATE_RANGE>|
+#     <DATE_APPROXIMATED> |
+#     INT <DATE> (<DATE_PHRASE>) |
+#     (<DATE_PHRASE>)
+#     ]
+
+# DATE := [<DATE_CALENDAR_ESCAPE> | <NULL>] <DATE_CALENDAR>
+# <DATE_CALENDAR> := [<YEAR> | <MONTH> <YEAR> | <DAY> <MONTH> <YEAR>]
+# <YEAR can be specified as "1000B.C." or "1699/00"
+# <MONTH> is all characters.
+# This does not use named groups, it may appear few times in other expressions
+# Groups: 1: calendar; 2: day; 3: month; 4: year
+DATE = r"""
+    (?:@\#D(\w+)@\s+)?          # @#DCALENDAR@, optional
+    (?:
+        (?:(\d+)\s+)?           # day (int), optional
+        ([A-Z]{3,4})\s+         # month, name 3-4 chars,
+    )?
+    (\d+\S*)                    # year, required, number with optional suffix
+    """
+DATE_RE = re.compile("^" + DATE + "$", re.X | re.I)
+
+# DATE_PERIOD:= [ FROM <DATE> | TO <DATE> | FROM <DATE> TO <DATE> ]
+DATE_PERIOD_FROM = r"^FROM\s+(?P<date>" + DATE + ")$"
+DATE_PERIOD_TO = r"^TO\s+(?P<date>" + DATE + ")$"
+DATE_PERIOD = r"^FROM\s+(?P<date1>" + DATE + ")\s+TO\s+(?P<date2>" + \
+              DATE + ")$"
+
+# DATE_RANGE:= [ BEF <DATE> | AFT <DATE> | BET <DATE> AND <DATE> ]
+DATE_RANGE_BEFORE = r"^BEF\s+(?P<date>" + DATE + ")$"
+DATE_RANGE_AFTER = r"^AFT\s+(?P<date>" + DATE + ")$"
+DATE_RANGE = r"^BET\s+(?P<date1>" + DATE + ")\s+AND\s+(?P<date2>" + DATE + ")$"
+
+# DATE_APPROXIMATED := [ ABT <DATE> | CAL <DATE> | EST <DATE> ]
+DATE_APPROX_ABOUT = r"^ABT\s+(?P<date>" + DATE + ")$"
+DATE_APPROX_CALC = r"^CAL\s+(?P<date>" + DATE + ")$"
+DATE_APPROX_EST = r"^EST\s+(?P<date>" + DATE + ")$"
+
+# INT <DATE> (<DATE_PHRASE>)
+DATE_INTERP = r"^INT\s+(?P<date>" + DATE + ")\s+\((?P<phrase>.*)\)$"
+DATE_PHRASE = r"^\((?P<phrase>.*)\)$"
+
+# INT <DATE> (<DATE_PHRASE>)
+DATE_SIMPLE = r"^(?P<date>" + DATE + ")$"
+
+DATES = ((re.compile(DATE_PERIOD, re.X | re.I), "FROM $date1 TO $date2"),
+         (re.compile(DATE_PERIOD_FROM, re.X | re.I), "FROM $date"),
+         (re.compile(DATE_PERIOD_TO, re.X | re.I), "TO $date"),
+         (re.compile(DATE_RANGE, re.X | re.I), "BETWEEN $date1 AND $date2"),
+         (re.compile(DATE_RANGE_BEFORE, re.X | re.I), "BEFORE $date"),
+         (re.compile(DATE_RANGE_AFTER, re.X | re.I), "AFTER $date"),
+         (re.compile(DATE_APPROX_ABOUT, re.X | re.I), "ABOUT $date"),
+         (re.compile(DATE_APPROX_CALC, re.X | re.I), "CALCULATED $date"),
+         (re.compile(DATE_APPROX_EST, re.X | re.I), "ESTIMATED $date"),
+         (re.compile(DATE_INTERP, re.X | re.I), "INTERPRETED $date ($phrase)"),
+         (re.compile(DATE_PHRASE, re.X | re.I), "($phrase)"),
+         (re.compile(DATE_SIMPLE, re.X | re.I), "$date"),
+         )
 
 
 class CalendarDate(object):
@@ -31,17 +102,14 @@ class CalendarDate(object):
     :param str month: Name of the month. Optional, but if day is given then
         month cannot be None.
     :param int day: Day in a month, optional.
-    :param str calendar: one of "GREGORIAN", "JULIAN", "HERBEW", "ROMAN",
+    :param str calendar: one of "GREGORIAN", "JULIAN", "HEBREW", "ROMAN",
         "FRENCH R", "UNKNOWN", default is "GREGORIAN"
     """
 
     DIGITS = re.compile(r"\d+")
-    MONTHS_GREG = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-    MONTHS_HERB = ['TSH', 'CSH', 'KSL', 'TVT', 'SHV', 'ADR', 'ADS', 'NSN', 'IYR', 'SVN', 'TMZ', 'AAV', 'ELL']
-    MONTHS_FREN = ['VEND', 'BRUM', 'FRIM', 'NIVO', 'PLUV', 'VENT', 'GERM', 'FLOR', 'PRAI', 'MESS', 'THER', 'FRUC', 'COMP']
     MONTHS = {"GREGORIAN": MONTHS_GREG,
               "JULIAN": MONTHS_GREG,
-              "HERBEW": MONTHS_HERB,
+              "HEBREW": MONTHS_HERB,
               "FRENCH R": MONTHS_FREN}
 
     def __init__(self, year, month=None, day=None, calendar=None):
@@ -51,6 +119,13 @@ class CalendarDate(object):
         self.calendar = calendar or "GREGORIAN"
 
         self._tuple = None
+
+    @classmethod
+    def parse(cls, datestr):
+        m = DATE_RE.match(datestr)
+        if m is not None:
+            day = None if m.group(2) is None else int(m.group(2))
+            return cls(m.group(4), m.group(3), day, m.group(1))
 
     @property
     def as_tuple(self):
@@ -63,7 +138,8 @@ class CalendarDate(object):
             # month is a string from a calendar (None works ok here too
             months = self.MONTHS.get(self.calendar, [])
             try:
-                month = months.index(self.month)
+                month = None if self.month is None else self.month.upper()
+                month = months.index(month)
             except ValueError:
                 month = 99
 
@@ -91,3 +167,45 @@ class CalendarDate(object):
 
     def __ge__(self, other):
         return self.as_tuple >= other.as_tuple
+
+    def fmt(self):
+        val = str(self.year)
+        if self.month is not None:
+            val += ' ' + str(self.month)
+            if self.day is not None:
+                val += ' ' + str(self.day)
+        return val
+
+    def __str__(self):
+        return "{}(year={}, month={}, day={}, calendar={})".format(
+            self.__class__.__name__, self.year, self.month,
+            self.day, self.calendar)
+
+    def __repr__(self):
+        return str(self)
+
+
+class DateValue(object):
+    """
+    """
+    def __init__(self, tmpl, kw):
+        self._tmpl = tmpl
+        self._kw = kw
+
+    @classmethod
+    def parse(cls, datestr):
+        for regex, tmpl in DATES:
+            m = regex.match(datestr)
+            if m is not None:
+                groups = {}
+                for key, val in m.groupdict().items():
+                    if key != 'phrase':
+                        val = CalendarDate.parse(val)
+                    groups[key] = val
+                return cls(tmpl, groups)
+        return None
+
+    def fmt(self):
+        tmpl = string.Template(self._tmpl)
+        kw = dict((key, val.fmt()) for key, val in self._kw.items())
+        return tmpl.substitute(kw)
