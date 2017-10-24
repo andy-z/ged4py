@@ -6,11 +6,12 @@
 from __future__ import print_function, absolute_import, division
 
 __all__ = ['make_record', 'Record', 'Pointer', 'NameRec', 'Name',
-           'Individual']
+           'Date', 'Individual']
 
 import re
 
 from .detail.name import split_name
+from .detail.date import DateValue
 
 # Even though the structure of GEDCOM file is more or less fixed,
 # interpretation of some data may vary depending on which application
@@ -132,7 +133,7 @@ class NameRec(Record):
     last element is a maiden name. Second element of a tuple is surname,
     first and third elements are pieces of the given name (this is determined
     entirely by how name is represented in GEDCOM file). Any of the elements
-    can be empty string. Few examples:
+    can be empty string. Few examples::
 
         ("John", "Smith", "")
         ("Mary Joan", "Smith", "", "Ivanova")    # maiden name
@@ -319,6 +320,22 @@ class Name(object):
         return fmt.format(self.__class__.__name__, self.format(FMT_DEFAULT))
 
 
+class Date(Record):
+    """Representation of the DATE record.
+
+    After `freeze()` method is called by parser the `value` attribute contains
+    instance of :py:class:`ged4py.detail.date.DateValue` class.
+    """
+
+    def freeze(self):
+        """Method called by parser when updates to this record finish.
+
+        :return: self
+        """
+        self.value = DateValue.parse(self.value)
+        return self
+
+
 class Individual(Record):
     """Representation of the INDI record.
 
@@ -343,7 +360,8 @@ class Individual(Record):
 
 # maps tag names to record class
 _tag_class = dict(INDI=Individual,
-                  NAME=NameRec)
+                  NAME=NameRec,
+                  DATE=Date)
 
 
 def make_record(level, xref_id, tag, value, sub_records, offset, dialect):

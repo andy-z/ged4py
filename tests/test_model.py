@@ -6,6 +6,7 @@
 import unittest
 
 from ged4py import model
+from ged4py.detail.date import DateValue
 
 
 class TestModel(unittest.TestCase):
@@ -310,6 +311,14 @@ class TestModel(unittest.TestCase):
         self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_COMMA), ("Jane A. Smith"))
         self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN), ("Jane A. Smith (Sawyer)"))
         self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN_ONLY), ("Jane A. Sawyer"))
+
+    def test_030_date(self):
+        """Test Date class."""
+
+        dialect = model.DIALECT_MYHERITAGE
+        date = model.make_record(1, None, "DATE", "1970", [], 0, dialect).freeze()
+        self.assertIsInstance(date, model.Date)
+        self.assertIsInstance(date.value, DateValue)
 
     def test_900_make_record(self):
         """Test make_record method()"""

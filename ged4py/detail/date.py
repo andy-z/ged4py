@@ -122,6 +122,10 @@ class CalendarDate(object):
 
     @classmethod
     def parse(cls, datestr):
+        """Parse <DATE> string and make :py:class:`CalendarDate` from it.
+
+        :param str datestr: String with GEDCOM date.
+        """
         m = DATE_RE.match(datestr)
         if m is not None:
             day = None if m.group(2) is None else int(m.group(2))
@@ -169,6 +173,8 @@ class CalendarDate(object):
         return self.as_tuple >= other.as_tuple
 
     def fmt(self):
+        """Make printable representation out of this instance.
+        """
         val = str(self.year)
         if self.month is not None:
             val += ' ' + str(self.month)
@@ -186,7 +192,13 @@ class CalendarDate(object):
 
 
 class DateValue(object):
-    """
+    """Representation of the <DATE_VALUE>, can be exact date, range,
+    period, etc.
+
+    :param str tmpl: Template string acceptable by `string.Template`.
+    :param dict kw: Dictionary with the keys being keywords in template
+        string and values are instance of :py:class:`CalendarDate` or
+        strings.
     """
     def __init__(self, tmpl, kw):
         self._tmpl = tmpl
@@ -194,6 +206,11 @@ class DateValue(object):
 
     @classmethod
     def parse(cls, datestr):
+        """Parse string <DATE_VALUE> string and make :py:class:`DateValue`
+        instance out of it.
+
+        :param str datestr: String with GEDCOM date, range, period, etc.
+        """
         for regex, tmpl in DATES:
             m = regex.match(datestr)
             if m is not None:
@@ -206,6 +223,19 @@ class DateValue(object):
         return None
 
     def fmt(self):
+        """Make printable representation out of this instance.
+        """
         tmpl = string.Template(self._tmpl)
-        kw = dict((key, val.fmt()) for key, val in self._kw.items())
+        kw = {}
+        for key, val in self._kw.items():
+            if key == 'phrase':
+                kw[key] = val
+            else:
+                kw[key] = val.fmt()
         return tmpl.substitute(kw)
+
+    def __str__(self):
+        return "{}({})".format(self.__class__.__name__, self.fmt())
+
+    def __repr__(self):
+        return str(self)
