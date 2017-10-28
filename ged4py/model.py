@@ -100,16 +100,16 @@ class Record(object):
                 rec = rec.ref
         return rec
 
-    def sub_tags(self, tag):
-        """Returns list of direct sub-records with given tag name.
+    def sub_tags(self, *tags):
+        """Returns list of direct sub-records matching any tag name.
 
         Unlike :py:meth:`sub_tag` method this method does not support
         hierarchical paths and does not resolve pointers.
 
-        :param str tag: Name of the sub-record tag
+        :param str tags: Names of the sub-record tag
         :return: List of `Records`, possibly empty.
         """
-        return [x for x in self.sub_records if x.tag == tag]
+        return [x for x in self.sub_records if x.tag in tags]
 
     def __repr__(self):
         return self.__str__()
@@ -143,13 +143,16 @@ class Pointer(Record):
 
     def __init__(self, parser):
         self.parser = parser
-        self._value = None
+        self._value = []  # use non-None to signify non-initialized
 
     @property
     def ref(self):
-        if self._value is None:
+        if self._value == []:
             offset, _ = self.parser.xref0.get(self.value, (None, None))
-            self._value = self.parser.read_record(offset)
+            if offset is None:
+                self._value = None
+            else:
+                self._value = self.parser.read_record(offset)
         return self._value
 
 
@@ -264,6 +267,13 @@ class Name(object):
         if self._primary.value[0] and self._primary.value[2]:
             return self._primary.value[0] + ' ' + self._primary.value[2]
         return self._primary.value[0] or self._primary.value[2]
+
+    @property
+    def first(self):
+        given = self.given
+        if given:
+            return given.split()[0]
+        return given
 
     @property
     def maiden(self):
