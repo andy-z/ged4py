@@ -317,7 +317,7 @@ class GedcomReader(object):
                         rec.value = rec.value.decode(self._encoding,
                                                      self._errors)
                     rec.freeze()
-                    _log.debug("    read_record, rec: %s", rec)
+#                    _log.debug("    read_record, rec: %s", rec)
             del stack[level + 1:]
 
             # extend stack to fit this level (and make parent levels if needed)
@@ -380,7 +380,7 @@ class GedcomReader(object):
         rec = model.make_record(level=gline.level, xref_id=gline.xref_id,
                                 tag=gline.tag, value=gline.value,
                                 sub_records=[], offset=gline.offset,
-                                dialect=dialect)
+                                dialect=dialect, parser=self)
 
         # add to parent's sub-records list
         if parent:

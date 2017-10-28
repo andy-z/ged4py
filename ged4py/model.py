@@ -72,14 +72,42 @@ class Record(object):
         """
         return self
 
-    def sub_tag(self, tag):
+    def sub_tag(self, path, follow=True):
         """Returns direct sub-record with given tag name or None.
+
+        Path can be a simple tag name, in which case the first direct
+        sub-record of this record with the matching tag is returned. Path
+        can also consist of several tags separated by slashes, in that case
+        sub-records are searched recursively.
+
+        If `follow` is True then pointer records are resolved and pointed
+        record is used instead of pointer record, this also works for all
+        intermediate records in a path.
+
+        :param str path: tag names separated by slashes.
+        :param boolean follow: If True then resolve pointers.
+        :return: `Record` instance or `None` if sub-record with a given
+            tag does not exist.
         """
-        recs = [x for x in self.sub_records if x.tag == tag]
-        return recs[0] if recs else None
+        tags = path.split('/')
+        rec = self
+        for tag in tags:
+            recs = [x for x in rec.sub_records if x.tag == tag]
+            if not recs:
+                return None
+            rec = recs[0]
+            if follow and isinstance(rec, Pointer):
+                rec = rec.ref
+        return rec
 
     def sub_tags(self, tag):
         """Returns list of direct sub-records with given tag name.
+
+        Unlike :py:meth:`sub_tag` method this method does not support
+        hierarchical paths and does not resolve pointers.
+
+        :param str tag: Name of the sub-record tag
+        :return: List of `Records`, possibly empty.
         """
         return [x for x in self.sub_records if x.tag == tag]
 
@@ -100,28 +128,29 @@ class Record(object):
         return fmt.format(self.__class__.__name__, self, value, n_sub)
 
 
-class Pointer(object):
+class Pointer(Record):
     """Class representing a reference to a record in a GEDCOM file.
 
     This class wraps a GEDCOM pointer and adds few useful methods to locate
     and retrieve a pointed object. Instance of this class will be used in
     place of the GEDCOM pointers in the objects created by parser.
 
-    :ivar str pointer: Value of the GEDCOM pointer (e.g. "@I1234@")
+    :param parser: Instance of `GedcomReader` class.
+
+    :ivar str value: Value of the GEDCOM pointer (e.g. "@I1234@")
+    :ivar Record ref: dereferenced GEDCOM record
     """
 
-    def __init__(self, pointer, registry):
-        self.pointer = pointer
-        self.registry = registry
+    def __init__(self, parser):
+        self.parser = parser
+        self._value = None
 
     @property
-    def object(self):
-        """Retrieve pointed object.
-        """
-        return self.registry.get(self.pointer)
-
-    def __str__(self):
-        return "Pointer({0})".format(self.pointer)
+    def ref(self):
+        if self._value is None:
+            offset, _ = self.parser.xref0.get(self.value, (None, None))
+            self._value = self.parser.read_record(offset)
+        return self._value
 
 
 class NameRec(Record):
@@ -357,6 +386,15 @@ class Individual(Record):
         # +1 <<PERSONAL_NAME_STRUCTURE>> {0:M}
         return Name(self.sub_tags("NAME"), self.dialect)
 
+    @property
+    def sex(self):
+        """Person sex, "M", "F", or "U"."""
+        # +1 SEX <SEX_VALUE>
+        sex_rec = self.sub_tag("SEX")
+        if sex_rec:
+            return sex_rec.value
+        return "U"
+
 
 # maps tag names to record class
 _tag_class = dict(INDI=Individual,
@@ -364,7 +402,8 @@ _tag_class = dict(INDI=Individual,
                   DATE=Date)
 
 
-def make_record(level, xref_id, tag, value, sub_records, offset, dialect):
+def make_record(level, xref_id, tag, value, sub_records, offset, dialect,
+                parser=None):
     """Create Record instance based on parameters.
 
     :param int level: Record level number.
@@ -375,11 +414,19 @@ def make_record(level, xref_id, tag, value, sub_records, offset, dialect):
         possibly empty. List can be updated later.
     :param int offset: Record location in a file.
     :param dialect: One of DIALECT_* constants.
+    :param parser: Instance of `GedcomReader` class, only needed for
+        records whose walue is a pointer.
     :return: Instance of :py:class:`Record` (or one of its subclasses).
     """
 
-    klass = _tag_class.get(tag, Record)
-    rec = klass()
+    if value and len(value) > 2 and value[0] == '@' and value[-1] == '@':
+        # this looks like a <pointer>, make a Pointer record
+        klass = Pointer
+        rec = klass(parser)
+    else:
+        klass = _tag_class.get(tag, Record)
+        rec = klass()
+
     rec.level = level
     rec.xref_id = xref_id
     rec.tag = tag

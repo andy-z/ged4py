@@ -58,23 +58,39 @@ class TestModel(unittest.TestCase):
             for i in range(3):
 
                 sub = model.Record()
-
                 sub.level = 1
                 sub.tag = subtag
                 sub.value = i
                 sub.sub_records = []
                 sub.offset = 1100 + 100 * i
                 sub.dialect = model.DIALECT_DEFAULT
+
+                subsub = model.Record()
+                subsub.level = 2
+                subsub.tag = "SUB"
+                subsub.value = 'VALUE'
+                subsub.sub_records = []
+                subsub.dialect = model.DIALECT_DEFAULT
+                subsub.freeze()
+
+                sub.sub_records.append(subsub)
                 sub.freeze()
 
                 rec.sub_records.append(sub)
 
+        # direct sub-tags
         rec.freeze()
         for subtag in ['SUBA', 'SUBB', 'SUBC']:
             self.assertEqual(rec.sub_tag(subtag).tag, subtag)
             self.assertEqual(len(rec.sub_tags(subtag)), 3)
+
+        # non-existing sub-tags
         self.assertTrue(rec.sub_tag("SUB") is None)
         self.assertEqual(rec.sub_tags("SUB"), [])
+
+        # hierarchical sub-tags
+        self.assertTrue(rec.sub_tag("SUBA/SUB") is not None)
+        self.assertEqual(rec.sub_tag("SUBB/SUB").tag, "SUB")
 
     def test_010_namerec_default(self):
         """Test NameRec class with default dialect."""
@@ -319,6 +335,28 @@ class TestModel(unittest.TestCase):
         date = model.make_record(1, None, "DATE", "1970", [], 0, dialect).freeze()
         self.assertIsInstance(date, model.Date)
         self.assertIsInstance(date.value, DateValue)
+
+    def test_040_Pointer(self):
+        """Test Date class."""
+
+        class Parser(object):
+            def __init__(self):
+                self.xref0 = {"@pointer0@": (0, "TAG0"),
+                              "@pointer1@": (1, "TAG1")}
+            def read_record(self, offset):
+                return str(offset)
+
+        pointer = model.Pointer(Parser())
+        pointer.value = "@pointer0@"
+        pointer.freeze()
+
+        self.assertEqual(pointer.value, "@pointer0@")
+        self.assertEqual(pointer.ref, "0")
+
+        dialect = model.DIALECT_MYHERITAGE
+        pointer = model.make_record(1, None, "FAMC", "@pointer1@", [], 0, dialect, Parser()).freeze()
+        self.assertEqual(pointer.value, "@pointer1@")
+        self.assertEqual(pointer.ref, "1")
 
     def test_900_make_record(self):
         """Test make_record method()"""
