@@ -222,6 +222,36 @@ class DateValue(object):
                 return cls(tmpl, groups)
         return None
 
+    @property
+    def _cmp_date(self):
+        """Returns Calendar data used for comparison.
+
+        Use the earliest date out of all CalendarDates in this instance,
+        or some date in the future if there are no CalendarDates (e.g.
+        when Data is a phrase).
+        """
+        if self._kw:
+            return sorted(self._kw.items())[0]
+        return CalendarDate(9999)
+
+    def __lt__(self, other):
+        return self._cmp_date < other._cmp_date
+
+    def __le__(self, other):
+        return self._cmp_date <= other._cmp_date
+
+    def __eq__(self, other):
+        return self._cmp_date == other._cmp_date
+
+    def __ne__(self, other):
+        return self._cmp_date != other._cmp_date
+
+    def __gt__(self, other):
+        return self._cmp_date > other._cmp_date
+
+    def __ge__(self, other):
+        return self._cmp_date >= other._cmp_date
+
     def fmt(self):
         """Make printable representation out of this instance.
         """

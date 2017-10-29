@@ -231,3 +231,17 @@ class TestDetailName(unittest.TestCase):
         self.assertEqual(date._tmpl, "$date")
         self.assertEqual(date._kw, {"date": CalendarDate("2017", "JAN", 1)})
         self.assertEqual(date.fmt(), "2017 JAN 1")
+
+    def test_017_date_cmp(self):
+        """Test detail.date.Date class."""
+
+        self.assertTrue(DateValue.parse("2016") < DateValue.parse("2017"))
+        self.assertTrue(DateValue.parse("2 JAN 2016") > DateValue.parse("1 JAN 2016"))
+        self.assertTrue(DateValue.parse("BET 1900 AND 2000") < DateValue.parse("FROM 1920 TO 1999"))
+
+        # Less specific date compares later than more specific
+        self.assertTrue(DateValue.parse("2000") > DateValue.parse("31 DEC 2000"))
+        self.assertTrue(DateValue.parse("DEC 2000") > DateValue.parse("31 DEC 2000"))
+
+        # phrase is always later than any regular date
+        self.assertTrue(DateValue.parse("(Could be 1996 or 1998)") > DateValue.parse("2000"))
