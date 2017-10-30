@@ -264,12 +264,14 @@ class Name(object):
 
     @property
     def given(self):
+        """Given name could include both first and middle name"""
         if self._primary.value[0] and self._primary.value[2]:
             return self._primary.value[0] + ' ' + self._primary.value[2]
         return self._primary.value[0] or self._primary.value[2]
 
     @property
     def first(self):
+        """First name is the first part of a given name (drops middle name)"""
         given = self.given
         if given:
             return given.split()[0]
@@ -388,6 +390,8 @@ class Individual(Record):
 
     def __init__(self):
         Record.__init__(self)
+        self._mother = []  # Non-None as uninitialized
+        self._father = []  # Non-None as uninitialized
 
     @property
     def name(self):
@@ -405,6 +409,19 @@ class Individual(Record):
             return sex_rec.value
         return "U"
 
+    @property
+    def mother(self):
+        """Parent of this individual"""
+        if self._mother == []:
+            self._mother = self.sub_tag("FAMC/WIFE")
+        return self._mother
+
+    @property
+    def father(self):
+        """Parent of this individual"""
+        if self._father == []:
+            self._father = self.sub_tag("FAMC/HUSB")
+        return self._father
 
 # maps tag names to record class
 _tag_class = dict(INDI=Individual,
