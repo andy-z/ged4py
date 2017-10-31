@@ -337,7 +337,7 @@ class TestModel(unittest.TestCase):
         self.assertIsInstance(date.value, DateValue)
 
     def test_040_Pointer(self):
-        """Test Date class."""
+        """Test Pointer class."""
 
         class Parser(object):
             def __init__(self):
@@ -357,6 +357,63 @@ class TestModel(unittest.TestCase):
         pointer = model.make_record(1, None, "FAMC", "@pointer1@", [], 0, dialect, Parser()).freeze()
         self.assertEqual(pointer.value, "@pointer1@")
         self.assertEqual(pointer.ref, "1")
+
+    def test_041_Pointer_sub(self):
+        """Test Pointer class."""
+
+        class Parser(object):
+            def __init__(self):
+                self.xref0 = {"@pointer0@": (0, "TAG0"),
+                              "@pointer1@": (1, "TAG1")}
+            def read_record(self, offset):
+                return str(offset)
+
+        dialect = model.DIALECT_MYHERITAGE
+        parser = Parser()
+        husb = model.make_record(1, None, "HUSB", "@pointer0@", [], 0, dialect, parser).freeze()
+        wife = model.make_record(1, None, "WIFE", "@pointer1@", [], 0, dialect, parser).freeze()
+        fam = model.make_record(0, None, "FAM", "", [husb, wife], 0, dialect, parser).freeze()
+
+        rec = fam.sub_tag("HUSB", follow=True)
+        self.assertEqual(rec, "0")
+        rec = fam.sub_tag("HUSB", follow=False)
+        self.assertTrue(rec is not None)
+        self.assertIsInstance(rec, model.Pointer)
+
+        recs = fam.sub_tags("HUSB", "WIFE", follow=True)
+        self.assertEqual(recs, ["0", "1"])
+        recs = fam.sub_tags("HUSB", "WIFE", follow=False)
+        self.assertEqual(len(recs), 2)
+        self.assertIsInstance(recs[0], model.Pointer)
+        self.assertIsInstance(recs[1], model.Pointer)
+
+    def test_050_Multimedia(self):
+        """Test Multimedia class."""
+
+        dialect = model.DIALECT_MYHERITAGE
+        file = model.make_record(1, None, "FILE", "/path/to/file.jpeg", [], 0, dialect, None).freeze()
+        form = model.make_record(1, None, "FORM", "JPG", [], 0, dialect, None).freeze()
+        obje = model.make_record(0, None, "OBJE", "", [file, form], 0, dialect, None).freeze()
+        self.assertIsInstance(obje, model.Multimedia)
+        self.assertEqual(obje.files, [("/path/to/file.jpeg", "JPG", None)])
+
+        medi = model.make_record(3, None, "MEDI", "photo", [], 0, dialect, None).freeze()
+        form = model.make_record(2, None, "FORM", "JPG", [medi], 0, dialect, None).freeze()
+        file = model.make_record(1, None, "FILE", "/path/to/file.jpeg", [form], 0, dialect, None).freeze()
+        obje = model.make_record(0, None, "OBJE", "", [file], 0, dialect, None).freeze()
+        self.assertIsInstance(obje, model.Multimedia)
+        self.assertEqual(obje.files, [("/path/to/file.jpeg", "JPG", "photo")])
+
+        medi = model.make_record(3, None, "MEDI", "video", [], 0, dialect, None).freeze()
+        form = model.make_record(2, None, "FORM", "MPEG", [medi], 0, dialect, None).freeze()
+        file1 = model.make_record(1, None, "FILE", "/path/to/file.mpg", [form], 0, dialect, None).freeze()
+        medi = model.make_record(3, None, "MEDI", "photo", [], 0, dialect, None).freeze()
+        form = model.make_record(2, None, "FORM", "JPG", [medi], 0, dialect, None).freeze()
+        file2 = model.make_record(1, None, "FILE", "/path/to/file.jpeg", [form], 0, dialect, None).freeze()
+        obje = model.make_record(0, None, "OBJE", "", [file1, file2], 0, dialect, None).freeze()
+        self.assertIsInstance(obje, model.Multimedia)
+        self.assertEqual(obje.files, [("/path/to/file.mpg", "MPEG", "video"),
+                                      ("/path/to/file.jpeg", "JPG", "photo")])
 
     def test_900_make_record(self):
         """Test make_record method()"""
