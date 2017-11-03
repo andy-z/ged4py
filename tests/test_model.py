@@ -387,34 +387,6 @@ class TestModel(unittest.TestCase):
         self.assertIsInstance(recs[0], model.Pointer)
         self.assertIsInstance(recs[1], model.Pointer)
 
-    def test_050_Multimedia(self):
-        """Test Multimedia class."""
-
-        dialect = model.DIALECT_MYHERITAGE
-        file = model.make_record(1, None, "FILE", "/path/to/file.jpeg", [], 0, dialect, None).freeze()
-        form = model.make_record(1, None, "FORM", "JPG", [], 0, dialect, None).freeze()
-        obje = model.make_record(0, None, "OBJE", "", [file, form], 0, dialect, None).freeze()
-        self.assertIsInstance(obje, model.Multimedia)
-        self.assertEqual(obje.files, [("/path/to/file.jpeg", "JPG", None)])
-
-        medi = model.make_record(3, None, "MEDI", "photo", [], 0, dialect, None).freeze()
-        form = model.make_record(2, None, "FORM", "JPG", [medi], 0, dialect, None).freeze()
-        file = model.make_record(1, None, "FILE", "/path/to/file.jpeg", [form], 0, dialect, None).freeze()
-        obje = model.make_record(0, None, "OBJE", "", [file], 0, dialect, None).freeze()
-        self.assertIsInstance(obje, model.Multimedia)
-        self.assertEqual(obje.files, [("/path/to/file.jpeg", "JPG", "photo")])
-
-        medi = model.make_record(3, None, "MEDI", "video", [], 0, dialect, None).freeze()
-        form = model.make_record(2, None, "FORM", "MPEG", [medi], 0, dialect, None).freeze()
-        file1 = model.make_record(1, None, "FILE", "/path/to/file.mpg", [form], 0, dialect, None).freeze()
-        medi = model.make_record(3, None, "MEDI", "photo", [], 0, dialect, None).freeze()
-        form = model.make_record(2, None, "FORM", "JPG", [medi], 0, dialect, None).freeze()
-        file2 = model.make_record(1, None, "FILE", "/path/to/file.jpeg", [form], 0, dialect, None).freeze()
-        obje = model.make_record(0, None, "OBJE", "", [file1, file2], 0, dialect, None).freeze()
-        self.assertIsInstance(obje, model.Multimedia)
-        self.assertEqual(obje.files, [("/path/to/file.mpg", "MPEG", "video"),
-                                      ("/path/to/file.jpeg", "JPG", "photo")])
-
     def test_900_make_record(self):
         """Test make_record method()"""
 

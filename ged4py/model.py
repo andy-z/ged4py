@@ -6,7 +6,7 @@
 from __future__ import print_function, absolute_import, division
 
 __all__ = ['make_record', 'Record', 'Pointer', 'NameRec', 'Name',
-           'Date', 'Individual', 'Multimedia']
+           'Date', 'Individual']
 
 import re
 
@@ -430,59 +430,10 @@ class Individual(Record):
         return self._father
 
 
-class Multimedia(Record):
-    """Representation of the OBJE record.
-
-    OBJE record contains one (in 5.5) or few (in 5.5.1) related multimedia
-    files. In 5.5 file contents can be embedded as BLOB record though we do
-    not support this. In 5.5.1 file name is stored in a record.
-
-    In 5.5.1 OBJE record is supposed to have structure::
-
-        OBJE
-          +1 FILE <MULTIMEDIA_FILE_REFN>    {1:M}
-            +2 FORM <MULTIMEDIA_FORMAT>     {1:1}
-                +3 MEDI <SOURCE_MEDIA_TYPE> {0:1}
-          +1 TITL <DESCRIPTIVE_TITLE>       {0:1}
-
-    Some applications which claim 5.5.1 version still store OBJE record in
-    5.5 format::
-
-        OBJE
-          +1 FILE <MULTIMEDIA_FILE_REFN>    {1:1}
-          +1 FORM <MULTIMEDIA_FORMAT>       {1:1}
-          +1 TITL <DESCRIPTIVE_TITLE>       {0:1}
-    """
-
-    def __init__(self):
-        Record.__init__(self)
-        self._files = None
-
-    @property
-    def files(self):
-        if self._files is None:
-            self._files = []
-            form = self.sub_tag("FORM")
-            if form:
-                form = form.value
-            files = self.sub_tags("FILE")
-            for file in files:
-                medi = None
-                fform = file.sub_tag("FORM")
-                if fform:
-                    medi = fform.sub_tag("MEDI")
-                    if medi:
-                        medi = medi.value
-                    fform = fform.value
-                self._files.append((file.value, fform or form, medi))
-        return self._files
-
-
 # maps tag names to record class
 _tag_class = dict(INDI=Individual,
                   NAME=NameRec,
-                  DATE=Date,
-                  OBJE=Multimedia)
+                  DATE=Date)
 
 
 def make_record(level, xref_id, tag, value, sub_records, offset, dialect,
