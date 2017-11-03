@@ -256,13 +256,19 @@ class Name(object):
         self._dialect = dialect
         self._primary = None  # "primary" name record
 
-        if len(names) == 1:
+        if len(names) == 0:
+            # make fake name record to simply logic below
+            self._primary = make_record(0, '', "NAME", "",
+                                        [], 0, DIALECT_DEFAULT).freeze()
+        elif len(names) == 1:
             self._primary = names[0]
         else:
             for name in names:
                 if not name.type:
                     self._primary = name
                     break
+            else:
+                self._primary = names[0]
 
     @property
     def surname(self):
