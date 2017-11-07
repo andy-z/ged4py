@@ -87,10 +87,12 @@ class TestModel(unittest.TestCase):
         # non-existing sub-tags
         self.assertTrue(rec.sub_tag("SUB") is None)
         self.assertEqual(rec.sub_tags("SUB"), [])
+        self.assertTrue(rec.sub_tag_value("SUB") is None)
 
         # hierarchical sub-tags
         self.assertTrue(rec.sub_tag("SUBA/SUB") is not None)
         self.assertEqual(rec.sub_tag("SUBB/SUB").tag, "SUB")
+        self.assertEqual(rec.sub_tag_value("SUBB/SUB"), "VALUE")
 
     def test_010_namerec_default(self):
         """Test NameRec class with default dialect."""

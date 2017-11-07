@@ -100,6 +100,22 @@ class Record(object):
                 rec = rec.ref
         return rec
 
+    def sub_tag_value(self, path, follow=True):
+        """Returns value of a direct sub-record or None.
+
+        Works as :py:method:`sub_tag` but returns value of a sub-record
+        instead of sub-record itself.
+
+        :param str path: tag names separated by slashes.
+        :param boolean follow: If True then resolve pointers.
+        :return: String or `None` if sub-record with a given
+            tag does not exist.
+        """
+        rec = self.sub_tag(path, follow)
+        if rec:
+            return rec.value
+        return None
+
     def sub_tags(self, *tags, **kw):
         """Returns list of direct sub-records matching any tag name.
 
