@@ -103,7 +103,7 @@ class Record(object):
     def sub_tag_value(self, path, follow=True):
         """Returns value of a direct sub-record or None.
 
-        Works as :py:method:`sub_tag` but returns value of a sub-record
+        Works as :py:meth:`sub_tag` but returns value of a sub-record
         instead of sub-record itself.
 
         :param str path: tag names separated by slashes.

@@ -11,7 +11,7 @@ import string
 
 MONTHS_GREG = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG',
                'SEP', 'OCT', 'NOV', 'DEC']
-MONTHS_HERB = ['TSH', 'CSH', 'KSL', 'TVT', 'SHV', 'ADR', 'ADS', 'NSN',
+MONTHS_HEBR = ['TSH', 'CSH', 'KSL', 'TVT', 'SHV', 'ADR', 'ADS', 'NSN',
                'IYR', 'SVN', 'TMZ', 'AAV', 'ELL']
 MONTHS_FREN = ['VEND', 'BRUM', 'FRIM', 'NIVO', 'PLUV', 'VENT', 'GERM',
                'FLOR', 'PRAI', 'MESS', 'THER', 'FRUC', 'COMP']
@@ -109,14 +109,21 @@ class CalendarDate(object):
     DIGITS = re.compile(r"\d+")
     MONTHS = {"GREGORIAN": MONTHS_GREG,
               "JULIAN": MONTHS_GREG,
-              "HEBREW": MONTHS_HERB,
+              "HEBREW": MONTHS_HEBR,
               "FRENCH R": MONTHS_FREN}
 
     def __init__(self, year, month=None, day=None, calendar=None):
         self.year = year
-        self.month = month
+        self.month = None if month is None else month.upper()
         self.day = day
         self.calendar = calendar or "GREGORIAN"
+
+        # determine month number
+        months = self.MONTHS.get(self.calendar, [])
+        try:
+            self.month_num = months.index(self.month) + 1
+        except ValueError:
+            self.month_num = None
 
         self._tuple = None
 
@@ -138,15 +145,7 @@ class CalendarDate(object):
             # extract leading digits from year
             m = self.DIGITS.match(self.year)
             year = int(m.group(0)) if m else 9999
-
-            # month is a string from a calendar (None works ok here too
-            months = self.MONTHS.get(self.calendar, [])
-            try:
-                month = None if self.month is None else self.month.upper()
-                month = months.index(month)
-            except ValueError:
-                month = 99
-
+            month = self.month_num or 99
             day = self.day if self.day is not None else 99
 
             # should we include calendar name in tuple too?
@@ -201,8 +200,8 @@ class DateValue(object):
         strings.
     """
     def __init__(self, tmpl, kw):
-        self._tmpl = tmpl
-        self._kw = kw
+        self.template = tmpl
+        self.kw = kw
 
     @classmethod
     def parse(cls, datestr):
@@ -230,8 +229,8 @@ class DateValue(object):
         or some date in the future if there are no CalendarDates (e.g.
         when Data is a phrase).
         """
-        if self._kw:
-            return sorted(self._kw.items())[0]
+        if self.kw:
+            return sorted(self.kw.items())[0]
         return CalendarDate(9999)
 
     def __lt__(self, other):
@@ -255,9 +254,9 @@ class DateValue(object):
     def fmt(self):
         """Make printable representation out of this instance.
         """
-        tmpl = string.Template(self._tmpl)
+        tmpl = string.Template(self.template)
         kw = {}
-        for key, val in self._kw.items():
+        for key, val in self.kw.items():
             if key == 'phrase':
                 kw[key] = val
             else:
