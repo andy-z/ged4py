@@ -13,11 +13,6 @@ GEDCOM parser for Python
         :target: https://ged4py.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-.. image:: https://pyup.io/repos/github/andy-z/ged4py/shield.svg
-     :target: https://pyup.io/repos/github/andy-z/ged4py/
-     :alt: Updates
-
-
 Implementation of the GEDCOM parser in Python
 
 
@@ -28,7 +23,10 @@ Implementation of the GEDCOM parser in Python
 Features
 --------
 
-* TODO
+* Parsing of GEDCOM files as defined by 5.5.1 version of GEDCOM standard
+* Supported file encodings are UTF-8 (with or without BOM), ASCII or ANSEL
+* Designed to parse large files efficiently
+* Supports Python 2.6+ and 3.3+
 
 Credits
 ---------
@@ -37,4 +35,3 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
-

@@ -117,7 +117,7 @@ def guess_codec(file, errors="strict", require_char=False):
 class GedcomReader(object):
     """Main interface for reading GEDCOM files.
 
-    :param str file: File name or file object open in binary mode, file must
+    :param file: File name or file object open in binary mode, file must
         be seekable.
     :param str encoding: If None (default) then file is analyzed using
         `guess_codec()` method to determine correct codec. Otherwise
@@ -156,7 +156,7 @@ class GedcomReader(object):
             encoding, self._bom_size = guess_codec(self._file,
                                                    errors=self._errors,
                                                    require_char=require_char)
-        except:
+        except Exception:
             self._file.close()
             raise
         self._file.seek(self._bom_size)
