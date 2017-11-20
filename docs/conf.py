@@ -49,8 +49,7 @@ def run_apidoc(_):
     cur_dir = os.path.abspath(os.path.dirname(__file__))
     sys.path.append(parentFolder)
     module = os.path.join(parentFolder, 'ged4py')
-    output_path = os.path.join(cur_dir, 'modules')
-    main(['-e', '-f', '-o', output_path, module])
+    main(['-e', '-f', '-o', cur_dir, module])
 
 
 def setup(app):
