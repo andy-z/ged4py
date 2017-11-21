@@ -12,7 +12,6 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    "future"
 ]
 
 setup_requirements = [
@@ -32,7 +31,7 @@ setup(
     url='https://github.com/andy-z/ged4py',
     license="MIT License",
 
-    packages=find_packages(include=['ged4py']),
+    packages=find_packages(include=['ged4py', 'ged4py.*']),
     entry_points={
         'console_scripts': [
         ]
