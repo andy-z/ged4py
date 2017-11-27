@@ -207,13 +207,7 @@ class TestModel(unittest.TestCase):
         self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("1Smith", "1John"))
         self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1John", "1Smith"))
 
-        self.assertEqual(name.format(model.FMT_DEFAULT), ("John Smith"))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST), ("John Smith"))
-        self.assertEqual(name.format(model.FMT_SURNAME_FIRST), ("Smith John"))
-        self.assertEqual(name.format(model.FMT_SURNAME_FIRST | model.FMT_COMMA), ("Smith, John"))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_COMMA), ("John Smith"))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN), ("John Smith"))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN_ONLY), ("John Smith"))
+        self.assertEqual(name.format(), ("John Smith"))
 
         names = [model.make_record(1, None, "NAME", "John", [], 0, dialect).freeze()]
         name = model.Name(names, dialect)
@@ -228,12 +222,7 @@ class TestModel(unittest.TestCase):
         self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("2", "1John"))
         self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1John", "2"))
 
-        self.assertEqual(name.format(model.FMT_DEFAULT), ("John"))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST), ("John"))
-        self.assertEqual(name.format(model.FMT_SURNAME_FIRST), ("John"))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_COMMA), ("John"))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN), ("John"))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN_ONLY), ("John"))
+        self.assertEqual(name.format(), ("John"))
 
         name_type = model.make_record(2, None, "TYPE", "maiden", [], 0, dialect).freeze()
         names = [model.make_record(1, None, "NAME", "/Sawyer/", [name_type], 0, dialect).freeze(),
@@ -250,14 +239,7 @@ class TestModel(unittest.TestCase):
         self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("1Sawyer", "1Jane A."))
         self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1Jane A.", "1Sawyer"))
 
-        self.assertEqual(name.format(model.FMT_DEFAULT), ("Jane Smith A."))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST), ("Jane A. Smith"))
-        self.assertEqual(name.format(model.FMT_SURNAME_FIRST), ("Smith Jane A."))
-        self.assertEqual(name.format(model.FMT_SURNAME_FIRST | model.FMT_COMMA), ("Smith, Jane A."))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_COMMA), ("Jane A. Smith"))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN), ("Jane A. Smith (Sawyer)"))
-        self.assertEqual(name.format(model.FMT_SURNAME_FIRST | model.FMT_COMMA | model.FMT_MAIDEN), ("Smith (Sawyer), Jane A."))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN_ONLY), ("Jane A. Sawyer"))
+        self.assertEqual(name.format(), ("Jane Smith A."))
 
     def test_021_name_altree(self):
         """Test Name class with ALTREE dialect."""
@@ -276,13 +258,7 @@ class TestModel(unittest.TestCase):
         self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("1Sawyer", "1Jane A."))
         self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1Jane A.", "1Sawyer"))
 
-        self.assertEqual(name.format(model.FMT_DEFAULT), ("Jane Smith A."))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST), ("Jane A. Smith"))
-        self.assertEqual(name.format(model.FMT_SURNAME_FIRST), ("Smith Jane A."))
-        self.assertEqual(name.format(model.FMT_SURNAME_FIRST | model.FMT_COMMA), ("Smith, Jane A."))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_COMMA), ("Jane A. Smith"))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN), ("Jane A. Smith (Sawyer)"))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN_ONLY), ("Jane A. Sawyer"))
+        self.assertEqual(name.format(), ("Jane Smith A."))
 
         names = [model.make_record(1, None, "NAME", "Jane /?/ A.", [], 0, dialect).freeze()]
         name = model.Name(names, dialect)
@@ -297,12 +273,7 @@ class TestModel(unittest.TestCase):
         self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("2", "1Jane A."))
         self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1Jane A.", "2"))
 
-        self.assertEqual(name.format(model.FMT_DEFAULT), ("Jane A."))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST), ("Jane A."))
-        self.assertEqual(name.format(model.FMT_SURNAME_FIRST), ("Jane A."))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_COMMA), ("Jane A."))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN), ("Jane A."))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN_ONLY), ("Jane A."))
+        self.assertEqual(name.format(), ("Jane A."))
 
     def test_022_name_myher(self):
         """Test Name class with MYHERITAGE dialect."""
@@ -322,13 +293,7 @@ class TestModel(unittest.TestCase):
         self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("1Sawyer", "1Jane A."))
         self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1Jane A.", "1Sawyer"))
 
-        self.assertEqual(name.format(model.FMT_DEFAULT), ("Jane Smith A."))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST), ("Jane A. Smith"))
-        self.assertEqual(name.format(model.FMT_SURNAME_FIRST), ("Smith Jane A."))
-        self.assertEqual(name.format(model.FMT_SURNAME_FIRST | model.FMT_COMMA), ("Smith, Jane A."))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_COMMA), ("Jane A. Smith"))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN), ("Jane A. Smith (Sawyer)"))
-        self.assertEqual(name.format(model.FMT_GIVEN_FIRST | model.FMT_MAIDEN_ONLY), ("Jane A. Sawyer"))
+        self.assertEqual(name.format(), ("Jane Smith A."))
 
     def test_030_date(self):
         """Test Date class."""

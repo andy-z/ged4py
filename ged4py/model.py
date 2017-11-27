@@ -28,14 +28,8 @@ ORDER_SURNAME_GIVEN = "last+first"
 ORDER_GIVEN_SURNAME = "first+last"
 ORDER_MAIDEN_GIVEN = "maiden+first"  # uses last name if no maiden name
 ORDER_GIVEN_MAIDEN = "first+maiden"  # uses last name if no maiden name
-
-# Names can be rendered in different formats
-FMT_DEFAULT = 0  # use GEDCOM name ordering: Joe /Smith/ Jr - > Joe Smith Jr
-FMT_GIVEN_FIRST = 0x1  # Jane Smith
-FMT_SURNAME_FIRST = 0x2  # Smith Jane
-FMT_COMMA = 0x4  # Smith, Jane -- only if surname is first
-FMT_MAIDEN = 0x8  # Jane Smith (Sawyer)   -- maiden name
-FMT_MAIDEN_ONLY = 0x10  # Jane Sawyer   -- maiden name only
+ORDER_LIST = [ORDER_SURNAME_GIVEN, ORDER_GIVEN_SURNAME,
+              ORDER_MAIDEN_GIVEN, ORDER_GIVEN_MAIDEN]
 
 
 class Record(object):
@@ -344,49 +338,25 @@ class Name(object):
         else:
             raise ValueError("unexpected order: {}".format(order))
 
-    def format(self, fmt):
+    def format(self):
         """Format name for output.
 
-        :param int fmt: Bitmask of FMT_* flags.
         :return: Formatted name representation.
         """
-        surname = self.surname
-        if fmt & FMT_MAIDEN_ONLY:
-            surname = self.maiden or self.surname
-        elif fmt & FMT_MAIDEN:
-            surname = self.surname
-            if self.maiden:
-                if surname:
-                    surname += ' '
-                surname += "(" + self.maiden + ")"
-
-        if fmt & FMT_SURNAME_FIRST:
-            if surname and self.given and fmt & FMT_COMMA:
-                return surname + ', ' + self.given
-            if surname and self.given:
-                return surname + ' ' + self.given
-            else:
-                return self.given or surname
-        elif fmt & FMT_GIVEN_FIRST:
-            if surname and self.given:
-                return self.given + ' ' + surname
-            else:
-                return self.given or surname
-        else:
-            name = self._primary.value[0]
-            if surname:
-                if name:
-                    name += ' '
-                name += surname
-            if self._primary.value[2]:
-                if name:
-                    name += ' '
-                name += self._primary.value[2]
-            return name
+        name = self._primary.value[0]
+        if self.surname:
+            if name:
+                name += ' '
+            name += self.surname
+        if self._primary.value[2]:
+            if name:
+                name += ' '
+            name += self._primary.value[2]
+        return name
 
     def __str__(self):
         fmt = "{0}({1!r})"
-        return fmt.format(self.__class__.__name__, self.format(FMT_DEFAULT))
+        return fmt.format(self.__class__.__name__, self.format())
 
 
 class Date(Record):

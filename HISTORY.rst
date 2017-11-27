@@ -2,6 +2,12 @@
 History
 =======
 
+0.1.2 (2017-11-26)
+------------------
+
+* Get rid of name formatting options, too complicated for this package.
+* Describe name parsing for different dialects.
+
 0.1.1 (2017-11-20)
 ------------------
 
