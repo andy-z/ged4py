@@ -435,7 +435,10 @@ def make_record(level, xref_id, tag, value, sub_records, offset, dialect,
     :param int level: Record level number.
     :param str xref_id: Record reference ID, possibly empty.
     :param str tag: Tag name.
-    :param str value: Record value, possibly empty.
+    :param value: Record value, possibly empty. Value can be None, bytes, or
+        string object, if it is bytes then it should be decoded into strings
+        before calling freeze(), this is normally done by the parser which
+        knows about encodings.
     :param list sub_records: Initial list of subordinate records,
         possibly empty. List can be updated later.
     :param int offset: Record location in a file.
@@ -444,8 +447,10 @@ def make_record(level, xref_id, tag, value, sub_records, offset, dialect,
         records whose walue is a pointer.
     :return: Instance of :py:class:`Record` (or one of its subclasses).
     """
-
-    if value and len(value) > 2 and value[0] == '@' and value[-1] == '@':
+    # value can be bytes or string so we check for both, 64 is code for '@'
+    if value and len(value) > 2 and \
+        ((value[0] == '@' and value[-1] == '@') or \
+        (value[0] == 64 and value[-1] == 64)):
         # this looks like a <pointer>, make a Pointer record
         klass = Pointer
         rec = klass(parser)
