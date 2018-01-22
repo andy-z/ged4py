@@ -43,7 +43,7 @@ setup(
     zip_safe=True,
     keywords='ged4py',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
@@ -54,6 +54,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Topic :: Sociology :: Genealogy',
     ],
     test_suite='tests',
     tests_require=test_requirements,
