@@ -155,7 +155,12 @@ class TestModel(unittest.TestCase):
         self.assertIsInstance(rec.value, tuple)
         self.assertEqual(rec.value, ("First", "Last Name", "Second"))
 
+        maiden = model.Record()
+        maiden.level = 2
+        maiden.tag = "SURN"
+        maiden.value = "Maiden"
         rec.value = "First /Last (Maiden)/"
+        rec.sub_records = [maiden]
         rec.freeze()
         self.assertIsInstance(rec.value, tuple)
         self.assertEqual(rec.value, ("First", "Last", "", "Maiden"))
@@ -245,7 +250,8 @@ class TestModel(unittest.TestCase):
         """Test Name class with ALTREE dialect."""
 
         dialect = model.DIALECT_ALTREE
-        names = [model.make_record(1, None, "NAME", "Jane /Smith (Sawyer)/ A.", [], 0, dialect).freeze()]
+        surn = model.make_record(2, None, "SURN", "Sawyer", [], 0, dialect).freeze()
+        names = [model.make_record(1, None, "NAME", "Jane /Smith (Sawyer)/ A.", [surn], 0, dialect).freeze()]
         name = model.Name(names, dialect)
 
         self.assertTrue(name._primary is names[0])

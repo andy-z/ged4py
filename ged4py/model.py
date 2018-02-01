@@ -8,9 +8,7 @@ from __future__ import print_function, absolute_import, division
 __all__ = ['make_record', 'Record', 'Pointer', 'NameRec', 'Name',
            'Date', 'Individual']
 
-import re
-
-from .detail.name import split_name
+from .detail.name import split_name, parse_name_altree, parse_name_myher
 from .detail.date import DateValue
 
 # Even though the structure of GEDCOM file is more or less fixed,
@@ -86,7 +84,7 @@ class Record(object):
         tags = path.split('/')
         rec = self
         for tag in tags:
-            recs = [x for x in rec.sub_records if x.tag == tag]
+            recs = [x for x in (rec.sub_records or []) if x.tag == tag]
             if not recs:
                 return None
             rec = recs[0]
@@ -192,48 +190,20 @@ class NameRec(Record):
     directly, :py:meth:`make_record` should be used instead.
     """
 
-    _surname_re = re.compile("(.*)\((.*)\)")
-
     def __init__(self):
         Record.__init__(self)
-        self.name_tuple = None
-        self.maiden = None
 
     def freeze(self):
         """Method called by parser when updates to this record finish.
 
         :return: self
         """
-        self.name_tuple = split_name(self.value)
+        name_tuple = split_name(self.value)
         if self.dialect in [DIALECT_ALTREE]:
-            if self.name_tuple[1] == '?':
-                self.name_tuple = (self.name_tuple[0],
-                                   '',
-                                   self.name_tuple[2])
-            # maiden name is part of surname (Surname (Maiden))
-            match = self._surname_re.match(self.name_tuple[1])
-            if match:
-                surname = match.group(1).strip()
-                if surname == '?':
-                    surname = ''
-                self.name_tuple = (self.name_tuple[0],
-                                   surname,
-                                   self.name_tuple[2])
-                self.maiden = match.group(2).strip()
-                if self.maiden == '?':
-                    self.maiden = None
+            name_tuple = parse_name_altree(self)
         elif self.dialect in [DIALECT_MYHERITAGE]:
-            # married name is in a special tag _MARNM
-            surname = self.sub_tag("_MARNM")
-            if surname:
-                surname = surname.value
-                self.maiden = self.name_tuple[1]
-                self.name_tuple = (self.name_tuple[0],
-                                   surname,
-                                   self.name_tuple[2])
-        self.value = self.name_tuple
-        if self.maiden:
-            self.value += (self.maiden,)
+            name_tuple = parse_name_myher(self)
+        self.value = name_tuple
         return self
 
     @property
@@ -267,7 +237,7 @@ class Name(object):
         self._primary = None  # "primary" name record
 
         if len(names) == 0:
-            # make fake name record to simply logic below
+            # make fake name record to simplify logic below
             self._primary = make_record(0, '', "NAME", "",
                                         [], 0, DIALECT_DEFAULT).freeze()
         elif len(names) == 1:
@@ -303,14 +273,13 @@ class Name(object):
     def maiden(self):
         """Maiden last name, can be None"""
         if self._dialect == DIALECT_DEFAULT:
-            # we expect it to be in a record with "maiden" type
+            # for default/unknown dialect try "maiden" name record first
             for name in self._names:
                 if name.type == "maiden":
                     return name.value[1]
-        else:
-            # rely on NamRec extracting it from other source
-            if self._primary:
-                return self._primary.maiden
+        # rely on NameRec extracting it from other source
+        if self._primary and len(self._primary.value) > 3:
+            return self._primary.value[3]
         return None
 
     def order(self, order):
@@ -449,8 +418,8 @@ def make_record(level, xref_id, tag, value, sub_records, offset, dialect,
     """
     # value can be bytes or string so we check for both, 64 is code for '@'
     if value and len(value) > 2 and \
-        ((value[0] == '@' and value[-1] == '@') or \
-        (value[0] == 64 and value[-1] == 64)):
+        ((value[0] == '@' and value[-1] == '@') or
+         (value[0] == 64 and value[-1] == 64)):
         # this looks like a <pointer>, make a Pointer record
         klass = Pointer
         rec = klass(parser)

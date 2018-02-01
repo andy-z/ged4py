@@ -5,7 +5,8 @@
 
 import unittest
 
-from ged4py.detail.name import split_name
+from ged4py.detail.name import split_name, parse_name_altree, parse_name_myher
+from ged4py import model
 
 
 class TestDetailName(unittest.TestCase):
@@ -40,3 +41,69 @@ class TestDetailName(unittest.TestCase):
 
         nsplit = split_name("Жанна /Иванова (Д'Арк)/")
         self.assertEqual(nsplit, ("Жанна", "Иванова (Д'Арк)", ""))
+
+    def test_002_parse_name_altree(self):
+        """Test parse_name_altree()
+        """
+        rec = model.NameRec()
+        rec.level = 1
+        rec.tag = "NAME"
+        rec.dialect = model.DIALECT_ALTREE
+
+        rec.value = "First /Last Name/ Second"
+        name_tup = parse_name_altree(rec)
+        self.assertIsInstance(name_tup, tuple)
+        self.assertEqual(name_tup, ("First", "Last Name", "Second"))
+
+        rec.value = "First /Last(-er)/ Second"
+        name_tup = parse_name_altree(rec)
+        self.assertIsInstance(name_tup, tuple)
+        self.assertEqual(name_tup, ("First", "Last(-er)", "Second"))
+
+        rec.value = "First /Last (-er)/ Second"
+        name_tup = parse_name_altree(rec)
+        self.assertIsInstance(name_tup, tuple)
+        self.assertEqual(name_tup, ("First", "Last (-er)", "Second"))
+
+        maiden = model.Record()
+        maiden.level = 2
+        maiden.tag = "SURN"
+        maiden.value = "Maiden"
+        rec.value = "First /Last (Maiden)/"
+        rec.sub_records = [maiden]
+        name_tup = parse_name_altree(rec)
+        self.assertIsInstance(name_tup, tuple)
+        self.assertEqual(name_tup, ("First", "Last", "", "Maiden"))
+
+    def test_003_parse_name_myher(self):
+        """Test parse_name_myher()
+        """
+        rec = model.NameRec()
+        rec.level = 1
+        rec.tag = "NAME"
+        rec.dialect = model.DIALECT_MYHERITAGE
+
+        rec.value = "First /Last Name/ Second"
+        name_tup = parse_name_myher(rec)
+        self.assertIsInstance(name_tup, tuple)
+        self.assertEqual(name_tup, ("First", "Last Name", "Second"))
+
+        rec.value = "First /Last(-er)/ Second"
+        name_tup = parse_name_myher(rec)
+        self.assertIsInstance(name_tup, tuple)
+        self.assertEqual(name_tup, ("First", "Last(-er)", "Second"))
+
+        rec.value = "First /Last (-er)/ Second"
+        name_tup = parse_name_altree(rec)
+        self.assertIsInstance(name_tup, tuple)
+        self.assertEqual(name_tup, ("First", "Last (-er)", "Second"))
+
+        married = model.Record()
+        married.level = 2
+        married.tag = "_MARNM"
+        married.value = "Married"
+        rec.value = "First /Maiden/"
+        rec.sub_records = [married]
+        name_tup = parse_name_myher(rec)
+        self.assertIsInstance(name_tup, tuple)
+        self.assertEqual(name_tup, ("First", "Married", "", "Maiden"))
