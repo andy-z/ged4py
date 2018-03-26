@@ -2,6 +2,11 @@
 History
 =======
 
+0.1.5 (2018-03-25)
+------------------
+
+* Fix for exception due to empty NAME record
+
 0.1.4 (2018-01-31)
 ------------------
 
