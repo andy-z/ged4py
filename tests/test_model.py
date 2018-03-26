@@ -107,6 +107,11 @@ class TestModel(unittest.TestCase):
         self.assertIsInstance(rec.value, tuple)
         self.assertEqual(rec.value, ("", "", ""))
 
+        rec.value = None
+        rec.freeze()
+        self.assertIsInstance(rec.value, tuple)
+        self.assertEqual(rec.value, ("", "", ""))
+
         rec.value = "First Name"
         rec.freeze()
         self.assertIsInstance(rec.value, tuple)
@@ -150,6 +155,11 @@ class TestModel(unittest.TestCase):
         self.assertIsInstance(rec.value, tuple)
         self.assertEqual(rec.value, ("", "", ""))
 
+        rec.value = None
+        rec.freeze()
+        self.assertIsInstance(rec.value, tuple)
+        self.assertEqual(rec.value, ("", "", ""))
+
         rec.value = "First /Last Name/ Second "
         rec.freeze()
         self.assertIsInstance(rec.value, tuple)
@@ -175,6 +185,11 @@ class TestModel(unittest.TestCase):
         rec.sub_records = []
 
         rec.value = ""
+        rec.freeze()
+        self.assertIsInstance(rec.value, tuple)
+        self.assertEqual(rec.value, ("", "", ""))
+
+        rec.value = None
         rec.freeze()
         self.assertIsInstance(rec.value, tuple)
         self.assertEqual(rec.value, ("", "", ""))
