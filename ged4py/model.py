@@ -179,12 +179,14 @@ class NameRec(Record):
     last element is a maiden name. Second element of a tuple is surname,
     first and third elements are pieces of the given name (this is determined
     entirely by how name is represented in GEDCOM file). Any of the elements
-    can be empty string. Few examples::
+    can be empty string. If NAME record value is empty in GEDCOM file then
+    all three fields of the tuple will be empty strings. Few examples::
 
         ("John", "Smith", "")
         ("Mary Joan", "Smith", "", "Ivanova")    # maiden name
         ("", "Ivanov", "Ivan Ivanovich")
         ("John", "Smith", "Jr.")
+        ("", "", "")                             # empty NAME record
 
     Client code usually does not need to create instances of this class
     directly, :py:meth:`make_record` should be used instead.
@@ -198,11 +200,15 @@ class NameRec(Record):
 
         :return: self
         """
-        name_tuple = split_name(self.value)
+        # None is the same as empty string
+        if self.value is None:
+            self.value = ""
         if self.dialect in [DIALECT_ALTREE]:
             name_tuple = parse_name_altree(self)
         elif self.dialect in [DIALECT_MYHERITAGE]:
             name_tuple = parse_name_myher(self)
+        else:
+            name_tuple = split_name(self.value)
         self.value = name_tuple
         return self
 
