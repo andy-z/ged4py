@@ -2,6 +2,12 @@
 History
 =======
 
+0.1.6 (2018-04-02)
+------------------
+
+* Improve handling of non-standard dates, any date string that cannot
+  be parsed according to GEDCOM syntax is assumed to be a "Date phrase"
+
 0.1.5 (2018-03-25)
 ------------------
 

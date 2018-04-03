@@ -219,7 +219,8 @@ class DateValue(object):
                         val = CalendarDate.parse(val)
                     groups[key] = val
                 return cls(tmpl, groups)
-        return None
+        # if cannot parse string assume it is a phrase
+        return cls("($phrase)", dict(phrase=datestr))
 
     @property
     def _cmp_date(self):
