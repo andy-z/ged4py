@@ -112,7 +112,7 @@ class CalendarDate(object):
               "HEBREW": MONTHS_HEBR,
               "FRENCH R": MONTHS_FREN}
 
-    def __init__(self, year, month=None, day=None, calendar=None):
+    def __init__(self, year=None, month=None, day=None, calendar=None):
         self.year = year
         self.month = None if month is None else month.upper()
         self.day = day
@@ -143,8 +143,11 @@ class CalendarDate(object):
         """Date as three-tuple of numbers"""
         if self._tuple is None:
             # extract leading digits from year
-            m = self.DIGITS.match(self.year)
-            year = int(m.group(0)) if m else 9999
+            year = 9999
+            if self.year:
+                m = self.DIGITS.match(self.year)
+                if m:
+                    year = int(m.group(0))
             month = self.month_num or 99
             day = self.day if self.day is not None else 99
 
@@ -194,12 +197,16 @@ class DateValue(object):
     """Representation of the <DATE_VALUE>, can be exact date, range,
     period, etc.
 
+    If `kw` is empty (default) then resulting DateValue is guaranteed to be
+    in the future w.r.t. any regular dates.
+
     :param str tmpl: Template string acceptable by `string.Template`.
     :param dict kw: Dictionary with the keys being keywords in template
         string and values are instance of :py:class:`CalendarDate` or
         strings.
     """
-    def __init__(self, tmpl, kw):
+
+    def __init__(self, tmpl="", kw={}):
         self.template = tmpl
         self.kw = kw
 
@@ -224,15 +231,18 @@ class DateValue(object):
 
     @property
     def _cmp_date(self):
-        """Returns Calendar data used for comparison.
+        """Returns Calendar date used for comparison.
 
         Use the earliest date out of all CalendarDates in this instance,
         or some date in the future if there are no CalendarDates (e.g.
-        when Data is a phrase).
+        when Date is a phrase).
         """
-        if self.kw:
-            return sorted(self.kw.items())[0]
-        return CalendarDate(9999)
+        dates = sorted(val for val in self.kw.values()
+                       if isinstance(val, CalendarDate))
+        if dates:
+            return dates[0]
+        # return date very far in the future
+        return CalendarDate()
 
     def __lt__(self, other):
         return self._cmp_date < other._cmp_date

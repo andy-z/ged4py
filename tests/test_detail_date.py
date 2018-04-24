@@ -38,6 +38,12 @@ class TestDetailName(unittest.TestCase):
         self.assertTrue(date.day is None)
         self.assertEqual(date.calendar, "HEBREW")
 
+        date = CalendarDate()
+        self.assertTrue(date.year is None)
+        self.assertTrue(date.month is None)
+        self.assertTrue(date.day is None)
+        self.assertEqual(date.calendar, "GREGORIAN")
+
     def test_002_cal_date_as_tuple(self):
         """Test detail.date.CalendarDate class."""
 
@@ -52,6 +58,9 @@ class TestDetailName(unittest.TestCase):
 
         date = CalendarDate("5000")
         self.assertEqual(date.as_tuple, (5000, 99, 99))
+
+        date = CalendarDate()
+        self.assertEqual(date.as_tuple, (9999, 99, 99))
 
     def test_003_cal_date_cmp(self):
         """Test detail.date.CalendarDate class."""
@@ -86,6 +95,10 @@ class TestDetailName(unittest.TestCase):
 
     def test_010_date(self):
         """Test detail.date.DateValue class."""
+
+        date = DateValue()
+        self.assertEqual(date.template, "")
+        self.assertEqual(date.kw, {})
 
         date = DateValue("$date", {})
         self.assertEqual(date.template, "$date")
@@ -235,6 +248,23 @@ class TestDetailName(unittest.TestCase):
     def test_017_date_cmp(self):
         """Test detail.date.Date class."""
 
+        dv = DateValue.parse("2016")
+        self.assertIsInstance(dv._cmp_date, CalendarDate)
+        self.assertEqual(dv._cmp_date, CalendarDate("2016"))
+
+        dv = DateValue.parse("31 DEC 2000")
+        self.assertIsInstance(dv._cmp_date, CalendarDate)
+        self.assertEqual(dv._cmp_date, CalendarDate("2000", "DEC", 31))
+
+        dv = DateValue.parse("BET 31 DEC 2000 AND 1 JAN 2001")
+        self.assertIsInstance(dv._cmp_date, CalendarDate)
+        self.assertEqual(dv._cmp_date, CalendarDate("2000", "DEC", 31))
+
+        # earliest date
+        dv = DateValue.parse("BET 31 DEC 2000 AND 1 JAN 2000")
+        self.assertIsInstance(dv._cmp_date, CalendarDate)
+        self.assertEqual(dv._cmp_date, CalendarDate("2000", "JAN", 1))
+
         self.assertTrue(DateValue.parse("2016") < DateValue.parse("2017"))
         self.assertTrue(DateValue.parse("2 JAN 2016") > DateValue.parse("1 JAN 2016"))
         self.assertTrue(DateValue.parse("BET 1900 AND 2000") < DateValue.parse("FROM 1920 TO 1999"))
@@ -245,3 +275,6 @@ class TestDetailName(unittest.TestCase):
 
         # phrase is always later than any regular date
         self.assertTrue(DateValue.parse("(Could be 1996 or 1998)") > DateValue.parse("2000"))
+
+        # "empty" date is always later than any regular date
+        self.assertTrue(DateValue() > DateValue.parse("2000"))

@@ -2,6 +2,11 @@
 History
 =======
 
+0.1.7 (2018-04-23)
+------------------
+
+* Fix for DateValue comparison, few small improvements
+
 0.1.6 (2018-04-02)
 ------------------
 
