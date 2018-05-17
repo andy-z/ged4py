@@ -240,7 +240,7 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(lines, expect)
 
     def test_021_gedcom_lines_errors(self):
-        """Test gedcom_lines method"""
+        """Test for exceptions raised by gedcom_lines method"""
 
         # tag name is only letters and digits
         data = b"0 HEAD\n1 CHAR ASCII\n1 SO@UR PIF PAF"
@@ -262,6 +262,22 @@ class TestParser(unittest.TestCase):
             with parser.GedcomReader(fname) as reader:
                 itr = reader.gedcom_lines(0)
                 self.assertRaises(parser.ParserError, list, itr)
+
+        # consistency check - nested levels
+        datas = [b"0 HEAD\n1 CHAR ASCII\n1 DATA\n3 MORE DATA",
+                 b"0 HEAD\n1 CHAR ASCII\n1 DATA adata\n1 CONC aadata",
+                 b"0 HEAD\n1 CHAR ASCII\n1 DATA adata\n3 CONC aadata",
+                 b"0 HEAD\n1 CHAR ASCII\n1 DATA adata\n1 CONT aadata",
+                 b"0 HEAD\n1 CHAR ASCII\n1 DATA adata\n3 CONT aadata",
+                 b"0 HEAD\n1 CHAR ASCII\n1 DATA adata\n2 CONT aadata\n3 CONT aadata",
+                 b"0 HEAD\n1 CHAR ASCII\n1 DATA adata\n2 CONT aadata\n1 CONT aadata",
+                 ]
+        for data in datas:
+            print(data)
+            with _temp_file(data) as fname:
+                with parser.GedcomReader(fname) as reader:
+                    itr = reader.gedcom_lines(0)
+                    self.assertRaises(parser.IntegrityError, list, itr)
 
     def test_030_read_record(self):
         """Test read_record method"""
