@@ -283,8 +283,12 @@ class GedcomReader(object):
                                          "illegal level nesting at line "
                                          "{0}: `{1}'".format(lineno, line))
                 if tag in ("CONT", "CONC"):
-                    if prev_gline.tag not in ("CONT", "CONC") and \
-                            level - prev_gline.level != 1:
+                    # CONT/CONC level must be +1 from preceding non-CONT/CONC
+                    # record or the same as preceding CONT/CONC record
+                    if ((prev_gline.tag in ("CONT", "CONC") and
+                         level != prev_gline.level) or
+                        (prev_gline.tag not in ("CONT", "CONC") and
+                         level - prev_gline.level != 1)):
                         self._file.seek(offset)
                         lineno = guess_lineno(self._file)
                         raise IntegrityError("Structural integrity -  illegal "

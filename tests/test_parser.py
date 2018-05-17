@@ -264,25 +264,20 @@ class TestParser(unittest.TestCase):
                 self.assertRaises(parser.ParserError, list, itr)
 
         # consistency check - nested levels
-        data = b"0 HEAD\n1 CHAR ASCII\n1 DATA\n3 MORE DATA"
-        with _temp_file(data) as fname:
-            with parser.GedcomReader(fname) as reader:
-                itr = reader.gedcom_lines(0)
-                self.assertRaises(parser.IntegrityError, list, itr)
-
-        # consistency check - CONC nesting
-        data = b"0 HEAD\n1 CHAR ASCII\n1 DATA adata\n1 CONC aadata"
-        with _temp_file(data) as fname:
-            with parser.GedcomReader(fname) as reader:
-                itr = reader.gedcom_lines(0)
-                self.assertRaises(parser.IntegrityError, list, itr)
-
-        # consistency check - CONT nesting
-        data = b"0 HEAD\n1 CHAR ASCII\n1 DATA adata\n1 CONT aadata"
-        with _temp_file(data) as fname:
-            with parser.GedcomReader(fname) as reader:
-                itr = reader.gedcom_lines(0)
-                self.assertRaises(parser.IntegrityError, list, itr)
+        datas = [b"0 HEAD\n1 CHAR ASCII\n1 DATA\n3 MORE DATA",
+                 b"0 HEAD\n1 CHAR ASCII\n1 DATA adata\n1 CONC aadata",
+                 b"0 HEAD\n1 CHAR ASCII\n1 DATA adata\n3 CONC aadata",
+                 b"0 HEAD\n1 CHAR ASCII\n1 DATA adata\n1 CONT aadata",
+                 b"0 HEAD\n1 CHAR ASCII\n1 DATA adata\n3 CONT aadata",
+                 b"0 HEAD\n1 CHAR ASCII\n1 DATA adata\n2 CONT aadata\n3 CONT aadata",
+                 b"0 HEAD\n1 CHAR ASCII\n1 DATA adata\n2 CONT aadata\n1 CONT aadata",
+                 ]
+        for data in datas:
+            print(data)
+            with _temp_file(data) as fname:
+                with parser.GedcomReader(fname) as reader:
+                    itr = reader.gedcom_lines(0)
+                    self.assertRaises(parser.IntegrityError, list, itr)
 
     def test_030_read_record(self):
         """Test read_record method"""
