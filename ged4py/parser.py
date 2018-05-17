@@ -4,7 +4,8 @@
 
 from __future__ import print_function, absolute_import, division
 
-__all__ = ['GedcomReader', 'ParserError', 'CodecError', 'guess_codec']
+__all__ = ['GedcomReader', 'ParserError', 'CodecError', 'IntegrityError',
+           'guess_codec']
 
 import codecs
 import collections
@@ -39,6 +40,13 @@ gedcom_line = collections.namedtuple("gedcom_line",
 
 class ParserError(Exception):
     """Class for exceptions raised for parsing errors.
+    """
+    pass
+
+
+class IntegrityError(Exception):
+    """Class for exceptions raised for structural errors, e.g. when record
+    level nesting is inconsistent.
     """
     pass
 
@@ -243,6 +251,7 @@ class GedcomReader(object):
 
         self._file.seek(offset)
 
+        prev_gline = None
         while True:
 
             offset = self._file.tell()
@@ -258,15 +267,38 @@ class GedcomReader(object):
                 raise ParserError("Invalid syntax at line "
                                   "{0}: `{1}'".format(lineno, line))
 
+            level = int(match.group('level'))
             xref_id = match.group('xref')
             if xref_id:
                 xref_id = xref_id.decode(self._encoding, self._errors)
             tag = match.group('tag').decode(self._encoding, self._errors)
-            yield gedcom_line(level=int(match.group('level')),
-                              xref_id=xref_id,
-                              tag=tag,
-                              value=match.group('value'),
-                              offset=offset)
+
+            # simple structural integrity check
+            if prev_gline is not None:
+                if level - prev_gline.level > 1:
+                    # nested levels should be incremental (+1)
+                    self._file.seek(offset)
+                    lineno = guess_lineno(self._file)
+                    raise IntegrityError("Structural integrity - "
+                                         "illegal level nesting at line "
+                                         "{0}: `{1}'".format(lineno, line))
+                if tag in ("CONT", "CONC"):
+                    if prev_gline.tag not in ("CONT", "CONC") and \
+                            level - prev_gline.level != 1:
+                        self._file.seek(offset)
+                        lineno = guess_lineno(self._file)
+                        raise IntegrityError("Structural integrity -  illegal "
+                                             "CONC/CONT nesting at line "
+                                             "{0}: `{1}'".format(lineno, line))
+
+            gline = gedcom_line(level=level,
+                                xref_id=xref_id,
+                                tag=tag,
+                                value=match.group('value'),
+                                offset=offset)
+            yield gline
+
+            prev_gline = gline
 
     def records0(self, tag=None):
         """Iterator over all level=0 records.
@@ -328,8 +360,7 @@ class GedcomReader(object):
             rec = self._make_record(parent, gline)
 
             # store as current record at this level
-            if rec:
-                stack[level] = rec
+            stack[level] = rec
 
         for rec in reversed(stack[reclevel:]):
             if rec:
