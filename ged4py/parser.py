@@ -111,12 +111,12 @@ def guess_codec(file, errors="strict", require_char=False):
                 encoding = words[2].decode(codec, errors)
                 new_codec = codecs.lookup(encoding).name
             except LookupError:
-                raise CodecError("Unknown codec name {0}".format(words[2]))
+                raise CodecError("Unknown codec name {0}".format(encoding))
             if bom_codec is None:
                 codec = new_codec
             elif new_codec != bom_codec:
                 raise CodecError("CHAR codec {0} is different from BOM "
-                                 "codec {1}".format(words[2], bom_codec))
+                                 "codec {1}".format(new_codec, bom_codec))
             break
 
     return codec, bom_size
@@ -264,6 +264,7 @@ class GedcomReader(object):
             if not match:
                 self._file.seek(offset)
                 lineno = guess_lineno(self._file)
+                line = line.decode(self._encoding, "ignore")
                 raise ParserError("Invalid syntax at line "
                                   "{0}: `{1}'".format(lineno, line))
 
@@ -279,6 +280,7 @@ class GedcomReader(object):
                     # nested levels should be incremental (+1)
                     self._file.seek(offset)
                     lineno = guess_lineno(self._file)
+                    line = line.decode(self._encoding, "ignore")
                     raise IntegrityError("Structural integrity - "
                                          "illegal level nesting at line "
                                          "{0}: `{1}'".format(lineno, line))
@@ -291,6 +293,7 @@ class GedcomReader(object):
                          level - prev_gline.level != 1)):
                         self._file.seek(offset)
                         lineno = guess_lineno(self._file)
+                        line = line.decode(self._encoding, "ignore")
                         raise IntegrityError("Structural integrity -  illegal "
                                              "CONC/CONT nesting at line "
                                              "{0}: `{1}'".format(lineno, line))
