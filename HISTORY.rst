@@ -2,6 +2,11 @@
 History
 =======
 
+0.1.9 (2018-05-17)
+------------------
+
+* Improve exception messages, convert bytes to string
+
 0.1.8 (2018-05-16)
 ------------------
 
