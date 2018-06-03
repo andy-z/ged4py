@@ -289,12 +289,15 @@ class Name(object):
         return None
 
     def order(self, order):
-        """Returns name order.
+        """Returns name order key.
 
-        Returns a string that can be compared to other such strings from
-        different name.
+        Returns tuple with two strings that can be compared to other such
+        tuple obtained from different name. Note that if you want
+        locale-dependent ordering then you need to compare strings using
+        locale-aware method (e.g. ``locale.strxfrm``).
 
         :param order: One of the ORDER_* constants.
+        :returns: tuple of two strings
         """
         given = self.given
         surname = self.surname
