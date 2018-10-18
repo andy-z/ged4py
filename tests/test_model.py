@@ -324,6 +324,18 @@ class TestModel(unittest.TestCase):
         self.assertIsInstance(date, model.Date)
         self.assertIsInstance(date.value, DateValue)
 
+        # empty date tag makes Date with empty DateValue
+        dialect = model.DIALECT_DEFAULT
+        date = model.make_record(1, None, "DATE", None, [], 0, dialect).freeze()
+        self.assertIsInstance(date, model.Date)
+        self.assertIsInstance(date.value, DateValue)
+        self.assertEqual(date.value.template, "")
+
+        date = model.make_record(1, None, "DATE", "", [], 0, dialect).freeze()
+        self.assertIsInstance(date, model.Date)
+        self.assertIsInstance(date.value, DateValue)
+        self.assertEqual(date.value.template, "")
+
     def test_040_Pointer(self):
         """Test Pointer class."""
 
