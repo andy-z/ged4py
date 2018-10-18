@@ -5,7 +5,8 @@
 
 import unittest
 
-from ged4py.detail.name import split_name, parse_name_altree, parse_name_myher
+from ged4py.detail.name import (split_name, parse_name_altree,
+                                parse_name_myher, parse_name_ancestris)
 from ged4py import model
 
 
@@ -107,3 +108,29 @@ class TestDetailName(unittest.TestCase):
         name_tup = parse_name_myher(rec)
         self.assertIsInstance(name_tup, tuple)
         self.assertEqual(name_tup, ("First", "Married", "", "Maiden"))
+
+    def test_004_parse_name_ancestris(self):
+        """Test parse_name_ancestris()
+
+        Ancestris dialect is just a split_name() which is tested separately,
+        so the is not much testing needed for it.
+        """
+        rec = model.NameRec()
+        rec.level = 1
+        rec.tag = "NAME"
+        rec.dialect = model.DIALECT_ANCESTRIS
+
+        rec.value = "First /Last Name/ Second"
+        name_tup = parse_name_ancestris(rec)
+        self.assertIsInstance(name_tup, tuple)
+        self.assertEqual(name_tup, ("First", "Last Name", "Second"))
+
+        rec.value = "First /Last(-er)/ Second"
+        name_tup = parse_name_ancestris(rec)
+        self.assertIsInstance(name_tup, tuple)
+        self.assertEqual(name_tup, ("First", "Last(-er)", "Second"))
+
+        rec.value = "First /Last (-er)/ Second"
+        name_tup = parse_name_ancestris(rec)
+        self.assertIsInstance(name_tup, tuple)
+        self.assertEqual(name_tup, ("First", "Last (-er)", "Second"))

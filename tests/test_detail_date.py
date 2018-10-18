@@ -278,3 +278,13 @@ class TestDetailName(unittest.TestCase):
 
         # "empty" date is always later than any regular date
         self.assertTrue(DateValue() > DateValue.parse("2000"))
+
+    def test_018_date_parse_empty(self):
+        """Test detail.date.DateValue class."""
+
+        for value in (None, ""):
+            date = DateValue.parse(value)
+            self.assertTrue(date is not None)
+            self.assertEqual(date.template, "")
+            self.assertEqual(date.kw, {})
+            self.assertEqual(date.fmt(), "")

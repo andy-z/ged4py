@@ -125,3 +125,18 @@ def parse_name_myher(record):
                       name_tuple[2],
                       maiden)
     return name_tuple
+
+def parse_name_ancestris(record):
+    """Parse NAME structure assuming ANCESTRIS dialect.
+
+    As far as I can tell Ancestris does not have any standard convention for
+    representing maiden or married names. Best we can do in this situation is
+    to use NAME record value and ignore any other fields.
+
+    :param record: NAME record
+    :return: tuple with 3 or 4 elements, first three elements of tuple are
+        the same as returned from :py:meth:`split_name` method, fourth element
+        (if present) denotes maiden name.
+    """
+    name_tuple = split_name(record.value)
+    return name_tuple

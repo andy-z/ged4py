@@ -8,7 +8,8 @@ from __future__ import print_function, absolute_import, division
 __all__ = ['make_record', 'Record', 'Pointer', 'NameRec', 'Name',
            'Date', 'Individual']
 
-from .detail.name import split_name, parse_name_altree, parse_name_myher
+from .detail.name import (split_name, parse_name_altree, parse_name_ancestris,
+                          parse_name_myher)
 from .detail.date import DateValue
 
 # Even though the structure of GEDCOM file is more or less fixed,
@@ -18,6 +19,7 @@ from .detail.date import DateValue
 DIALECT_DEFAULT = "DEF"
 DIALECT_MYHERITAGE = "MYHER"  # myheritage.com
 DIALECT_ALTREE = "AGELONG"  # Agelong Tree (genery.com)
+DIALECT_ANCESTRIS = "ANCESTRIS"  # Ancestris (ancestris.org)
 
 # Names/Individuals can be ordered differently, e.g. by surname first,
 # by given name first, or by maiden name first. This few constants define
@@ -207,6 +209,8 @@ class NameRec(Record):
             name_tuple = parse_name_altree(self)
         elif self.dialect in [DIALECT_MYHERITAGE]:
             name_tuple = parse_name_myher(self)
+        elif self.dialect in [DIALECT_ANCESTRIS]:
+            name_tuple = parse_name_ancestris(self)
         else:
             name_tuple = split_name(self.value)
         self.value = name_tuple

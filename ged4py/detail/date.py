@@ -217,6 +217,10 @@ class DateValue(object):
 
         :param str datestr: String with GEDCOM date, range, period, etc.
         """
+        # some apps generate DATE recods without any value, which is
+        # non-standard, return empty DateValue for those
+        if not datestr:
+            return cls()
         for regex, tmpl in DATES:
             m = regex.match(datestr)
             if m is not None:
