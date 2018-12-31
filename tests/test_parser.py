@@ -41,6 +41,9 @@ class TestParser(unittest.TestCase):
         file = io.BytesIO(b"0 HEAD\n1 CHAR ASCII\n0 TRLR")
         self.assertEqual(parser.guess_codec(file), ("ascii", 0))
 
+        file = io.BytesIO(b"0 HEAD\n1 CHAR ANSEL\n0 TRLR")
+        self.assertEqual(parser.guess_codec(file), ("gedcom", 0))
+
         file = io.BytesIO(b"0 HEAD\n1 CHAR UTF-8\n0 TRLR")
         self.assertEqual(parser.guess_codec(file), ("utf-8", 0))
 
@@ -77,7 +80,7 @@ class TestParser(unittest.TestCase):
         data = b"0 HEAD\n1 CHAR ANSEL\n0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                self.assertEqual(reader._encoding, "ansel")
+                self.assertEqual(reader._encoding, "gedcom")
                 self.assertEqual(reader._bom_size, 0)
 
         data = b"0 HEAD\n1 CHAR ASCII\n0 TRLR"
@@ -120,7 +123,7 @@ class TestParser(unittest.TestCase):
         data = b"0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                self.assertEqual(reader._encoding, "ansel")
+                self.assertEqual(reader._encoding, "gedcom")
                 self.assertEqual(reader._bom_size, 0)
 
         data = b"\xef\xbb\xbf0 TRLR"
@@ -410,6 +413,31 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(note.level, 0)
                 self.assertEqual(note.tag, "TAG")
                 self.assertEqual(note.value, u"Иван Иванович")
+
+        # encoded string split in between combining characters (UTF-8)
+        data = b"0 HEAD\n1 CHAR UTF8\n"\
+            b"0 TAG Pa\n"\
+            b"1 CONC \xcc\x8al"
+        with _temp_file(data) as fname:
+            with parser.GedcomReader(fname) as reader:
+
+                note = reader.read_record(19)
+                self.assertEqual(note.level, 0)
+                self.assertEqual(note.tag, "TAG")
+                self.assertEqual(note.value, u"Pål")
+
+        # encoded string split in between combining characters (ANSEL)
+        data = b"0 HEAD\n1 CHAR ANSEL\n"\
+            b"0 TAG P\xea\n"\
+            b"1 CONC al"
+
+        with _temp_file(data) as fname:
+            with parser.GedcomReader(fname) as reader:
+
+                note = reader.read_record(20)
+                self.assertEqual(note.level, 0)
+                self.assertEqual(note.tag, "TAG")
+                self.assertEqual(note.value, u"Pål")
 
     def test_035_read_record_errors(self):
         """Test read_record method"""

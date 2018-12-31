@@ -2,6 +2,11 @@
 History
 =======
 
+0.1.11 (TBD)
+------------
+
+* Improve support for ANSEL encoded documents that use combining characters.
+
 0.1.9 (2018-05-17)
 ------------------
 
