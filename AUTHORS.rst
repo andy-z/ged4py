@@ -10,4 +10,6 @@ Development Lead
 Contributors
 ------------
 
-None yet. Why not be the first?
+* David Haney (`@haney`_)
+
+.. _@haney: https://github.com/haney

@@ -35,8 +35,17 @@ argument to parser::
     parser = GedcomReader(path, encoding="utf-8")
 
 Any encoding supported by Python :py:mod:`codecs` module can be used as
-argument, additionally this package defines ANSEL encoding, so "ansel" string
-can be given as argument too.
+an argument. In addition, this package registers two additional encodings
+from the ansel_ package:
+
+.. list-table::
+    :widths: auto
+
+    - * ansel
+      * American National Standard for Extended Latin Alphabet Coded Character
+        Set for Bibliographic Use (ANSEL)
+    - * gedcom
+      * GEDCOM extensions for ANSEL
 
 By default parser raises exception if it encounters errors while decoding
 data in a file. To override this behavior one can specify different error
@@ -106,3 +115,5 @@ each corresponding to specific record tag:
   :py:meth:`~ged4py.model.Record.sub_tag_value` have keyword argument
   ``follow`` which can be set to ``True`` to allow automatic dereferencing
   of the pointer records.
+
+.. _ansel: https://pypi.org/project/ansel/

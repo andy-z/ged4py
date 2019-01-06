@@ -70,8 +70,8 @@ def guess_codec(file, errors="strict", require_char=False):
     :param str errors: Controls error handling behavior during string
         decoding, accepts same values as standard `codecs.decode` method.
     :param bool require_char: If True then exception is thrown if CHAR
-        record is not found in a header, if False and C?HAR is not in the
-        header then codec determined from BOM or "ansel" is returned.
+        record is not found in a header, if False and CHAR is not in the
+        header then codec determined from BOM or "gedcom" is returned.
     :returns: Tuple (codec_name, bom_size)
     :raises: :py:class:`CodecError` when codec name in file is unknown or
         when codec name in file contradicts codec determined from BOM.
@@ -79,10 +79,15 @@ def guess_codec(file, errors="strict", require_char=False):
         input lines and `errors` is set to "strict" (default).
     """
 
+    # mapping of gedcom character set specifiers to Python encoding names
+    gedcom_char_to_codec = {
+        'ansel': 'gedcom',
+    }
+
     # check BOM first
     bom_codec = check_bom(file)
     bom_size = file.tell()
-    codec = bom_codec or 'ansel'
+    codec = bom_codec or 'gedcom'
 
     # scan header until CHAR or end of header
     while True:
@@ -109,6 +114,8 @@ def guess_codec(file, errors="strict", require_char=False):
         elif len(words) >= 3 and words[0] == b"1" and words[1] == b"CHAR":
             try:
                 encoding = words[2].decode(codec, errors)
+                encoding = gedcom_char_to_codec.get(encoding.lower(),
+                                                    encoding.lower())
                 new_codec = codecs.lookup(encoding).name
             except LookupError:
                 raise CodecError("Unknown codec name {0}".format(encoding))
@@ -134,7 +141,7 @@ class GedcomReader(object):
         decoding, accepts same values as standard `codecs.decode` method.
     :param bool require_char: If True then exception is thrown if CHAR
         record is not found in a header, if False and CHAR is not in the
-        header then codec determined from BOM or "ansel" is used.
+        header then codec determined from BOM or "gedcom" is used.
     """
 
     def __init__(self, file, encoding=None, errors="strict",
@@ -237,7 +244,7 @@ class GedcomReader(object):
         """Generator method for *gedcom lines*.
 
         GEDCOM line grammar is defined in Chapter 1 of GEDCOM standard, it
-        consists if the level number, optional reference ID, tag name, and
+        consists of the level number, optional reference ID, tag name, and
         optional value separated by spaces. Chaper 1 is pure grammar level,
         it does not assign any semantics to tags or levels. Consequently
         this method does not perform any operations on the lines other than
