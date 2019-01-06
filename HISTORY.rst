@@ -2,10 +2,15 @@
 History
 =======
 
-0.1.11 (TBD)
-------------
+0.1.11 (2019-01-06)
+-------------------
 
 * Improve support for ANSEL encoded documents that use combining characters.
+
+0.1.10 (2018-10-17)
+-------------------
+
+* Add protection for empty DATE fields.
 
 0.1.9 (2018-05-17)
 ------------------
