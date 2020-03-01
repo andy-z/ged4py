@@ -126,6 +126,7 @@ def parse_name_myher(record):
                       maiden)
     return name_tuple
 
+
 def parse_name_ancestris(record):
     """Parse NAME structure assuming ANCESTRIS dialect.
 

@@ -343,6 +343,7 @@ class TestModel(unittest.TestCase):
             def __init__(self):
                 self.xref0 = {b"@pointer0@": (0, "TAG0"),
                               b"@pointer1@": (1, "TAG1")}
+
             def read_record(self, offset):
                 return str(offset)
 
@@ -366,6 +367,7 @@ class TestModel(unittest.TestCase):
             def __init__(self):
                 self.xref0 = {b"@pointer0@": (0, "TAG0"),
                               b"@pointer1@": (1, "TAG1")}
+
             def read_record(self, offset):
                 return str(offset)
 

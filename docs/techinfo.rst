@@ -56,9 +56,12 @@ and it uses simple algorithm to determine that:
   ``codecs`` module. This scheme applies to to both header (before ``CHAR``
   record) and regular content.
 
+See also Tamura Jones' excellent `article`_ summarizing many varieties of
+illegal encodings that may be present in GEDCOM files.
+
 .. _ANSEL: https://en.wikipedia.org/wiki/ANSEL
 .. _BOM: https://en.wikipedia.org/wiki/Byte_order_mark
-
+.. _article: https://www.tamurajones.net/GEDCOMCharacterEncodings.xhtml
 
 Name representation
 -------------------

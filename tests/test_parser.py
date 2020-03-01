@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Tests for `ged4py.codecs` module."""
+"""Tests for `ged4py.parser` module."""
 
 from contextlib import contextmanager
 import io
@@ -381,7 +381,8 @@ class TestParser(unittest.TestCase):
     def test_031_read_record_conc(self):
         # encoded string
         data = b"0 HEAD\n1 CHAR UTF8\n"\
-            b"0 TAG \xd0\x98\xd0\xb2\xd0\xb0\xd0\xbd \xd0\x98\xd0\xb2\xd0\xb0\xd0\xbd\xd0\xbe\xd0\xb2\xd0\xb8\xd1\x87"
+            b"0 TAG \xd0\x98\xd0\xb2\xd0\xb0\xd0\xbd \xd0\x98\xd0\xb2\xd0\xb0"\
+            b"\xd0\xbd\xd0\xbe\xd0\xb2\xd0\xb8\xd1\x87"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
 
@@ -500,7 +501,8 @@ class TestParser(unittest.TestCase):
     def test_042_rec_dialect(self):
         """Test records0 method"""
 
-        data = b"0 HEAD\n1 CHAR ASCII\n1 SOUR ALTREE\n0 INDI A\n1 SUBA A\n1 SUBB B\n2 SUBC C\n1 SUBD D\n0 STOP"
+        data = b"0 HEAD\n1 CHAR ASCII\n1 SOUR ALTREE\n"\
+            b"0 INDI A\n1 SUBA A\n1 SUBB B\n2 SUBC C\n1 SUBD D\n0 STOP"
         with io.BytesIO(data) as file:
             with parser.GedcomReader(file) as reader:
 
