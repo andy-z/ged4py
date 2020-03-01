@@ -7,8 +7,8 @@ import io
 import logging
 import pytest
 
-
 from ged4py.parser import GedcomReader, CodecError
+
 
 def _check_log_rec(rec, level, msg, args):
     assert rec.levelno == level
@@ -39,26 +39,26 @@ def test_001_standard():
 
 
 @pytest.mark.parametrize('enc,pyenc,ambig',
-                        [("IBMPC", "cp437", True),
-                         ("IBM", "cp437", True),
-                         ("IBM-PC", "cp437", True),
-                         ("OEM", "cp437", True),
-                         ("MSDOS", "cp850", True),
-                         ("IBM DOS", "cp850", True),
-                         ("MS-DOS", "cp850", True),
-                         ("ANSI", "cp1252", True),
-                         ("WINDOWS", "cp1252", True),
-                         ("IBM WINDOWS", "cp1252", True),
-                         ("IBM_WINDOWS", "cp1252", True),
-                         ("WINDOWS-1250", "cp1250", False),
-                         ("WINDOWS-1251", "cp1251", False),
-                         ("CP1252", "cp1252", False),
-                         ("ISO-8859-1", "iso8859-1", False),
-                         ("ISO8859-1", "iso8859-1", False),
-                         ("ISO8859", "iso8859-1", True),
-                         ("LATIN1", "iso8859-1", True),
-                         ("MACINTOSH", "mac-roman", True),
-                        ])
+                         [("IBMPC", "cp437", True),
+                          ("IBM", "cp437", True),
+                          ("IBM-PC", "cp437", True),
+                          ("OEM", "cp437", True),
+                          ("MSDOS", "cp850", True),
+                          ("IBM DOS", "cp850", True),
+                          ("MS-DOS", "cp850", True),
+                          ("ANSI", "cp1252", True),
+                          ("WINDOWS", "cp1252", True),
+                          ("IBM WINDOWS", "cp1252", True),
+                          ("IBM_WINDOWS", "cp1252", True),
+                          ("WINDOWS-1250", "cp1250", False),
+                          ("WINDOWS-1251", "cp1251", False),
+                          ("CP1252", "cp1252", False),
+                          ("ISO-8859-1", "iso8859-1", False),
+                          ("ISO8859-1", "iso8859-1", False),
+                          ("ISO8859", "iso8859-1", True),
+                          ("LATIN1", "iso8859-1", True),
+                          ("MACINTOSH", "mac-roman", True),
+                          ])
 def test_002_illegal(enc, pyenc, ambig, caplog):
     """Test for illegal encodings.
     """
@@ -69,7 +69,7 @@ def test_002_illegal(enc, pyenc, ambig, caplog):
     file = io.BytesIO(b"0 HEAD\n%s\n0 TRLR" % char)
     reader = GedcomReader(file)
     assert reader._encoding == pyenc
-    
+
     # check logging
     assert len(caplog.records) == (2 if ambig else 1)
     _check_log_rec(caplog.records[0], logging.ERROR,
@@ -77,8 +77,8 @@ def test_002_illegal(enc, pyenc, ambig, caplog):
                    (2, char, enc))
     if ambig:
         _check_log_rec(caplog.records[1], logging.WARNING,
-                    "is ambiguous, it will be interpreted as",
-                    (enc, pyenc))
+                       "is ambiguous, it will be interpreted as",
+                       (enc, pyenc))
 
 
 def test_003_codec_exceptions():
@@ -87,10 +87,9 @@ def test_003_codec_exceptions():
     # unknown codec name
     file = io.BytesIO(b"0 HEAD\n1 CHAR NOTCODEC\n0 TRLR")
     with pytest.raises(CodecError):
-        reader = GedcomReader(file)
+        GedcomReader(file)
 
     # BOM disagrees with CHAR
     file = io.BytesIO(b"\xef\xbb\xbf0 HEAD\n1 CHAR ANSEL\n0 TRLR")
     with pytest.raises(CodecError):
-        reader = GedcomReader(file)
-
+        GedcomReader(file)
