@@ -2,6 +2,11 @@
 History
 =======
 
+0.1.12 (2020-03-01)
+-------------------
+
+* Add support for a bunch of illegal encodings (thanks @Tuisto59 for report).
+
 0.1.11 (2019-01-06)
 -------------------
 
