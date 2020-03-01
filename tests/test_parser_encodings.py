@@ -66,7 +66,7 @@ def test_002_illegal(enc, pyenc, ambig, caplog):
 
     # %s formatting works in py27 and py3
     char = ("1 CHAR " + enc).encode()
-    file = io.BytesIO(b"0 HEAD\n%s\n0 TRLR" % char)
+    file = io.BytesIO(b"0 HEAD\n" + char + b"\n0 TRLR")
     reader = GedcomReader(file)
     assert reader._encoding == pyenc
 
