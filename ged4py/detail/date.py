@@ -44,13 +44,14 @@ DATE_RE = re.compile("^" + DATE + "$", re.X | re.I)
 # DATE_PERIOD:= [ FROM <DATE> | TO <DATE> | FROM <DATE> TO <DATE> ]
 DATE_PERIOD_FROM = r"^FROM\s+(?P<date>" + DATE + ")$"
 DATE_PERIOD_TO = r"^TO\s+(?P<date>" + DATE + ")$"
-DATE_PERIOD = r"^FROM\s+(?P<date1>" + DATE + ")\s+TO\s+(?P<date2>" + \
+DATE_PERIOD = r"^FROM\s+(?P<date1>" + DATE + r")\s+TO\s+(?P<date2>" + \
               DATE + ")$"
 
 # DATE_RANGE:= [ BEF <DATE> | AFT <DATE> | BET <DATE> AND <DATE> ]
 DATE_RANGE_BEFORE = r"^BEF\s+(?P<date>" + DATE + ")$"
 DATE_RANGE_AFTER = r"^AFT\s+(?P<date>" + DATE + ")$"
-DATE_RANGE = r"^BET\s+(?P<date1>" + DATE + ")\s+AND\s+(?P<date2>" + DATE + ")$"
+DATE_RANGE = r"^BET\s+(?P<date1>" + DATE + r")\s+AND\s+(?P<date2>" + \
+             DATE + ")$"
 
 # DATE_APPROXIMATED := [ ABT <DATE> | CAL <DATE> | EST <DATE> ]
 DATE_APPROX_ABOUT = r"^ABT\s+(?P<date>" + DATE + ")$"
@@ -58,7 +59,7 @@ DATE_APPROX_CALC = r"^CAL\s+(?P<date>" + DATE + ")$"
 DATE_APPROX_EST = r"^EST\s+(?P<date>" + DATE + ")$"
 
 # INT <DATE> (<DATE_PHRASE>)
-DATE_INTERP = r"^INT\s+(?P<date>" + DATE + ")\s+\((?P<phrase>.*)\)$"
+DATE_INTERP = r"^INT\s+(?P<date>" + DATE + r")\s+\((?P<phrase>.*)\)$"
 DATE_PHRASE = r"^\((?P<phrase>.*)\)$"
 
 # INT <DATE> (<DATE_PHRASE>)
