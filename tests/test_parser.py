@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Tests for `ged4py.codecs` module."""
+"""Tests for `ged4py.parser` module."""
 
 from contextlib import contextmanager
 import io

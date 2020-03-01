@@ -57,7 +57,7 @@ class CodecError(ParserError):
     pass
 
 
-def guess_codec(file, errors="strict", require_char=False):
+def guess_codec(file, errors="strict", require_char=False, warn=True):
     """Look at file contents and guess its correct encoding.
 
     File must be open in binary mode and positioned at offset 0. If BOM
@@ -72,6 +72,8 @@ def guess_codec(file, errors="strict", require_char=False):
     :param bool require_char: If True then exception is thrown if CHAR
         record is not found in a header, if False and CHAR is not in the
         header then codec determined from BOM or "gedcom" is returned.
+    :param bool warn: If True (default) then generate error/warning messages
+        for illegal encodings.
     :returns: Tuple (codec_name, bom_size)
     :raises: :py:class:`CodecError` when codec name in file is unknown or
         when codec name in file contradicts codec determined from BOM.
@@ -79,10 +81,35 @@ def guess_codec(file, errors="strict", require_char=False):
         input lines and `errors` is set to "strict" (default).
     """
 
-    # mapping of gedcom character set specifiers to Python encoding names
-    gedcom_char_to_codec = {
-        'ansel': 'gedcom',
+    # set of illegal but unambiguous encodings and their corresponding codecs
+    illegal_encodings = {
+        "windows-1250": "cp1250",
+        "windows-1251": "cp1251",
+        "cp1252": "cp1252",
+        "iso-8859-1": "iso8859-1",
+        "iso8859-1": "iso8859-1",
     }
+    # set of ambiguous (and illegal) encodings
+    ambiguous_encodings = {
+        'ibmpc': 'cp437',
+        "ibm": "cp437",
+        "ibm-pc": "cp437",
+        "oem": "cp437",
+        "msdos": "cp850",
+        "ibm dos": "cp850",
+        "ms-dos": "cp850",
+        "ansi": "cp1252",
+        "windows": "cp1252",
+        "ibm_windows": "cp1252",
+        "ibm windows": "cp1252",
+        "iso8859": "iso8859-1",
+        "latin1": "iso8859-1",
+        "macintosh": "mac-roman",
+    }
+    illegal_encodings.update(ambiguous_encodings)
+    # full set of encodings, including legal ones
+    gedcom_char_to_codec = {"ansel": "gedcom"}
+    gedcom_char_to_codec.update(illegal_encodings)
 
     # check BOM first
     bom_codec = check_bom(file)
@@ -90,7 +117,10 @@ def guess_codec(file, errors="strict", require_char=False):
     codec = bom_codec or 'gedcom'
 
     # scan header until CHAR or end of header
+    lineno = 0
     while True:
+
+        lineno += 1
 
         # this stops at '\n'
         line = file.readline()
@@ -113,12 +143,18 @@ def guess_codec(file, errors="strict", require_char=False):
                 break
         elif len(words) >= 3 and words[0] == b"1" and words[1] == b"CHAR":
             try:
-                encoding = words[2].decode(codec, errors)
-                encoding = gedcom_char_to_codec.get(encoding.lower(),
-                                                    encoding.lower())
+                enc = b" ".join(words[2:]).decode(codec, errors)
+                encoding = gedcom_char_to_codec.get(enc.lower(), enc.lower())
+                if enc.lower() in illegal_encodings and warn:
+                    _log.error("Line %d: \"%s\" - \"%s\" is not a legal "
+                               "character set or encoding.", lineno, line, enc)
+                    if enc.lower() in ambiguous_encodings:
+                        _log.warning("Character set (\"%s\") is ambiguous, it "
+                                     "will be interpreted as \"%s\"",
+                                     enc, encoding)
                 new_codec = codecs.lookup(encoding).name
             except LookupError:
-                raise CodecError("Unknown codec name {0}".format(encoding))
+                raise CodecError("Unknown codec name '{0}'".format(enc))
             if bom_codec is None:
                 codec = new_codec
             elif new_codec != bom_codec:
@@ -170,7 +206,8 @@ class GedcomReader(object):
         try:
             encoding, self._bom_size = guess_codec(self._file,
                                                    errors=self._errors,
-                                                   require_char=require_char)
+                                                   require_char=require_char,
+                                                   warn=self._encoding is None)
         except Exception:
             self._file.close()
             raise
