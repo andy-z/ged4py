@@ -2,6 +2,11 @@
 History
 =======
 
+0.1.13 (2020-04-15)
+-------------------
+
+* Add support for MacOS line breaks (single CR character)
+
 0.1.12 (2020-03-01)
 -------------------
 
