@@ -4,7 +4,7 @@
 
 __author__ = """Andy Salnikov"""
 __email__ = 'ged4py@py-dev.com'
-__version__ = '0.1.12'
+__version__ = '0.1.13'
 
 import ansel as _ansel
 _ansel.register()
