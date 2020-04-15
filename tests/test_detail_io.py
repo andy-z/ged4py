@@ -9,7 +9,7 @@ import tempfile
 import os
 import unittest
 
-from ged4py.detail.io import check_bom, guess_lineno
+from ged4py.detail.io import check_bom, guess_lineno, BinaryFileCR
 
 
 @contextmanager
@@ -105,3 +105,69 @@ class TestDetailIo(unittest.TestCase):
         self.assertEqual(file.tell(), 0)
         self.assertEqual(guess_lineno(file), 1)
         self.assertEqual(file.tell(), 0)
+
+    def test_003_BinaryFileCR(self):
+
+        file = BinaryFileCR(io.BytesIO(b""))
+        line = file.readline()
+        self.assertEqual(len(line), 0)
+
+        file = BinaryFileCR(io.BytesIO(b"line1\nline2"))
+        line = file.readline()
+        self.assertEqual(line, b"line1\n")
+        self.assertEqual(file.tell(), 6)
+        line = file.readline()
+        self.assertEqual(line, b"line2")
+        self.assertEqual(file.tell(), 11)
+
+        file = BinaryFileCR(io.BytesIO(b"line1\nline2\n"))
+        line = file.readline()
+        self.assertEqual(line, b"line1\n")
+        self.assertEqual(file.tell(), 6)
+        line = file.readline()
+        self.assertEqual(line, b"line2\n")
+        self.assertEqual(file.tell(), 12)
+        file.seek(6)
+        line = file.readline()
+        self.assertEqual(line, b"line2\n")
+        self.assertEqual(file.tell(), 12)
+
+        file = BinaryFileCR(io.BytesIO(b"line1\rline2\r"))
+        line = file.readline()
+        self.assertEqual(line, b"line1\r")
+        self.assertEqual(file.tell(), 6)
+        line = file.readline()
+        self.assertEqual(line, b"line2\r")
+        self.assertEqual(file.tell(), 12)
+        file.seek(6)
+        line = file.readline()
+        self.assertEqual(line, b"line2\r")
+        self.assertEqual(file.tell(), 12)
+
+        file = BinaryFileCR(io.BytesIO(b"line1\r\nline2\r\n"))
+        line = file.readline()
+        self.assertEqual(line, b"line1\r\n")
+        self.assertEqual(file.tell(), 7)
+        line = file.readline()
+        self.assertEqual(line, b"line2\r\n")
+        self.assertEqual(file.tell(), 14)
+        file.seek(7)
+        line = file.readline()
+        self.assertEqual(line, b"line2\r\n")
+        self.assertEqual(file.tell(), 14)
+
+        file = BinaryFileCR(io.BytesIO(b"abc\r\ndef\r\n"))
+        line = file.readline(0)
+        self.assertEqual(len(line), 0)
+        line = file.readline(1)
+        self.assertEqual(line, b"a")
+        line = file.readline(3)
+        self.assertEqual(line, b"bc\r")
+        line = file.readline()
+        self.assertEqual(line, b"\n")
+        line = file.readline(5)
+        self.assertEqual(line, b"def\r\n")
+        line = file.readline(100)
+        self.assertEqual(len(line), 0)
+        line = file.readline(0)
+        self.assertEqual(len(line), 0)

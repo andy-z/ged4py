@@ -4,6 +4,7 @@
 from __future__ import print_function, absolute_import, division
 
 import codecs
+import io
 import os
 
 
@@ -60,3 +61,41 @@ def guess_lineno(file):
         lineno += 1
     file.seek(offset)
     return lineno
+
+
+class BinaryFileCR(io.BufferedReader):
+    """Binary file with support of CR line terminators.
+
+    I need a binary file object with readline() method which supports all
+    possible line terminators (LF, CR-LF, CR). Standard binary files have
+    readline that only stops at LF (and hence CR-LF). This class adds a
+    workaround for readline method to understand CR-delimited files.
+    """
+    CR, LF = b'\r', b'\n'
+
+    def __init__(self, raw):
+        io.BufferedReader.__init__(self, raw)
+
+    def readline(self, limit=-1):
+        if limit == 0:
+            return b""
+        data = []
+        while True:
+            byte = self.read(1)
+            if not byte:
+                return b"".join(data)
+            data.append(byte)
+            if limit >= 0 and len(data) >= limit:
+                return b"".join(data)
+            elif byte == self.LF:
+                return b"".join(data)
+            elif byte == self.CR:
+                # look at next byte
+                more_data = self.peek(1)
+                if not more_data:
+                    return b"".join(data)
+                nxt = more_data[:1]
+                if nxt == self.LF:
+                    nxt = self.read(1)
+                    data.append(nxt)
+                return b"".join(data)
