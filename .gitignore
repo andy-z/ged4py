@@ -61,8 +61,8 @@ target/
 # pyenv python configuration file
 .python-version
 
-
-#eclipse stuff
+# IDE stuff
 .project
 .pydevproject
 .settings/
+.vscode/

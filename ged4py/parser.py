@@ -13,7 +13,7 @@ import io
 import logging
 import re
 
-from .detail.io import check_bom, guess_lineno
+from .detail.io import check_bom, guess_lineno, BinaryFileCR
 from . import model
 
 _log = logging.getLogger(__name__)
@@ -201,6 +201,7 @@ class GedcomReader(object):
         else:
             raw = io.FileIO(file)
             self._file = io.BufferedReader(raw)
+        self._file = BinaryFileCR(self._file)
 
         # check codec and BOM
         try:
