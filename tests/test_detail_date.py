@@ -18,46 +18,58 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.year, 2017)
         self.assertIsNone(date.dual_year)
         self.assertFalse(date.bc)
+        self.assertEqual(date.year_str, "2017")
         self.assertEqual(date.month, "OCT")
         self.assertEqual(date.month_num, 10)
         self.assertEqual(date.day, 9)
+        self.assertEqual(date.calendar, "GREGORIAN")
 
         date = GregorianDate(2017, "OCT", bc=True)
         self.assertEqual(date.year, 2017)
         self.assertIsNone(date.dual_year)
         self.assertTrue(date.bc)
+        self.assertEqual(date.year_str, "2017 B.C.")
         self.assertEqual(date.month, "OCT")
         self.assertEqual(date.month_num, 10)
         self.assertIsNone(date.day)
+        self.assertEqual(date.calendar, "GREGORIAN")
 
         date = GregorianDate(1699, "FEB", dual_year=1700)
         self.assertEqual(date.year, 1699)
         self.assertEqual(date.dual_year, 1700)
         self.assertFalse(date.bc)
+        self.assertEqual(date.year_str, "1699/00")
         self.assertEqual(date.month, "FEB")
         self.assertEqual(date.month_num, 2)
         self.assertIsNone(date.day)
+        self.assertEqual(date.calendar, "GREGORIAN")
 
         date = HebrewDate(5000)
         self.assertEqual(date.year, 5000)
         self.assertFalse(date.bc)
+        self.assertEqual(date.year_str, "5000")
         self.assertIsNone(date.month)
         self.assertIsNone(date.month_num)
         self.assertIsNone(date.day)
+        self.assertEqual(date.calendar, "HEBREW")
 
         date = FrenchDate(1, "FRUC", 1)
         self.assertEqual(date.year, 1)
         self.assertFalse(date.bc)
+        self.assertEqual(date.year_str, "1")
         self.assertEqual(date.month, "FRUC")
         self.assertEqual(date.month_num, 12)
         self.assertEqual(date.day, 1)
+        self.assertEqual(date.calendar, "FRENCH R")
 
         date = JulianDate(5, "JAN", bc=True)
         self.assertEqual(date.year, 5)
         self.assertTrue(date.bc)
+        self.assertEqual(date.year_str, "5 B.C.")
         self.assertEqual(date.month, "JAN")
         self.assertEqual(date.month_num, 1)
         self.assertIsNone(date.day)
+        self.assertEqual(date.calendar, "JULIAN")
 
     def test_002_cal_date_key(self):
         """Test detail.date.CalendarDate class."""
@@ -146,6 +158,8 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.month, "MAY")
         self.assertEqual(date.month_num, 5)
         self.assertEqual(date.day, 31)
+        self.assertEqual(date.original, "31 MAY 2020")
+        self.assertEqual(date.calendar, "GREGORIAN")
 
         date = CalendarDate.parse("@#DGREGORIAN@ 10 MAR 1698/99")
         self.assertIsInstance(date, GregorianDate)
@@ -155,11 +169,15 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.month, "MAR")
         self.assertEqual(date.month_num, 3)
         self.assertEqual(date.day, 10)
+        self.assertEqual(date.original, "@#DGREGORIAN@ 10 MAR 1698/99")
+        self.assertEqual(date.calendar, "GREGORIAN")
 
         date = CalendarDate.parse("10 MAR 1699/00")
         self.assertIsInstance(date, GregorianDate)
         self.assertEqual(date.year, 1699)
         self.assertEqual(date.dual_year, 1700)
+        self.assertEqual(date.original, "10 MAR 1699/00")
+        self.assertEqual(date.calendar, "GREGORIAN")
 
         date = CalendarDate.parse("@#DJULIAN@ 100 B.C.")
         self.assertIsInstance(date, JulianDate)
@@ -168,6 +186,8 @@ class TestDetailDate(unittest.TestCase):
         self.assertIsNone(date.month)
         self.assertIsNone(date.month_num)
         self.assertIsNone(date.day)
+        self.assertEqual(date.original, "@#DJULIAN@ 100 B.C.")
+        self.assertEqual(date.calendar, "JULIAN")
 
         date = CalendarDate.parse("@#DFRENCH@ 15 GERM 0001")
         self.assertIsInstance(date, FrenchDate)
@@ -176,6 +196,8 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.month, "GERM")
         self.assertEqual(date.month_num, 7)
         self.assertEqual(date.day, 15)
+        self.assertEqual(date.original, "@#DFRENCH@ 15 GERM 0001")
+        self.assertEqual(date.calendar, "FRENCH R")
 
         date = CalendarDate.parse("@#DHEBREW@ 7 NSN 5000")
         self.assertIsInstance(date, HebrewDate)
@@ -184,6 +206,8 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.month, "NSN")
         self.assertEqual(date.month_num, 8)
         self.assertEqual(date.day, 7)
+        self.assertEqual(date.original, "@#DHEBREW@ 7 NSN 5000")
+        self.assertEqual(date.calendar, "HEBREW")
 
         # cannot handle ROMAN
         with self.assertRaises(ValueError):

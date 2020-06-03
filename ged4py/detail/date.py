@@ -125,7 +125,7 @@ class CalendarDate(object):
         """Day number or ``None`` (`int`)"""
         self.bc = bc
         """Flag which is ``True`` if year has a "B.C" suffix (`bool`)."""
-        self.original = None
+        self.original = original
         """Original string representation of this date as it was specified in
         GEDCOM file, could be ``None`` (`str`).
         """
@@ -145,7 +145,7 @@ class CalendarDate(object):
     def months(self):
         """Ordered list of month names (in GEDCOM format) defined in calendar.
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def key(self):
         """Return ordering key for this instance.
@@ -157,7 +157,23 @@ class CalendarDate(object):
         JD) and ``flag`` should be set to 1. If date and month are known then
         flag should be set to 0.
         """
-        raise NotImplementedError
+        raise NotImplementedError()
+
+    @property
+    def year_str(self):
+        """Calendar year in string representation, this can include dual year
+        and/or B.C. suffix (`str`)
+        """
+        year = str(self.year)
+        if self.bc:
+            year += " B.C."
+        return year
+
+    @property
+    def calendar(self):
+        """Calendar name usedfor this date (`str`)
+        """
+        raise NotImplementedError()
 
     @classmethod
     def parse(cls, datestr):
@@ -232,11 +248,7 @@ class CalendarDate(object):
     def fmt(self):
         """Make printable representation out of this instance.
         """
-        if self.original:
-            return self.original
-        val = [self.day, self.month, self.year]
-        if self.bc:
-            val += ["B.C."]
+        val = [self.day, self.month, self.year_str]
         return " ".join([str(item) for item in val if item is not None])
 
     def __str__(self):
@@ -279,6 +291,13 @@ class GregorianDate(CalendarDate):
         """
         return MONTHS_GREG
 
+    @property
+    def calendar(self):
+        """Calendar name used for this date, in format defined by GEDCOM
+        (`str`)
+        """
+        return "GREGORIAN"
+
     def key(self):
         """Return ordering key for this instance.
         """
@@ -307,17 +326,22 @@ class GregorianDate(CalendarDate):
         flag = 1 if self.day is None or self.month_num is None else 0
         return jd, flag
 
-    def fmt(self):
-        """Make printable representation out of this instance.
+    @property
+    def year_str(self):
+        """Calendar year in string representation, this can include dual year
+        and/or B.C. suffix (`str`)
         """
-        if self.original:
-            return self.original
         year = str(self.year)
         if self.dual_year is not None:
             year += "/" + str(self.dual_year)[-2:]
-        val = [self.day, self.month, year]
         if self.bc:
-            val += ["B.C."]
+            year += " B.C."
+        return year
+
+    def fmt(self):
+        """Make printable representation out of this instance.
+        """
+        val = [self.day, self.month, self.year_str]
         return " ".join([str(item) for item in val if item is not None])
 
 
@@ -360,6 +384,13 @@ class JulianDate(CalendarDate):
         flag = 1 if self.day is None or self.month_num is None else 0
         return jd, flag
 
+    @property
+    def calendar(self):
+        """Calendar name used for this date, in format defined by GEDCOM
+        (`str`)
+        """
+        return "JULIAN"
+
 
 class HebrewDate(CalendarDate):
     """Implementation of CalendarDate for Hebrew calendar.
@@ -385,6 +416,13 @@ class HebrewDate(CalendarDate):
         jd = calendar.to_jd(year, month, day)
         flag = 1 if self.day is None or self.month_num is None else 0
         return jd, flag
+
+    @property
+    def calendar(self):
+        """Calendar name used for this date, in format defined by GEDCOM
+        (`str`)
+        """
+        return "HEBREW"
 
 
 class FrenchDate(CalendarDate):
@@ -417,6 +455,13 @@ class FrenchDate(CalendarDate):
         jd = calendar.to_jd(year, month, day)
         flag = 1 if self.day is None or self.month_num is None else 0
         return jd, flag
+
+    @property
+    def calendar(self):
+        """Calendar name used for this date, in format defined by GEDCOM
+        (`str`)
+        """
+        return "FRENCH R"
 
 
 class OldCalendarDate(object):
