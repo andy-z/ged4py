@@ -5,7 +5,7 @@
 
 import unittest
 
-from ged4py.detail.date import CalendarDate, FrenchDate, GregorianDate, HebrewDate, JulianDate, DateValue
+from ged4py.date import CalendarDate, FrenchDate, GregorianDate, HebrewDate, JulianDate, DateValue
 
 
 class TestDetailDate(unittest.TestCase):

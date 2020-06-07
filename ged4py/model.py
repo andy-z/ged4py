@@ -10,7 +10,7 @@ __all__ = ['make_record', 'Record', 'Pointer', 'NameRec', 'Name',
 
 from .detail.name import (split_name, parse_name_altree, parse_name_ancestris,
                           parse_name_myher)
-from .detail.date import DateValue
+from .date import DateValue
 
 # Even though the structure of GEDCOM file is more or less fixed,
 # interpretation of some data may vary depending on which application

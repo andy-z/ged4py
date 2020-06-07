@@ -6,7 +6,7 @@
 import unittest
 
 from ged4py import model
-from ged4py.detail.date import DateValue
+from ged4py.date import DateValue
 
 
 class TestModel(unittest.TestCase):
