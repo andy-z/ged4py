@@ -345,7 +345,7 @@ class Date(Record):
     """Representation of the DATE record.
 
     After `freeze()` method is called by parser the `value` attribute contains
-    instance of :py:class:`ged4py.detail.date.DateValue` class.
+    instance of :py:class:`ged4py.date.DateValue` class.
     """
 
     def freeze(self):

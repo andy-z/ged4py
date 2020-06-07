@@ -1,10 +1,10 @@
-"""Internal module for parsing dates in gedcom format.
+"""Module for parsing and representing dates in gedcom format.
 """
 
 from __future__ import print_function, absolute_import, division
 
-__all__ = ["CalendarDate", "FrenchDate", "GregorianDate", "HebrewDate", "JulianDate",
-           "DateValue"]
+__all__ = ["CalendarTypes", "CalendarDate", "FrenchDate", "GregorianDate",
+           "HebrewDate", "JulianDate", "DateValue"]
 
 import abc
 import re
@@ -38,9 +38,8 @@ MONTHS_FREN = ['VEND', 'BRUM', 'FRIM', 'NIVO', 'PLUV', 'VENT', 'GERM',
 # <MONTH> is all characters.
 # This does not use named groups, it may appear few times in other expressions
 # Groups: 1: calendar; 2: day; 3: month; 4: year
-YEAR = r""
 DATE = r"""
-    (?:@\#D(\w+)@\s+)?          # @#DCALENDAR@, optional (group=1)
+    (?:@\#D([\w ]+)@\s+)?       # @#DCALENDAR@, optional (group=1)
     (?:
         (?:(\d+)\s+)?           # day (int), optional (group=2)
         ([A-Z]{3,4})\s+         # month, name 3-4 chars (group=3)
@@ -90,6 +89,19 @@ DATES = ((re.compile(DATE_PERIOD, re.X | re.I), "FROM $date1 TO $date2"),
          (re.compile(DATE_PHRASE, re.X | re.I), "($phrase)"),
          (re.compile(DATE_SIMPLE, re.X | re.I), "$date"),
          )
+
+
+class CalendarTypes(object):
+    """Namespace for constants defining names of calendars.
+
+    Note that it does not define constants for ``ROMAN`` calendar which is
+    declared in GEDCOM standrad as a placeholder for future definition, or
+    ``UNKNOWN`` calendar which is not supported by this library.
+    """
+    GREGORIAN = "GREGORIAN"
+    JULIAN = "JULIAN"
+    HEBREW = "HEBREW"
+    FRENCH_R = "FRENCH R"
 
 
 class CalendarDate(with_metaclass(abc.ABCMeta)):
@@ -176,7 +188,8 @@ class CalendarDate(with_metaclass(abc.ABCMeta)):
     @property
     @abc.abstractmethod
     def calendar(self):
-        """Calendar name usedfor this date (`str`)
+        """Calendar name used for this date, one of the constants defined in
+        :py:class:`CalendarTypes` (`str`)
         """
         raise NotImplementedError()
 
@@ -212,22 +225,22 @@ class CalendarDate(with_metaclass(abc.ABCMeta)):
         if m is None:
             raise ValueError("Failed to parse date: " + datestr)
 
-        calendar = m.group(1) or "GREGORIAN"
+        calendar = m.group(1) or CalendarTypes.GREGORIAN
         day = None if m.group(2) is None else int(m.group(2))
         month = m.group(3)
         year = int(m.group(4))
         dual_year = _dual_year(m.group(4), m.group(5))
         bc = m.group(6) is not None
-        if dual_year is not None and calendar != "GREGORIAN":
+        if dual_year is not None and calendar != CalendarTypes.GREGORIAN:
             raise ValueError("Cannot use dual year (YYYY/YY) in non-Gregorian calendar: " + datestr)
 
-        if calendar == "GREGORIAN":
+        if calendar == CalendarTypes.GREGORIAN:
             return GregorianDate(year, month, day, bc=bc, original=datestr, dual_year=dual_year)
-        elif calendar == "JULIAN":
+        elif calendar == CalendarTypes.JULIAN:
             return JulianDate(year, month, day, bc=bc, original=datestr)
-        elif calendar == "FRENCH":
+        elif calendar == CalendarTypes.FRENCH_R:
             return FrenchDate(year, month, day, bc=bc, original=datestr)
-        elif calendar == "HEBREW":
+        elif calendar == CalendarTypes.HEBREW:
             return HebrewDate(year, month, day, bc=bc, original=datestr)
         else:
             raise ValueError("Unknown calendar: " + datestr)
@@ -298,10 +311,7 @@ class GregorianDate(CalendarDate):
 
     @property
     def calendar(self):
-        """Calendar name used for this date, in format defined by GEDCOM
-        (`str`)
-        """
-        return "GREGORIAN"
+        return CalendarTypes.GREGORIAN
 
     def key(self):
         """Return ordering key for this instance.
@@ -391,10 +401,7 @@ class JulianDate(CalendarDate):
 
     @property
     def calendar(self):
-        """Calendar name used for this date, in format defined by GEDCOM
-        (`str`)
-        """
-        return "JULIAN"
+        return CalendarTypes.JULIAN
 
 
 class HebrewDate(CalendarDate):
@@ -424,10 +431,7 @@ class HebrewDate(CalendarDate):
 
     @property
     def calendar(self):
-        """Calendar name used for this date, in format defined by GEDCOM
-        (`str`)
-        """
-        return "HEBREW"
+        return CalendarTypes.HEBREW
 
 
 class FrenchDate(CalendarDate):
@@ -463,10 +467,7 @@ class FrenchDate(CalendarDate):
 
     @property
     def calendar(self):
-        """Calendar name used for this date, in format defined by GEDCOM
-        (`str`)
-        """
-        return "FRENCH R"
+        return CalendarTypes.FRENCH_R
 
 
 class DateValue(object):

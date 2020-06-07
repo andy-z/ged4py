@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Tests for `ged4py.detail.date` module."""
+"""Tests for `ged4py.date` module."""
 
 import unittest
 
-from ged4py.date import CalendarDate, FrenchDate, GregorianDate, HebrewDate, JulianDate, DateValue
+from ged4py.date import (CalendarTypes, CalendarDate, FrenchDate, GregorianDate,
+                         HebrewDate, JulianDate, DateValue)
 
 
 class TestDetailDate(unittest.TestCase):
-    """Tests for `ged4py.detail.date` module."""
+    """Tests for `ged4py.date` module."""
 
     def test_001_cal_date(self):
-        """Test detail.date.CalendarDate class."""
+        """Test date.CalendarDate class."""
 
         date = GregorianDate(2017, "OCT", 9)
         self.assertEqual(date.year, 2017)
@@ -22,7 +23,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.month, "OCT")
         self.assertEqual(date.month_num, 10)
         self.assertEqual(date.day, 9)
-        self.assertEqual(date.calendar, "GREGORIAN")
+        self.assertEqual(date.calendar, CalendarTypes.GREGORIAN)
 
         date = GregorianDate(2017, "OCT", bc=True)
         self.assertEqual(date.year, 2017)
@@ -32,7 +33,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.month, "OCT")
         self.assertEqual(date.month_num, 10)
         self.assertIsNone(date.day)
-        self.assertEqual(date.calendar, "GREGORIAN")
+        self.assertEqual(date.calendar, CalendarTypes.GREGORIAN)
 
         date = GregorianDate(1699, "FEB", dual_year=1700)
         self.assertEqual(date.year, 1699)
@@ -42,7 +43,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.month, "FEB")
         self.assertEqual(date.month_num, 2)
         self.assertIsNone(date.day)
-        self.assertEqual(date.calendar, "GREGORIAN")
+        self.assertEqual(date.calendar, CalendarTypes.GREGORIAN)
 
         date = HebrewDate(5000)
         self.assertEqual(date.year, 5000)
@@ -51,7 +52,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertIsNone(date.month)
         self.assertIsNone(date.month_num)
         self.assertIsNone(date.day)
-        self.assertEqual(date.calendar, "HEBREW")
+        self.assertEqual(date.calendar, CalendarTypes.HEBREW)
 
         date = FrenchDate(1, "FRUC", 1)
         self.assertEqual(date.year, 1)
@@ -60,7 +61,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.month, "FRUC")
         self.assertEqual(date.month_num, 12)
         self.assertEqual(date.day, 1)
-        self.assertEqual(date.calendar, "FRENCH R")
+        self.assertEqual(date.calendar, CalendarTypes.FRENCH_R)
 
         date = JulianDate(5, "JAN", bc=True)
         self.assertEqual(date.year, 5)
@@ -69,10 +70,10 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.month, "JAN")
         self.assertEqual(date.month_num, 1)
         self.assertIsNone(date.day)
-        self.assertEqual(date.calendar, "JULIAN")
+        self.assertEqual(date.calendar, CalendarTypes.JULIAN)
 
     def test_002_cal_date_key(self):
-        """Test detail.date.CalendarDate class."""
+        """Test date.CalendarDate class."""
 
         date = GregorianDate(2017, "OCT", 9)
         self.assertEqual(date.key(), (2458035.5, 0))
@@ -90,7 +91,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.key(), (2086672.5, 1))
 
     def test_003_cal_date_cmp(self):
-        """Test detail.date.CalendarDate class."""
+        """Test date.CalendarDate class."""
 
         self.assertTrue(GregorianDate(2016, "JAN", 1) < GregorianDate(2017, "JAN", 1))
         self.assertTrue(GregorianDate(2017, "JAN", 1) < GregorianDate(2017, "FEB", 1))
@@ -128,7 +129,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertTrue(GregorianDate(2020, "JAN", 1) == HebrewDate(5780, "SVN", 4))
 
     def test_004_cal_date_fmt(self):
-        """Test detail.date.CalendarDate class."""
+        """Test date.CalendarDate class."""
         date = GregorianDate(2017, "OCT", 9)
         self.assertEqual(date.fmt(), "9 OCT 2017")
 
@@ -148,7 +149,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.fmt(), "5 OCT 1582")
 
     def test_005_cal_date_parse(self):
-        """Test detail.date.CalendarDate.parse method."""
+        """Test date.CalendarDate.parse method."""
 
         date = CalendarDate.parse("31 MAY 2020")
         self.assertIsInstance(date, GregorianDate)
@@ -159,7 +160,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.month_num, 5)
         self.assertEqual(date.day, 31)
         self.assertEqual(date.original, "31 MAY 2020")
-        self.assertEqual(date.calendar, "GREGORIAN")
+        self.assertEqual(date.calendar, CalendarTypes.GREGORIAN)
 
         date = CalendarDate.parse("@#DGREGORIAN@ 10 MAR 1698/99")
         self.assertIsInstance(date, GregorianDate)
@@ -170,14 +171,14 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.month_num, 3)
         self.assertEqual(date.day, 10)
         self.assertEqual(date.original, "@#DGREGORIAN@ 10 MAR 1698/99")
-        self.assertEqual(date.calendar, "GREGORIAN")
+        self.assertEqual(date.calendar, CalendarTypes.GREGORIAN)
 
         date = CalendarDate.parse("10 MAR 1699/00")
         self.assertIsInstance(date, GregorianDate)
         self.assertEqual(date.year, 1699)
         self.assertEqual(date.dual_year, 1700)
         self.assertEqual(date.original, "10 MAR 1699/00")
-        self.assertEqual(date.calendar, "GREGORIAN")
+        self.assertEqual(date.calendar, CalendarTypes.GREGORIAN)
 
         date = CalendarDate.parse("@#DJULIAN@ 100 B.C.")
         self.assertIsInstance(date, JulianDate)
@@ -187,17 +188,17 @@ class TestDetailDate(unittest.TestCase):
         self.assertIsNone(date.month_num)
         self.assertIsNone(date.day)
         self.assertEqual(date.original, "@#DJULIAN@ 100 B.C.")
-        self.assertEqual(date.calendar, "JULIAN")
+        self.assertEqual(date.calendar, CalendarTypes.JULIAN)
 
-        date = CalendarDate.parse("@#DFRENCH@ 15 GERM 0001")
+        date = CalendarDate.parse("@#DFRENCH R@ 15 GERM 0001")
         self.assertIsInstance(date, FrenchDate)
         self.assertEqual(date.year, 1)
         self.assertFalse(date.bc)
         self.assertEqual(date.month, "GERM")
         self.assertEqual(date.month_num, 7)
         self.assertEqual(date.day, 15)
-        self.assertEqual(date.original, "@#DFRENCH@ 15 GERM 0001")
-        self.assertEqual(date.calendar, "FRENCH R")
+        self.assertEqual(date.original, "@#DFRENCH R@ 15 GERM 0001")
+        self.assertEqual(date.calendar, CalendarTypes.FRENCH_R)
 
         date = CalendarDate.parse("@#DHEBREW@ 7 NSN 5000")
         self.assertIsInstance(date, HebrewDate)
@@ -207,7 +208,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.month_num, 8)
         self.assertEqual(date.day, 7)
         self.assertEqual(date.original, "@#DHEBREW@ 7 NSN 5000")
-        self.assertEqual(date.calendar, "HEBREW")
+        self.assertEqual(date.calendar, CalendarTypes.HEBREW)
 
         # cannot handle ROMAN
         with self.assertRaises(ValueError):
@@ -226,7 +227,7 @@ class TestDetailDate(unittest.TestCase):
             date = CalendarDate.parse("start of time")
 
     def test_010_date(self):
-        """Test detail.date.DateValue class."""
+        """Test date.DateValue class."""
 
         date = DateValue()
         self.assertEqual(date.template, "")
@@ -251,7 +252,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.fmt(), "FROM 2017 TO (some day)")
 
     def test_011_date_fmt(self):
-        """Test detail.date.DateValue class."""
+        """Test date.DateValue class."""
 
         date = DateValue("date", {})
         self.assertEqual(date.fmt(), "date")
@@ -267,7 +268,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.fmt(), "BET 1 JAN 2017 AND 20 FLOR 2020")
 
     def test_012_date_parse_period(self):
-        """Test detail.date.DateValue class."""
+        """Test date.DateValue class."""
 
         date = DateValue.parse("FROM 1967")
         self.assertTrue(date is not None)
@@ -295,7 +296,7 @@ class TestDetailDate(unittest.TestCase):
                                    "date2": GregorianDate(2000, "APR", 1)})
 
     def test_013_date_parse_range(self):
-        """Test detail.date.DateValue class."""
+        """Test date.DateValue class."""
 
         date = DateValue.parse("BEF 1967B.C.")
         self.assertTrue(date is not None)
@@ -324,7 +325,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.fmt(), "BETWEEN MAR 1920 AND APR 2000")
 
     def test_014_date_parse_approx(self):
-        """Test detail.date.DateValue class."""
+        """Test date.DateValue class."""
 
         dates = {"500B.C.": GregorianDate(500, bc=True),
                  "@#DGREGORIAN@ JAN 2017": GregorianDate(2017, "JAN"),
@@ -341,7 +342,7 @@ class TestDetailDate(unittest.TestCase):
                 self.assertEqual(date.kw, {"date": value})
 
     def test_015_date_parse_phrase(self):
-        """Test detail.date.DateValue class."""
+        """Test date.DateValue class."""
 
         date = DateValue.parse("(some phrase)")
         self.assertTrue(date is not None)
@@ -363,7 +364,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.fmt(), "INTERPRETED 1 JAN 2017 (some phrase)")
 
     def test_016_date_parse_simple(self):
-        """Test detail.date.DateValue class."""
+        """Test date.DateValue class."""
 
         date = DateValue.parse("1967 B.C.")
         self.assertTrue(date is not None)
@@ -378,7 +379,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(date.fmt(), "1 JAN 2017")
 
     def test_017_date_cmp(self):
-        """Test detail.date.Date class."""
+        """Test date.Date class."""
 
         dv = DateValue.parse("2016")
         self.assertIsInstance(dv._cmp_date, CalendarDate)
@@ -412,7 +413,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertTrue(DateValue() > DateValue.parse("2000"))
 
     def test_018_date_parse_empty(self):
-        """Test detail.date.DateValue class."""
+        """Test date.DateValue class."""
 
         for value in (None, ""):
             date = DateValue.parse(value)
