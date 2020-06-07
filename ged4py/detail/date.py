@@ -6,8 +6,10 @@ from __future__ import print_function, absolute_import, division
 __all__ = ["CalendarDate", "FrenchDate", "GregorianDate", "HebrewDate", "JulianDate",
            "DateValue"]
 
+import abc
 import re
 import string
+from six import with_metaclass
 
 import convertdate.french_republican
 import convertdate.gregorian
@@ -90,7 +92,7 @@ DATES = ((re.compile(DATE_PERIOD, re.X | re.I), "FROM $date1 TO $date2"),
          )
 
 
-class CalendarDate(object):
+class CalendarDate(with_metaclass(abc.ABCMeta)):
     """Interface for calendar date representation.
 
     This class defines attributes and methods that are common for all
@@ -142,11 +144,13 @@ class CalendarDate(object):
             pass
 
     @classmethod
+    @abc.abstractmethod
     def months(self):
         """Ordered list of month names (in GEDCOM format) defined in calendar.
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def key(self):
         """Return ordering key for this instance.
 
@@ -170,6 +174,7 @@ class CalendarDate(object):
         return year
 
     @property
+    @abc.abstractmethod
     def calendar(self):
         """Calendar name usedfor this date (`str`)
         """
@@ -462,120 +467,6 @@ class FrenchDate(CalendarDate):
         (`str`)
         """
         return "FRENCH R"
-
-
-class OldCalendarDate(object):
-    """Representation of calendar date, corresponding to <DATE> element.
-
-    This includes optional calendar kind (calendar escape) which can be
-    one of @#DHEBREW@ | @#DROMAN@ | @#DFRENCH R@ | @#DGREGORIAN@ |
-    @#DJULIAN@ | @#DUNKNOWN@ (@#DGREGORIAN@ is default). Date consists
-    of year, month, and day; day and month are optional (either day or
-    day+month), year must be present. Day is a number, month is month name
-    in given calendar. Year is a number optionally followed by "B.C." or
-    "/NN".
-
-    Dates can be ordered but ordering only works for the dates from the
-    same calendar, dates from different calendars will be ordered randomly.
-
-    In general date parsing tries to make best effort to guess all possible
-    formats, but if it fails it does not raise exceptions, instead it uses
-    some defaults values for items that cannot be understood.
-
-    :param str year: String representing year in a calendar. Expected to
-        start with few digits and followed by some suffix.
-    :param str month: Name of the month. Optional, but if day is given then
-        month cannot be None.
-    :param int day: Day in a month, optional.
-    :param str calendar: one of "GREGORIAN", "JULIAN", "HEBREW", "ROMAN",
-        "FRENCH R", "UNKNOWN", default is "GREGORIAN"
-    """
-
-    DIGITS = re.compile(r"\d+")
-    MONTHS = {"GREGORIAN": MONTHS_GREG,
-              "JULIAN": MONTHS_GREG,
-              "HEBREW": MONTHS_HEBR,
-              "FRENCH R": MONTHS_FREN}
-
-    def __init__(self, year=None, month=None, day=None, calendar=None):
-        self.year = year
-        self.month = None if month is None else month.upper()
-        self.day = day
-        self.calendar = calendar or "GREGORIAN"
-
-        # determine month number
-        months = self.MONTHS.get(self.calendar, [])
-        try:
-            self.month_num = months.index(self.month) + 1
-        except ValueError:
-            self.month_num = None
-
-        self._tuple = None
-
-    @classmethod
-    def parse(cls, datestr):
-        """Parse <DATE> string and make :py:class:`CalendarDate` from it.
-
-        :param str datestr: String with GEDCOM date.
-        """
-        m = DATE_RE.match(datestr)
-        if m is not None:
-            day = None if m.group(2) is None else int(m.group(2))
-            return cls(m.group(4), m.group(3), day, m.group(1))
-
-    @property
-    def as_tuple(self):
-        """Date as three-tuple of numbers"""
-        if self._tuple is None:
-            # extract leading digits from year
-            year = 9999
-            if self.year:
-                m = self.DIGITS.match(self.year)
-                if m:
-                    year = int(m.group(0))
-            month = self.month_num or 99
-            day = self.day if self.day is not None else 99
-
-            # should we include calendar name in tuple too?
-            self._tuple = year, month, day
-
-        return self._tuple
-
-    def __lt__(self, other):
-        return self.as_tuple < other.as_tuple
-
-    def __le__(self, other):
-        return self.as_tuple <= other.as_tuple
-
-    def __eq__(self, other):
-        return self.as_tuple == other.as_tuple
-
-    def __ne__(self, other):
-        return self.as_tuple != other.as_tuple
-
-    def __gt__(self, other):
-        return self.as_tuple > other.as_tuple
-
-    def __ge__(self, other):
-        return self.as_tuple >= other.as_tuple
-
-    def fmt(self):
-        """Make printable representation out of this instance.
-        """
-        val = str(self.year)
-        if self.month is not None:
-            val += ' ' + str(self.month)
-            if self.day is not None:
-                val += ' ' + str(self.day)
-        return val
-
-    def __str__(self):
-        return "{}(year={}, month={}, day={}, calendar={})".format(
-            self.__class__.__name__, self.year, self.month,
-            self.day, self.calendar)
-
-    def __repr__(self):
-        return str(self)
 
 
 class DateValue(object):
