@@ -329,12 +329,10 @@ class TestModel(unittest.TestCase):
         date = model.make_record(1, None, "DATE", None, [], 0, dialect).freeze()
         self.assertIsInstance(date, model.Date)
         self.assertIsInstance(date.value, DateValue)
-        self.assertEqual(date.value.template, "")
 
         date = model.make_record(1, None, "DATE", "", [], 0, dialect).freeze()
         self.assertIsInstance(date, model.Date)
         self.assertIsInstance(date.value, DateValue)
-        self.assertEqual(date.value.template, "")
 
     def test_040_Pointer(self):
         """Test Pointer class."""

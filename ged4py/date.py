@@ -3,12 +3,17 @@
 
 from __future__ import print_function, absolute_import, division
 
-__all__ = ["CalendarTypes", "CalendarDate", "FrenchDate", "GregorianDate",
-           "HebrewDate", "JulianDate", "DateValue"]
+__all__ = [
+    "CalendarTypes", "CalendarDate", "FrenchDate", "GregorianDate",
+    "HebrewDate", "JulianDate", "DateValueTypes", "DateValue",
+    "DateValueAbout", "DateValueAfter", "DateValueBefore", "DateValueCalculated",
+    "DateValueEstimated", "DateValueFrom", "DateValueInterpreted", "DateValuePeriod",
+    "DateValuePhrase", "DateValueRange", "DateValueSimple", "DateValueTo", "DateValueTypes",
+    "CalendarDateVisitor", "DateValueVisitor"
+]
 
 import abc
 import re
-import string
 from six import with_metaclass
 
 import convertdate.french_republican
@@ -71,24 +76,12 @@ DATE_APPROX_EST = r"^EST\s+(?P<date>" + DATE + ")$"
 
 # INT <DATE> (<DATE_PHRASE>)
 DATE_INTERP = r"^INT\s+(?P<date>" + DATE + r")\s+\((?P<phrase>.*)\)$"
+
+# (<DATE_PHRASE>)
 DATE_PHRASE = r"^\((?P<phrase>.*)\)$"
 
-# INT <DATE> (<DATE_PHRASE>)
+# <DATE>
 DATE_SIMPLE = r"^(?P<date>" + DATE + ")$"
-
-DATES = ((re.compile(DATE_PERIOD, re.X | re.I), "FROM $date1 TO $date2"),
-         (re.compile(DATE_PERIOD_FROM, re.X | re.I), "FROM $date"),
-         (re.compile(DATE_PERIOD_TO, re.X | re.I), "TO $date"),
-         (re.compile(DATE_RANGE, re.X | re.I), "BETWEEN $date1 AND $date2"),
-         (re.compile(DATE_RANGE_BEFORE, re.X | re.I), "BEFORE $date"),
-         (re.compile(DATE_RANGE_AFTER, re.X | re.I), "AFTER $date"),
-         (re.compile(DATE_APPROX_ABOUT, re.X | re.I), "ABOUT $date"),
-         (re.compile(DATE_APPROX_CALC, re.X | re.I), "CALCULATED $date"),
-         (re.compile(DATE_APPROX_EST, re.X | re.I), "ESTIMATED $date"),
-         (re.compile(DATE_INTERP, re.X | re.I), "INTERPRETED $date ($phrase)"),
-         (re.compile(DATE_PHRASE, re.X | re.I), "($phrase)"),
-         (re.compile(DATE_SIMPLE, re.X | re.I), "$date"),
-         )
 
 
 class CalendarTypes(object):
@@ -189,13 +182,25 @@ class CalendarDate(with_metaclass(abc.ABCMeta)):
     @abc.abstractmethod
     def calendar(self):
         """Calendar name used for this date, one of the constants defined in
-        :py:class:`CalendarTypes` (`str`)
+        :class:`CalendarTypes` (`str`)
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def accept(self, visitor):
+        """Support visitor pattern.
+
+        Each concrete sub-class will implement this method by dispatching the
+        call to corresponding visitor method.
+
+        :param CalendarDateVisitor visitor: visitor instance.
+        :returns: Value returned from a visitor method.
         """
         raise NotImplementedError()
 
     @classmethod
     def parse(cls, datestr):
-        """Parse <DATE> string and make :py:class:`CalendarDate` from it.
+        """Parse <DATE> string and make :class:`CalendarDate` from it.
 
         :param str datestr: String with GEDCOM date.
         :returns: CalendarDate instance
@@ -290,7 +295,7 @@ class GregorianDate(CalendarDate):
     actual year number (e.g. as if it was specified as "1699/1700").
 
     Parameter ``dual_year`` (and corresponding attribute) is used for dual
-    year. Other parameters have the same meaning as in :py:class:`CalendarDate`
+    year. Other parameters have the same meaning as in :class:`CalendarDate`
     class.
 
     :param int dual_year: Dual year number or ``None``. Actual year should be
@@ -359,11 +364,14 @@ class GregorianDate(CalendarDate):
         val = [self.day, self.month, self.year_str]
         return " ".join([str(item) for item in val if item is not None])
 
+    def accept(self, visitor):
+        return visitor.visitGregorian(self)
+
 
 class JulianDate(CalendarDate):
     """Implementation of CalendarDate for Julian calendar.
 
-    All parameters have the same meaning as in :py:class:`CalendarDate` class.
+    All parameters have the same meaning as in :class:`CalendarDate` class.
     """
     def __init__(self, year, month=None, day=None, bc=False, original=None):
         CalendarDate.__init__(self, year, month, day, bc, original)
@@ -403,11 +411,14 @@ class JulianDate(CalendarDate):
     def calendar(self):
         return CalendarTypes.JULIAN
 
+    def accept(self, visitor):
+        return visitor.visitJulian(self)
+
 
 class HebrewDate(CalendarDate):
     """Implementation of CalendarDate for Hebrew calendar.
 
-    All parameters have the same meaning as in :py:class:`CalendarDate` class.
+    All parameters have the same meaning as in :class:`CalendarDate` class.
     """
     def __init__(self, year, month=None, day=None, bc=False, original=None):
         CalendarDate.__init__(self, year, month, day, bc, original)
@@ -433,11 +444,14 @@ class HebrewDate(CalendarDate):
     def calendar(self):
         return CalendarTypes.HEBREW
 
+    def accept(self, visitor):
+        return visitor.visitHebrew(self)
+
 
 class FrenchDate(CalendarDate):
     """Implementation of CalendarDate for French republican calendar.
 
-    All parameters have the same meaning as in :py:class:`CalendarDate` class.
+    All parameters have the same meaning as in :class:`CalendarDate` class.
     """
     def __init__(self, year, month=None, day=None, bc=False, original=None):
         CalendarDate.__init__(self, year, month, day, bc, original)
@@ -469,27 +483,121 @@ class FrenchDate(CalendarDate):
     def calendar(self):
         return CalendarTypes.FRENCH_R
 
+    def accept(self, visitor):
+        return visitor.visitFrench(self)
 
-class DateValue(object):
+
+class CalendarDateVisitor(with_metaclass(abc.ABCMeta)):
+    """Interface for implementation of Visitor pattern for
+    :class:`CalendarDate` classes.
+
+    One can easily extend behavior of the :class:`CalendarDate` class
+    hierarchy without modifying classes themselves. Clients need to implement
+    new behavior by sub-classing :class:`CalendarDateVisitor` and calling
+    :meth:`CalendarDate.accept()` method, e.g.::
+
+        class FormatterVisitor(CalendarDateVisitor):
+
+            def visitGregorian(self, date):
+                return "Gregorian date:" + date.fmt()
+
+            # and so on for each date type
+
+        visitor = FormatterVisitor()
+
+        date = CalendarDate.parse(date_string)
+        formatted = date.accept(visitor)
+    """
+
+    def visitGregorian(self, date):
+        """Visit an instance of :class:`GregorianDate` type.
+        """
+        raise NotImplementedError()
+
+    def visitJulian(self, date):
+        """Visit an instance of :class:`JulianDate` type.
+        """
+        raise NotImplementedError()
+
+    def visitHebrew(self, date):
+        """Visit an instance of :class:`HebrewDate` type.
+        """
+        raise NotImplementedError()
+
+    def visitFrench(self, date):
+        """Visit an instance of :class:`FrenchDate` type.
+        """
+        raise NotImplementedError()
+
+
+class DateValueTypes(object):
+    """Namespace for constants defining types of date values.
+    """
+
+    SIMPLE = 0
+    "Date value consists of a single CalendarDate"
+
+    FROM = 1
+    "Period of dates starting at specified date, end date is unknown"
+
+    TO = 2
+    "Period of dates ending at specified date, start date is unknown"
+
+    PERIOD = 3
+    "Period of dates starting at one date and ending at another"
+
+    BEFORE = 4
+    "Date value for an event known to happen before given date"
+
+    AFTER = 5
+    "Date value for an event known to happen after given date"
+
+    RANGE = 6
+    "Date value for an event known to happen between given dates"
+
+    ABOUT = 7
+    "Date value for an event known to happen at approximate date"
+
+    CALCULATED = 8
+    "Date value for an event calculated from other known information"
+
+    ESTIMATED = 9
+    "Date value for an event estimated from other known information"
+
+    INTERPRETED = 10
+    "Date value for an event interpreted from a specified phrase"
+
+    PHRASE = 11
+    "Date value for an event is a phrase"
+
+
+class DateValue(with_metaclass(abc.ABCMeta)):
     """Representation of the <DATE_VALUE>, can be exact date, range,
     period, etc.
 
-    If `kw` is empty (default) then resulting DateValue is guaranteed to be
-    in the future w.r.t. any regular dates.
+    ``DateValue`` is an abstract base class, for each separate kind of GEDCOM
+    date there is a separate concrete class (e.g. ``DateValueRange``). Class
+    method :meth:`parse` is used to parse a date string and return an
+    instance corresponding DateValue type. Different types have different
+    attributes, to implement type-specific code on client side one can use one
+    of these approaches:
 
-    :param str tmpl: Template string acceptable by `string.Template`.
-    :param dict kw: Dictionary with the keys being keywords in template
-        string and values are instance of :py:class:`CalendarDate` or
-        strings.
+        - dispatch based on the value of :attr:`kind` attribute, it has one of
+          the values defined in :class:`DateValueTypes` enum,
+        - dispatch based on the type of the instance using ``isinstance``
+          method to check the type (e.g. ``isinstance(date, DateValueRange)``)
+        - double dispatch (visitor pattern) by implementing
+          :class:`DateValueVisitor` interface.
+
+    :param key: Object that is used for ordering, usually
+            :class:`CalendarDate` but can be ``None``.
     """
-
-    def __init__(self, tmpl="", kw={}):
-        self.template = tmpl
-        self.kw = kw
+    def __init__(self, key):
+        self._key = key
 
     @classmethod
     def parse(cls, datestr):
-        """Parse string <DATE_VALUE> string and make :py:class:`DateValue`
+        """Parse string <DATE_VALUE> string and make :class:`DateValue`
         instance out of it.
 
         :param str datestr: String with GEDCOM date, range, period, etc.
@@ -497,8 +605,8 @@ class DateValue(object):
         # some apps generate DATE recods without any value, which is
         # non-standard, return empty DateValue for those
         if not datestr:
-            return cls()
-        for regex, tmpl in DATES:
+            return DateValuePhrase(None)
+        for regex, klass in DATES:
             m = regex.match(datestr)
             if m is not None:
                 groups = {}
@@ -506,57 +614,416 @@ class DateValue(object):
                     if key != 'phrase':
                         val = CalendarDate.parse(val)
                     groups[key] = val
-                return cls(tmpl, groups)
+                return klass(**groups)
         # if cannot parse string assume it is a phrase
-        return cls("($phrase)", dict(phrase=datestr))
+        return DateValuePhrase(datestr)
 
     @property
-    def _cmp_date(self):
-        """Returns Calendar date used for comparison.
-
-        Use the earliest date out of all CalendarDates in this instance,
-        or some date in the future if there are no CalendarDates (e.g.
-        when Date is a phrase).
+    @abc.abstractmethod
+    def kind(self):
+        """The type of GEDCOM date, one of the constants defined in
+        :class:`DateValueTypes`.
         """
-        dates = sorted(val for val in self.kw.values()
-                       if isinstance(val, CalendarDate))
-        if dates:
-            return dates[0]
-        # return date very far in the future
-        return GregorianDate(2999)
+        raise NotImplementedError()
+
+    def key(self):
+        """Return ordering key for this instance.
+
+        If this instance has a date or range of dates associated with it then
+        this method returns first or only date associated with this instance.
+        For other dates (``PHRASE`` is the only instance without date) it
+        returns a fixed but arbitrary date in the future.
+        """
+        if self._key is None:
+            # Use year 2999 so that it is ordered after all real dates
+            return GregorianDate(2999)
+        return self._key
 
     def __lt__(self, other):
-        return self._cmp_date < other._cmp_date
+        return self.key() < other.key()
 
     def __le__(self, other):
-        return self._cmp_date <= other._cmp_date
+        return self.key() <= other.key()
 
     def __eq__(self, other):
-        return self._cmp_date == other._cmp_date
+        return self.key() == other.key()
 
     def __ne__(self, other):
-        return self._cmp_date != other._cmp_date
+        return self.key() != other.key()
 
     def __gt__(self, other):
-        return self._cmp_date > other._cmp_date
+        return self.key() > other.key()
 
     def __ge__(self, other):
-        return self._cmp_date >= other._cmp_date
+        return self.key() >= other.key()
 
-    def fmt(self):
-        """Make printable representation out of this instance.
+    @abc.abstractmethod
+    def accept(self, visitor):
+        """Support visitor pattern.
+
+        Each concrete sub-class will implement this method by dispatching the
+        call to corresponding visitor method.
+
+        :param DateValueVisitor visitor: visitor instance.
+        :returns: Value returned from a visitor method.
         """
-        tmpl = string.Template(self.template)
-        kw = {}
-        for key, val in self.kw.items():
-            if key == 'phrase':
-                kw[key] = val
-            else:
-                kw[key] = val.fmt()
-        return tmpl.substitute(kw)
+        raise NotImplementedError()
 
+    @abc.abstractmethod
+    def fmt(self):
+        """Return date as a string formatted similarly to its GEDCOM
+        representation.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def __str__(self):
-        return "{}({})".format(self.__class__.__name__, self.fmt())
+        raise NotImplementedError()
 
     def __repr__(self):
         return str(self)
+
+
+class _DateValueSingle(DateValue):
+    """Implementation of DateValue for single-value date.
+    """
+    def __init__(self, date):
+        DateValue.__init__(self, date)
+        self._date = date
+
+    @property
+    def date(self):
+        "Date of this instance (`CalendarDate`)"
+        return self._date
+
+    def __str__(self):
+        return "{}(date={})".format(self.__class__.__name__, self.date)
+
+
+class _DateValueDual(DateValue):
+    """Implementation of DateValue for dual-value date.
+    """
+    def __init__(self, date1, date2):
+        DateValue.__init__(self, date1)
+        self._date1 = date1
+        self._date2 = date2
+
+    @property
+    def date1(self):
+        "First date of this instance (`CalendarDate`)"
+        return self._date1
+
+    @property
+    def date2(self):
+        "Second date of this instance (`CalendarDate`)"
+        return self._date2
+
+    def __str__(self):
+        return "{}(date1={}, date2={})".format(self.__class__.__name__, self.date1, self.date2)
+
+
+class DateValueSimple(_DateValueSingle):
+    """Implementation of DateValue for simple single-value DATE.
+    """
+    @property
+    def kind(self):
+        return DateValueTypes.SIMPLE
+
+    def accept(self, visitor):
+        return visitor.visitSimple(self)
+
+    def fmt(self):
+        return self.date.fmt()
+
+
+class DateValueFrom(_DateValueSingle):
+    """Implementation of DateValue for FROM date.
+    """
+    @property
+    def kind(self):
+        return DateValueTypes.FROM
+
+    def accept(self, visitor):
+        return visitor.visitFrom(self)
+
+    def fmt(self):
+        return "FROM {}".format(self.date.fmt())
+
+
+class DateValueTo(_DateValueSingle):
+    """Implementation of DateValue for TO date.
+    """
+    @property
+    def kind(self):
+        return DateValueTypes.TO
+
+    def accept(self, visitor):
+        return visitor.visitTo(self)
+
+    def fmt(self):
+        return "TO {}".format(self.date.fmt())
+
+
+class DateValuePeriod(_DateValueDual):
+    """Implementation of DateValue for FROM ... TO date.
+    """
+    @property
+    def kind(self):
+        return DateValueTypes.PERIOD
+
+    def accept(self, visitor):
+        return visitor.visitPeriod(self)
+
+    def fmt(self):
+        return "FROM {} TO {}".format(self.date1.fmt(), self.date2.fmt())
+
+
+class DateValueBefore(_DateValueSingle):
+    """Implementation of DateValue for BEF date.
+    """
+    @property
+    def kind(self):
+        return DateValueTypes.BEFORE
+
+    def accept(self, visitor):
+        return visitor.visitBefore(self)
+
+    def fmt(self):
+        return "BEFORE {}".format(self.date.fmt())
+
+
+class DateValueAfter(_DateValueSingle):
+    """Implementation of DateValue for AFTE date.
+    """
+    @property
+    def kind(self):
+        return DateValueTypes.AFTER
+
+    def accept(self, visitor):
+        return visitor.visitAfter(self)
+
+    def fmt(self):
+        return "AFTER {}".format(self.date.fmt())
+
+
+class DateValueRange(_DateValueDual):
+    """Implementation of DateValue for BET .. AND ... date.
+    """
+    @property
+    def kind(self):
+        return DateValueTypes.RANGE
+
+    def accept(self, visitor):
+        return visitor.visitRange(self)
+
+    def fmt(self):
+        return "BETWEEN {} AND {}".format(self.date1.fmt(), self.date2.fmt())
+
+
+class DateValueAbout(_DateValueSingle):
+    """Implementation of DateValue for ABT date.
+    """
+    @property
+    def kind(self):
+        return DateValueTypes.ABOUT
+
+    def accept(self, visitor):
+        return visitor.visitAbout(self)
+
+    def fmt(self):
+        return "ABOUT {}".format(self.date.fmt())
+
+
+class DateValueCalculated(_DateValueSingle):
+    """Implementation of DateValue for CAL date.
+    """
+    @property
+    def kind(self):
+        return DateValueTypes.CALCULATED
+
+    def accept(self, visitor):
+        return visitor.visitCalculated(self)
+
+    def fmt(self):
+        return "CALCULATED {}".format(self.date.fmt())
+
+
+class DateValueEstimated(_DateValueSingle):
+    """Implementation of DateValue for EST date.
+    """
+    @property
+    def kind(self):
+        return DateValueTypes.ESTIMATED
+
+    def accept(self, visitor):
+        return visitor.visitEstimated(self)
+
+    def fmt(self):
+        return "ESTIMATED {}".format(self.date.fmt())
+
+
+class DateValueInterpreted(_DateValueSingle):
+    """Implementation of DateValue for INT date.
+    """
+    def __init__(self, date, phrase):
+        _DateValueSingle.__init__(self, date)
+        self._phrase = phrase
+
+    @property
+    def kind(self):
+        return DateValueTypes.INTERPRETED
+
+    @property
+    def phrase(self):
+        """Phrase associated with this date (`str`)
+        """
+        return self._phrase
+
+    def accept(self, visitor):
+        return visitor.visitInterpreted(self)
+
+    def __str__(self):
+        return "{}(date={}, phrase={})".format(self.__class__.__name__, self.date, self.phrase)
+
+    def fmt(self):
+        return "INTERPRETED {} ({})".format(self.date.fmt(), self.phrase)
+
+
+class DateValuePhrase(_DateValueSingle):
+    """Implementation of DateValue for INT date.
+    """
+    def __init__(self, phrase):
+        _DateValueSingle.__init__(self, None)
+        self._phrase = phrase
+
+    @property
+    def kind(self):
+        return DateValueTypes.PHRASE
+
+    @property
+    def phrase(self):
+        """Phrase associated with this date (`str`)
+        """
+        return self._phrase
+
+    def accept(self, visitor):
+        return visitor.visitPhrase(self)
+
+    def __str__(self):
+        return "{}(phrase={})".format(self.__class__.__name__, self.phrase)
+
+    def fmt(self):
+        if self.phrase is None:
+            return ""
+        else:
+            return "({})".format(self.phrase)
+
+
+DATES = (
+    (re.compile(DATE_PERIOD, re.X | re.I), DateValuePeriod),
+    (re.compile(DATE_PERIOD_FROM, re.X | re.I), DateValueFrom),
+    (re.compile(DATE_PERIOD_TO, re.X | re.I), DateValueTo),
+    (re.compile(DATE_RANGE, re.X | re.I), DateValueRange),
+    (re.compile(DATE_RANGE_BEFORE, re.X | re.I), DateValueBefore),
+    (re.compile(DATE_RANGE_AFTER, re.X | re.I), DateValueAfter),
+    (re.compile(DATE_APPROX_ABOUT, re.X | re.I), DateValueAbout),
+    (re.compile(DATE_APPROX_CALC, re.X | re.I), DateValueCalculated),
+    (re.compile(DATE_APPROX_EST, re.X | re.I), DateValueEstimated),
+    (re.compile(DATE_INTERP, re.X | re.I), DateValueInterpreted),
+    (re.compile(DATE_PHRASE, re.X | re.I), DateValuePhrase),
+    (re.compile(DATE_SIMPLE, re.X | re.I), DateValueSimple),
+)
+
+
+class DateValueVisitor(with_metaclass(abc.ABCMeta)):
+    """Interface for implementation of Visitor pattern for DateValue classes.
+
+    One can easily extend behavior of the DateValue class hierarchy without
+    modifying classes themselves. Clients need to implement new behavior by
+    sub-classing ``DateValueVisitor`` and calling :meth:`DateValue.accept`
+    method, e.g.::
+
+        class FormatterVisitor(DateValueVisitor):
+
+            def visitSimple(self, date):
+                return "Simple date: " + date.date.fmt()
+
+            # and so on for each date type
+
+        visitor = FormatterVisitor()
+
+        date = DateValue.parse(date_string)
+        formatted = date.accept(visitor)
+    """
+
+    @abc.abstractmethod
+    def visitSimple(self, date):
+        """Visit an instance of :class:`DateValueSimple` type.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def visitPeriod(self, date):
+        """Visit an instance of :class:`DateValuePeriod` type.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def visitFrom(self, date):
+        """Visit an instance of :class:`DateValueFrom` type.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def visitTo(self, date):
+        """Visit an instance of :class:`DateValueTo` type.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def visitRange(self, date):
+        """Visit an instance of :class:`DateValueRange` type.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def visitBefore(self, date):
+        """Visit an instance of :class:`DateValueBefore` type.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def visitAfter(self, date):
+        """Visit an instance of :class:`DateValueAfter` type.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def visitAbout(self, date):
+        """Visit an instance of :class:`DateValueAbout` type.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def visitCalculated(self, date):
+        """Visit an instance of :class:`DateValueCalculated` type.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def visitEstimated(self, date):
+        """Visit an instance of :class:`DateValueEstimated` type.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def visitInterpreted(self, date):
+        """Visit an instance of :class:`DateValueInterpreted` type.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def visitPhrase(self, date):
+        """Visit an instance of :class:`DateValuePhrase` type.
+        """
+        raise NotImplementedError()

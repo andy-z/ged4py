@@ -5,8 +5,96 @@
 
 import unittest
 
-from ged4py.date import (CalendarTypes, CalendarDate, FrenchDate, GregorianDate,
-                         HebrewDate, JulianDate, DateValue)
+from ged4py.date import (
+    CalendarTypes, CalendarDate, FrenchDate, GregorianDate, HebrewDate, JulianDate,
+    DateValue, DateValueAbout, DateValueAfter, DateValueBefore, DateValueCalculated,
+    DateValueEstimated, DateValueFrom, DateValueInterpreted, DateValuePeriod,
+    DateValuePhrase, DateValueRange, DateValueSimple, DateValueTo, DateValueTypes,
+    CalendarDateVisitor, DateValueVisitor
+)
+
+
+class TestDateVisitor(CalendarDateVisitor, DateValueVisitor):
+
+    def visitGregorian(self, date):
+        if not isinstance(date, GregorianDate):
+            raise TypeError(str(type(date)))
+        return ("gregorian", date)
+
+    def visitJulian(self, date):
+        if not isinstance(date, JulianDate):
+            raise TypeError(str(type(date)))
+        return ("julian", date)
+
+    def visitHebrew(self, date):
+        if not isinstance(date, HebrewDate):
+            raise TypeError(str(type(date)))
+        return ("hebrew", date)
+
+    def visitFrench(self, date):
+        if not isinstance(date, FrenchDate):
+            raise TypeError(str(type(date)))
+        return ("french", date)
+
+    def visitSimple(self, date):
+        if not isinstance(date, DateValueSimple):
+            raise TypeError(str(type(date)))
+        return ("simple", date.date)
+
+    def visitPeriod(self, date):
+        if not isinstance(date, DateValuePeriod):
+            raise TypeError(str(type(date)))
+        return ("period", date.date1, date.date2)
+
+    def visitFrom(self, date):
+        if not isinstance(date, DateValueFrom):
+            raise TypeError(str(type(date)))
+        return ("from", date.date)
+
+    def visitTo(self, date):
+        if not isinstance(date, DateValueTo):
+            raise TypeError(str(type(date)))
+        return ("to", date.date)
+
+    def visitRange(self, date):
+        if not isinstance(date, DateValueRange):
+            raise TypeError(str(type(date)))
+        return ("range", date.date1, date.date2)
+
+    def visitBefore(self, date):
+        if not isinstance(date, DateValueBefore):
+            raise TypeError(str(type(date)))
+        return ("before", date.date)
+
+    def visitAfter(self, date):
+        if not isinstance(date, DateValueAfter):
+            raise TypeError(str(type(date)))
+        return ("after", date.date)
+
+    def visitAbout(self, date):
+        if not isinstance(date, DateValueAbout):
+            raise TypeError(str(type(date)))
+        return ("about", date.date)
+
+    def visitCalculated(self, date):
+        if not isinstance(date, DateValueCalculated):
+            raise TypeError(str(type(date)))
+        return ("calculated", date.date)
+
+    def visitEstimated(self, date):
+        if not isinstance(date, DateValueEstimated):
+            raise TypeError(str(type(date)))
+        return ("estimated", date.date)
+
+    def visitInterpreted(self, date):
+        if not isinstance(date, DateValueInterpreted):
+            raise TypeError(str(type(date)))
+        return ("interpreted", date.date, date.phrase)
+
+    def visitPhrase(self, date):
+        if not isinstance(date, DateValuePhrase):
+            raise TypeError(str(type(date)))
+        return ("phrase", date.phrase)
 
 
 class TestDetailDate(unittest.TestCase):
@@ -226,177 +314,172 @@ class TestDetailDate(unittest.TestCase):
         with self.assertRaises(ValueError):
             date = CalendarDate.parse("start of time")
 
-    def test_010_date(self):
+    def test_006_cal_date_visitor(self):
+        """Test date.CalendarDate.accept method."""
+
+        visitor = TestDateVisitor()
+
+        date = GregorianDate(2017, "OCT", 9)
+        value = date.accept(visitor)
+        self.assertEqual(value, ("gregorian", date))
+
+        date = HebrewDate(5000)
+        value = date.accept(visitor)
+        self.assertEqual(value, ("hebrew", date))
+
+        date = FrenchDate(1, "VEND", 1)
+        value = date.accept(visitor)
+        self.assertEqual(value, ("french", date))
+
+        date = JulianDate(1582, "OCT", 5)
+        value = date.accept(visitor)
+        self.assertEqual(value, ("julian", date))
+
+    def test_010_date_no_date(self):
         """Test date.DateValue class."""
 
-        date = DateValue()
-        self.assertEqual(date.template, "")
-        self.assertEqual(date.kw, {})
-
-        date = DateValue("$date", {})
-        self.assertEqual(date.template, "$date")
-        self.assertEqual(date.kw, {})
-
-        date = DateValue("FROM $date1 TO $date2",
-                         {"date1": GregorianDate(2017),
-                          "date2": GregorianDate(2020)})
-        self.assertEqual(date.template, "FROM $date1 TO $date2")
-        self.assertEqual(date.kw, {"date1": GregorianDate(2017),
-                                   "date2": GregorianDate(2020)})
-        self.assertEqual(date.fmt(), "FROM 2017 TO 2020")
-
-        # "phrase" keyword corresponds to string
-        date = DateValue("FROM $date1 TO ($phrase)",
-                         {"date1": GregorianDate(2017),
-                          "phrase": "some day"})
-        self.assertEqual(date.fmt(), "FROM 2017 TO (some day)")
-
-    def test_011_date_fmt(self):
-        """Test date.DateValue class."""
-
-        date = DateValue("date", {})
-        self.assertEqual(date.fmt(), "date")
-
-        date = DateValue("FROM $date1 TO $date2",
-                         {"date1": GregorianDate(2017),
-                          "date2": GregorianDate(2020)})
-        self.assertEqual(date.fmt(), "FROM 2017 TO 2020")
-
-        date = DateValue("BET $date1 AND $date2",
-                         {"date1": GregorianDate(2017, "JAN", 1),
-                          "date2": FrenchDate(2020, "FLOR", 20)})
-        self.assertEqual(date.fmt(), "BET 1 JAN 2017 AND 20 FLOR 2020")
+        date = DateValue.parse("not a date")
+        self.assertIsInstance(date, DateValuePhrase)
+        self.assertEqual(date.kind, DateValueTypes.PHRASE)
+        self.assertIsNone(date.date)
+        self.assertEqual(date.phrase, "not a date")
+        self.assertEqual(date.fmt(), "(not a date)")
 
     def test_012_date_parse_period(self):
         """Test date.DateValue class."""
 
         date = DateValue.parse("FROM 1967")
-        self.assertTrue(date is not None)
-        self.assertEqual(date.template, "FROM $date")
-        self.assertEqual(date.kw, {"date": GregorianDate(1967)})
+        self.assertIsInstance(date, DateValueFrom)
+        self.assertEqual(date.kind, DateValueTypes.FROM)
+        self.assertEqual(date.date, GregorianDate(1967))
         self.assertEqual(date.fmt(), "FROM 1967")
 
         date = DateValue.parse("TO 1 JAN 2017")
-        self.assertTrue(date is not None)
-        self.assertEqual(date.template, "TO $date")
-        self.assertEqual(date.kw, {"date": GregorianDate(2017, "JAN", 1)})
+        self.assertIsInstance(date, DateValueTo)
+        self.assertEqual(date.kind, DateValueTypes.TO)
+        self.assertEqual(date.date, GregorianDate(2017, "JAN", 1))
         self.assertEqual(date.fmt(), "TO 1 JAN 2017")
 
         date = DateValue.parse("FROM 1920 TO 2000")
-        self.assertTrue(date is not None)
-        self.assertEqual(date.template, "FROM $date1 TO $date2")
-        self.assertEqual(date.kw, {"date1": GregorianDate(1920),
-                                   "date2": GregorianDate(2000)})
+        self.assertIsInstance(date, DateValuePeriod)
+        self.assertEqual(date.kind, DateValueTypes.PERIOD)
+        self.assertEqual(date.date1, GregorianDate(1920))
+        self.assertEqual(date.date2, GregorianDate(2000))
         self.assertEqual(date.fmt(), "FROM 1920 TO 2000")
 
         date = DateValue.parse("from mar 1920 to 1 apr 2000")
-        self.assertTrue(date is not None)
-        self.assertEqual(date.template, "FROM $date1 TO $date2")
-        self.assertEqual(date.kw, {"date1": GregorianDate(1920, "MAR"),
-                                   "date2": GregorianDate(2000, "APR", 1)})
+        self.assertIsInstance(date, DateValuePeriod)
+        self.assertEqual(date.kind, DateValueTypes.PERIOD)
+        self.assertEqual(date.date1, GregorianDate(1920, "MAR"))
+        self.assertEqual(date.date2, GregorianDate(2000, "APR", 1))
+        self.assertEqual(date.fmt(), "FROM MAR 1920 TO 1 APR 2000")
 
     def test_013_date_parse_range(self):
         """Test date.DateValue class."""
 
         date = DateValue.parse("BEF 1967B.C.")
-        self.assertTrue(date is not None)
-        self.assertEqual(date.template, "BEFORE $date")
-        self.assertEqual(date.kw, {"date": GregorianDate(1967, bc=True)})
+        self.assertIsInstance(date, DateValueBefore)
+        self.assertEqual(date.kind, DateValueTypes.BEFORE)
+        self.assertEqual(date.date, GregorianDate(1967, bc=True))
         self.assertEqual(date.fmt(), "BEFORE 1967 B.C.")
 
         date = DateValue.parse("AFT 1 JAN 2017")
-        self.assertTrue(date is not None)
-        self.assertEqual(date.template, "AFTER $date")
-        self.assertEqual(date.kw, {"date": GregorianDate(2017, "JAN", 1)})
+        self.assertIsInstance(date, DateValueAfter)
+        self.assertEqual(date.kind, DateValueTypes.AFTER)
+        self.assertEqual(date.date, GregorianDate(2017, "JAN", 1))
         self.assertEqual(date.fmt(), "AFTER 1 JAN 2017")
 
         date = DateValue.parse("BET @#DJULIAN@ 1600 AND 2000")
-        self.assertTrue(date is not None)
-        self.assertEqual(date.template, "BETWEEN $date1 AND $date2")
-        self.assertEqual(date.kw, {"date1": JulianDate(1600),
-                                   "date2": GregorianDate(2000)})
+        self.assertIsInstance(date, DateValueRange)
+        self.assertEqual(date.kind, DateValueTypes.RANGE)
+        self.assertEqual(date.date1, JulianDate(1600))
+        self.assertEqual(date.date2, GregorianDate(2000))
         self.assertEqual(date.fmt(), "BETWEEN 1600 AND 2000")
 
         date = DateValue.parse("bet mar 1920 and apr 2000")
-        self.assertTrue(date is not None)
-        self.assertEqual(date.template, "BETWEEN $date1 AND $date2")
-        self.assertEqual(date.kw, {"date1": GregorianDate(1920, "MAR"),
-                                   "date2": GregorianDate(2000, "APR")})
+        self.assertIsInstance(date, DateValueRange)
+        self.assertEqual(date.kind, DateValueTypes.RANGE)
+        self.assertEqual(date.date1, GregorianDate(1920, "MAR"))
+        self.assertEqual(date.date2, GregorianDate(2000, "APR"))
         self.assertEqual(date.fmt(), "BETWEEN MAR 1920 AND APR 2000")
 
     def test_014_date_parse_approx(self):
         """Test date.DateValue class."""
 
-        dates = {"500B.C.": GregorianDate(500, bc=True),
-                 "@#DGREGORIAN@ JAN 2017": GregorianDate(2017, "JAN"),
+        dates = {"500 B.C.": GregorianDate(500, bc=True),
+                 "JAN 2017": GregorianDate(2017, "JAN"),
                  "31 JAN 2017": GregorianDate(2017, "JAN", 31)}
 
-        approx = {"ABT": "ABOUT", "CAL": "CALCULATED", "EST": "ESTIMATED"}
+        approx = [
+            ("ABT", "ABOUT", DateValueAbout, DateValueTypes.ABOUT),
+            ("CAL", "CALCULATED", DateValueCalculated, DateValueTypes.CALCULATED),
+            ("EST", "ESTIMATED", DateValueEstimated, DateValueTypes.ESTIMATED)
+        ]
 
-        for appr, tmpl in approx.items():
+        for appr, fmt, klass, typeEnum in approx:
             for datestr, value in dates.items():
-
                 date = DateValue.parse(appr + " " + datestr)
-                self.assertTrue(date is not None)
-                self.assertEqual(date.template, tmpl + " $date")
-                self.assertEqual(date.kw, {"date": value})
+                self.assertIsInstance(date, klass)
+                self.assertEqual(date.kind, typeEnum)
+                self.assertEqual(date.fmt(), fmt + " " + datestr)
+                self.assertEqual(date.date, value)
 
     def test_015_date_parse_phrase(self):
         """Test date.DateValue class."""
 
         date = DateValue.parse("(some phrase)")
-        self.assertTrue(date is not None)
-        self.assertEqual(date.template, "($phrase)")
-        self.assertEqual(date.kw, {"phrase": "some phrase"})
+        self.assertIsInstance(date, DateValuePhrase)
+        self.assertEqual(date.kind, DateValueTypes.PHRASE)
+        self.assertEqual(date.phrase, "some phrase")
 
         date = DateValue.parse("INT 1967 B.C. (some phrase)")
-        self.assertTrue(date is not None)
-        self.assertEqual(date.template, "INTERPRETED $date ($phrase)")
-        self.assertEqual(date.kw, {"date": GregorianDate(1967, bc=True),
-                                   "phrase": "some phrase"})
+        self.assertIsInstance(date, DateValueInterpreted)
+        self.assertEqual(date.kind, DateValueTypes.INTERPRETED)
+        self.assertEqual(date.date, GregorianDate(1967, bc=True))
+        self.assertEqual(date.phrase, "some phrase")
         self.assertEqual(date.fmt(), "INTERPRETED 1967 B.C. (some phrase)")
 
         date = DateValue.parse("INT @#DGREGORIAN@ 1 JAN 2017 (some phrase)")
-        self.assertTrue(date is not None)
-        self.assertEqual(date.template, "INTERPRETED $date ($phrase)")
-        self.assertEqual(date.kw, {"date": GregorianDate(2017, "JAN", 1),
-                                   "phrase": "some phrase"})
+        self.assertIsInstance(date, DateValueInterpreted)
+        self.assertEqual(date.kind, DateValueTypes.INTERPRETED)
+        self.assertEqual(date.date, GregorianDate(2017, "JAN", 1))
+        self.assertEqual(date.phrase, "some phrase")
         self.assertEqual(date.fmt(), "INTERPRETED 1 JAN 2017 (some phrase)")
 
     def test_016_date_parse_simple(self):
         """Test date.DateValue class."""
 
         date = DateValue.parse("1967 B.C.")
-        self.assertTrue(date is not None)
-        self.assertEqual(date.template, "$date")
-        self.assertEqual(date.kw, {"date": GregorianDate(1967, bc=True)})
+        self.assertIsInstance(date, DateValueSimple)
+        self.assertEqual(date.kind, DateValueTypes.SIMPLE)
+        self.assertEqual(date.date, GregorianDate(1967, bc=True))
         self.assertEqual(date.fmt(), "1967 B.C.")
 
         date = DateValue.parse("@#DGREGORIAN@ 1 JAN 2017")
-        self.assertTrue(date is not None)
-        self.assertEqual(date.template, "$date")
-        self.assertEqual(date.kw, {"date": GregorianDate(2017, "JAN", 1)})
+        self.assertIsInstance(date, DateValueSimple)
+        self.assertEqual(date.kind, DateValueTypes.SIMPLE)
+        self.assertEqual(date.date, GregorianDate(2017, "JAN", 1))
         self.assertEqual(date.fmt(), "1 JAN 2017")
 
     def test_017_date_cmp(self):
         """Test date.Date class."""
 
         dv = DateValue.parse("2016")
-        self.assertIsInstance(dv._cmp_date, CalendarDate)
-        self.assertEqual(dv._cmp_date, GregorianDate(2016))
+        self.assertIsInstance(dv.key(), CalendarDate)
+        self.assertEqual(dv.key(), GregorianDate(2016))
 
         dv = DateValue.parse("31 DEC 2000")
-        self.assertIsInstance(dv._cmp_date, CalendarDate)
-        self.assertEqual(dv._cmp_date, GregorianDate(2000, "DEC", 31))
+        self.assertIsInstance(dv.key(), CalendarDate)
+        self.assertEqual(dv.key(), GregorianDate(2000, "DEC", 31))
 
         dv = DateValue.parse("BET 31 DEC 2000 AND 1 JAN 2001")
-        self.assertIsInstance(dv._cmp_date, CalendarDate)
-        self.assertEqual(dv._cmp_date, GregorianDate(2000, "DEC", 31))
+        self.assertIsInstance(dv.key(), CalendarDate)
+        self.assertEqual(dv.key(), GregorianDate(2000, "DEC", 31))
 
-        # earliest date
+        # first date, even though it is not earliest
         dv = DateValue.parse("BET 31 DEC 2000 AND 1 JAN 2000")
-        self.assertIsInstance(dv._cmp_date, CalendarDate)
-        self.assertEqual(dv._cmp_date, GregorianDate(2000, "JAN", 1))
+        self.assertIsInstance(dv.key(), CalendarDate)
+        self.assertEqual(dv.key(), GregorianDate(2000, "DEC", 31))
 
         self.assertTrue(DateValue.parse("2016") < DateValue.parse("2017"))
         self.assertTrue(DateValue.parse("2 JAN 2016") > DateValue.parse("1 JAN 2016"))
@@ -410,14 +493,59 @@ class TestDetailDate(unittest.TestCase):
         self.assertTrue(DateValue.parse("(Could be 1996 or 1998)") > DateValue.parse("2000"))
 
         # "empty" date is always later than any regular date
-        self.assertTrue(DateValue() > DateValue.parse("2000"))
+        self.assertTrue(DateValue.parse("") > DateValue.parse("2000"))
 
     def test_018_date_parse_empty(self):
         """Test date.DateValue class."""
 
         for value in (None, ""):
             date = DateValue.parse(value)
-            self.assertTrue(date is not None)
-            self.assertEqual(date.template, "")
-            self.assertEqual(date.kw, {})
+            self.assertIsInstance(date, DateValuePhrase)
+            self.assertEqual(date.kind, DateValueTypes.PHRASE)
+            self.assertIsNone(date.date)
+            self.assertIsNone(date.phrase)
             self.assertEqual(date.fmt(), "")
+
+    def test_019_date_value_visitor(self):
+        """Test date.DateValue class."""
+
+        visitor = TestDateVisitor()
+
+        date1 = GregorianDate(2017, "JAN", 1)
+        date2 = GregorianDate(2017, "DEC", 31)
+
+        value = DateValueSimple(date1).accept(visitor)
+        self.assertEqual(value, ("simple", date1))
+
+        value = DateValueFrom(date1).accept(visitor)
+        self.assertEqual(value, ("from", date1))
+
+        value = DateValueTo(date1).accept(visitor)
+        self.assertEqual(value, ("to", date1))
+
+        value = DateValuePeriod(date1, date2).accept(visitor)
+        self.assertEqual(value, ("period", date1, date2))
+
+        value = DateValueBefore(date1).accept(visitor)
+        self.assertEqual(value, ("before", date1))
+
+        value = DateValueAfter(date1).accept(visitor)
+        self.assertEqual(value, ("after", date1))
+
+        value = DateValueRange(date1, date2).accept(visitor)
+        self.assertEqual(value, ("range", date1, date2))
+
+        value = DateValueAbout(date1).accept(visitor)
+        self.assertEqual(value, ("about", date1))
+
+        value = DateValueCalculated(date1).accept(visitor)
+        self.assertEqual(value, ("calculated", date1))
+
+        value = DateValueEstimated(date1).accept(visitor)
+        self.assertEqual(value, ("estimated", date1))
+
+        value = DateValueInterpreted(date1, "phrase").accept(visitor)
+        self.assertEqual(value, ("interpreted", date1, "phrase"))
+
+        value = DateValuePhrase("phrase").accept(visitor)
+        self.assertEqual(value, ("phrase", "phrase"))
