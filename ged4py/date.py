@@ -268,16 +268,13 @@ class CalendarDate(with_metaclass(abc.ABCMeta)):
     def __ge__(self, other):
         return self.key() >= other.key()
 
-    def fmt(self):
+    def __str__(self):
         """Make printable representation out of this instance.
         """
         val = [self.day, self.month, self.year_str]
+        if self.calendar != CalendarTypes.GREGORIAN:
+            val = ["@#D{}@".format(self.calendar)] + val
         return " ".join([str(item) for item in val if item is not None])
-
-    def __str__(self):
-        return "{}(year={}, month={}, day={}, bc={})".format(
-            self.__class__.__name__, self.year, self.month,
-            self.day, self.bc)
 
     def __repr__(self):
         return str(self)
@@ -358,7 +355,7 @@ class GregorianDate(CalendarDate):
             year += " B.C."
         return year
 
-    def fmt(self):
+    def __str__(self):
         """Make printable representation out of this instance.
         """
         val = [self.day, self.month, self.year_str]
@@ -499,7 +496,7 @@ class CalendarDateVisitor(with_metaclass(abc.ABCMeta)):
         class FormatterVisitor(CalendarDateVisitor):
 
             def visitGregorian(self, date):
-                return "Gregorian date:" + date.fmt()
+                return "Gregorian date:" + str(date)
 
             # and so on for each date type
 
@@ -670,18 +667,12 @@ class DateValue(with_metaclass(abc.ABCMeta)):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def fmt(self):
-        """Return date as a string formatted similarly to its GEDCOM
-        representation.
-        """
-        raise NotImplementedError()
-
-    @abc.abstractmethod
     def __str__(self):
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def __repr__(self):
-        return str(self)
+        raise NotImplementedError()
 
 
 class _DateValueSingle(DateValue):
@@ -696,7 +687,7 @@ class _DateValueSingle(DateValue):
         "Date of this instance (`CalendarDate`)"
         return self._date
 
-    def __str__(self):
+    def __repr__(self):
         return "{}(date={})".format(self.__class__.__name__, self.date)
 
 
@@ -718,7 +709,7 @@ class _DateValueDual(DateValue):
         "Second date of this instance (`CalendarDate`)"
         return self._date2
 
-    def __str__(self):
+    def __repr__(self):
         return "{}(date1={}, date2={})".format(self.__class__.__name__, self.date1, self.date2)
 
 
@@ -732,8 +723,8 @@ class DateValueSimple(_DateValueSingle):
     def accept(self, visitor):
         return visitor.visitSimple(self)
 
-    def fmt(self):
-        return self.date.fmt()
+    def __str__(self):
+        return str(self.date)
 
 
 class DateValueFrom(_DateValueSingle):
@@ -746,8 +737,8 @@ class DateValueFrom(_DateValueSingle):
     def accept(self, visitor):
         return visitor.visitFrom(self)
 
-    def fmt(self):
-        return "FROM {}".format(self.date.fmt())
+    def __str__(self):
+        return "FROM {}".format(self.date)
 
 
 class DateValueTo(_DateValueSingle):
@@ -760,8 +751,8 @@ class DateValueTo(_DateValueSingle):
     def accept(self, visitor):
         return visitor.visitTo(self)
 
-    def fmt(self):
-        return "TO {}".format(self.date.fmt())
+    def __str__(self):
+        return "TO {}".format(self.date)
 
 
 class DateValuePeriod(_DateValueDual):
@@ -774,8 +765,8 @@ class DateValuePeriod(_DateValueDual):
     def accept(self, visitor):
         return visitor.visitPeriod(self)
 
-    def fmt(self):
-        return "FROM {} TO {}".format(self.date1.fmt(), self.date2.fmt())
+    def __str__(self):
+        return "FROM {} TO {}".format(self.date1, self.date2)
 
 
 class DateValueBefore(_DateValueSingle):
@@ -788,8 +779,8 @@ class DateValueBefore(_DateValueSingle):
     def accept(self, visitor):
         return visitor.visitBefore(self)
 
-    def fmt(self):
-        return "BEFORE {}".format(self.date.fmt())
+    def __str__(self):
+        return "BEFORE {}".format(self.date)
 
 
 class DateValueAfter(_DateValueSingle):
@@ -802,8 +793,8 @@ class DateValueAfter(_DateValueSingle):
     def accept(self, visitor):
         return visitor.visitAfter(self)
 
-    def fmt(self):
-        return "AFTER {}".format(self.date.fmt())
+    def __str__(self):
+        return "AFTER {}".format(self.date)
 
 
 class DateValueRange(_DateValueDual):
@@ -816,8 +807,8 @@ class DateValueRange(_DateValueDual):
     def accept(self, visitor):
         return visitor.visitRange(self)
 
-    def fmt(self):
-        return "BETWEEN {} AND {}".format(self.date1.fmt(), self.date2.fmt())
+    def __str__(self):
+        return "BETWEEN {} AND {}".format(self.date1, self.date2)
 
 
 class DateValueAbout(_DateValueSingle):
@@ -830,8 +821,8 @@ class DateValueAbout(_DateValueSingle):
     def accept(self, visitor):
         return visitor.visitAbout(self)
 
-    def fmt(self):
-        return "ABOUT {}".format(self.date.fmt())
+    def __str__(self):
+        return "ABOUT {}".format(self.date)
 
 
 class DateValueCalculated(_DateValueSingle):
@@ -844,8 +835,8 @@ class DateValueCalculated(_DateValueSingle):
     def accept(self, visitor):
         return visitor.visitCalculated(self)
 
-    def fmt(self):
-        return "CALCULATED {}".format(self.date.fmt())
+    def __str__(self):
+        return "CALCULATED {}".format(self.date)
 
 
 class DateValueEstimated(_DateValueSingle):
@@ -858,8 +849,8 @@ class DateValueEstimated(_DateValueSingle):
     def accept(self, visitor):
         return visitor.visitEstimated(self)
 
-    def fmt(self):
-        return "ESTIMATED {}".format(self.date.fmt())
+    def __str__(self):
+        return "ESTIMATED {}".format(self.date)
 
 
 class DateValueInterpreted(_DateValueSingle):
@@ -882,11 +873,11 @@ class DateValueInterpreted(_DateValueSingle):
     def accept(self, visitor):
         return visitor.visitInterpreted(self)
 
-    def __str__(self):
+    def __repr__(self):
         return "{}(date={}, phrase={})".format(self.__class__.__name__, self.date, self.phrase)
 
-    def fmt(self):
-        return "INTERPRETED {} ({})".format(self.date.fmt(), self.phrase)
+    def __str__(self):
+        return "INTERPRETED {} ({})".format(self.date, self.phrase)
 
 
 class DateValuePhrase(_DateValueSingle):
@@ -909,10 +900,10 @@ class DateValuePhrase(_DateValueSingle):
     def accept(self, visitor):
         return visitor.visitPhrase(self)
 
-    def __str__(self):
+    def __repr__(self):
         return "{}(phrase={})".format(self.__class__.__name__, self.phrase)
 
-    def fmt(self):
+    def __str__(self):
         if self.phrase is None:
             return ""
         else:
@@ -946,7 +937,7 @@ class DateValueVisitor(with_metaclass(abc.ABCMeta)):
         class FormatterVisitor(DateValueVisitor):
 
             def visitSimple(self, date):
-                return "Simple date: " + date.date.fmt()
+                return "Simple date: " + str(date.date)
 
             # and so on for each date type
 
