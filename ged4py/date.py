@@ -100,27 +100,35 @@ class CalendarTypes(object):
 class CalendarDate(with_metaclass(abc.ABCMeta)):
     """Interface for calendar date representation.
 
-    This class defines attributes and methods that are common for all
-    calendars defined in GEDCOM (though the meaning and representation can be
-    different in different calendars). In GEDCOM date consists of year, month,
-    and day; day and month are optional (either day or day+month), year must
-    be present. Day is a number, month is month name in a given calendar.
-    Year is a number optionally followed by "B.C." or "/`NUMBER`" (latter is
-    defined for Gregorian calendar only).
-
-    Implementation for different calendars are provided by subclasses which
-    can implement additional attributes or methods. All subclasses need to
-    implement `key` method to support ordering of the dates from different
-    calendars.
-
     :param int year: Calendar year number. If ``bc`` parameter is ``True``
-        then this number is before "epoch" of that calendar.
+        then this year is before "epoch" of that calendar.
     :param str month: Name of the month. Optional, but if day is given then
         month cannot be None.
     :param int day: Day in a month, optional.
     :param bool bc: `True` if year has "B.C."
     :param str original: Original string representation of this date as it was
         specified in GEDCOM file, could be ``None``.
+
+    This class defines attributes and methods that are common for all
+    calendars defined in GEDCOM (though the meaning and representation can be
+    different in different calendars). In GEDCOM date consists of year, month,
+    and day; day and month are optional (either day or day+month), year must
+    be present. Day is a number, month is month name in a given calendar.
+    Year is a number optionally followed by ``B.C.`` or ``/NUMBER`` (latter
+    is defined for Gregorian calendar only).
+
+    Implementation for different calendars are provided by subclasses which
+    can implement additional attributes or methods. All subclasses need to
+    implement :meth:`key` method to support ordering of the dates from
+    different calendars. To implement type-specific code on client side one
+    can use one of these approaches:
+
+        - dispatch based on the value of :attr:`calendar` attribute, it has
+          one of the values defined in :class:`CalendarTypes` enum,
+        - dispatch based on the type of the instance using ``isinstance``
+          method to check the type (e.g. ``isinstance(date, GregorianDate)``)
+        - double dispatch (visitor pattern) by implementing
+          :class:`CalendarDateVisitor` interface.
     """
 
     def __init__(self, year, month=None, day=None, bc=False, original=None):
@@ -203,7 +211,7 @@ class CalendarDate(with_metaclass(abc.ABCMeta)):
         """Parse <DATE> string and make :class:`CalendarDate` from it.
 
         :param str datestr: String with GEDCOM date.
-        :returns: CalendarDate instance
+        :returns: :class:`CalendarDate` instance
         :raises: ValueError is raised if parsing fails.
         """
 
@@ -283,6 +291,13 @@ class CalendarDate(with_metaclass(abc.ABCMeta)):
 class GregorianDate(CalendarDate):
     """Implementation of CalendarDate for Gregorian calendar.
 
+    Parameter ``dual_year`` (and corresponding attribute) is used for dual
+    year. Other parameters have the same meaning as in :class:`CalendarDate`
+    class.
+
+    :param int dual_year: Dual year number or ``None``. Actual year should be
+        given, not just two last digits.
+
     In GEDCOM Gregorian calendar dates are allowed to specify year in the
     form YEAR1/YEAR2 (a.k.a.) dual-dating. Second number is used to specify
     year as if calendar year starts in January, while the first number is
@@ -290,13 +305,6 @@ class GregorianDate(CalendarDate):
     GEDCOM specifies that dual year uses just two last digits in the dual
     year number, though some implementations use 4 digits. This class expects
     actual year number (e.g. as if it was specified as "1699/1700").
-
-    Parameter ``dual_year`` (and corresponding attribute) is used for dual
-    year. Other parameters have the same meaning as in :class:`CalendarDate`
-    class.
-
-    :param int dual_year: Dual year number or ``None``. Actual year should be
-        given, not just two last digits.
     """
     def __init__(self, year, month=None, day=None, bc=False, original=None, dual_year=None):
         CalendarDate.__init__(self, year, month, day, bc, original)
@@ -572,12 +580,15 @@ class DateValue(with_metaclass(abc.ABCMeta)):
     """Representation of the <DATE_VALUE>, can be exact date, range,
     period, etc.
 
+    :param key: Object that is used for ordering, usually
+            :class:`CalendarDate` but can be ``None``.
+
     ``DateValue`` is an abstract base class, for each separate kind of GEDCOM
     date there is a separate concrete class (e.g. ``DateValueRange``). Class
     method :meth:`parse` is used to parse a date string and return an
-    instance corresponding DateValue type. Different types have different
-    attributes, to implement type-specific code on client side one can use one
-    of these approaches:
+    instance of corresponding ``DateValue`` type. Different types have
+    different attributes, to implement type-specific code on client side one
+    can use one of these approaches:
 
         - dispatch based on the value of :attr:`kind` attribute, it has one of
           the values defined in :class:`DateValueTypes` enum,
@@ -585,9 +596,6 @@ class DateValue(with_metaclass(abc.ABCMeta)):
           method to check the type (e.g. ``isinstance(date, DateValueRange)``)
         - double dispatch (visitor pattern) by implementing
           :class:`DateValueVisitor` interface.
-
-    :param key: Object that is used for ordering, usually
-            :class:`CalendarDate` but can be ``None``.
     """
     def __init__(self, key):
         self._key = key
@@ -598,6 +606,7 @@ class DateValue(with_metaclass(abc.ABCMeta)):
         instance out of it.
 
         :param str datestr: String with GEDCOM date, range, period, etc.
+        :returns: :class:`DateValue` instance
         """
         # some apps generate DATE recods without any value, which is
         # non-standard, return empty DateValue for those
@@ -619,7 +628,7 @@ class DateValue(with_metaclass(abc.ABCMeta)):
     @abc.abstractmethod
     def kind(self):
         """The type of GEDCOM date, one of the constants defined in
-        :class:`DateValueTypes`.
+        :class:`DateValueTypes` (`int`).
         """
         raise NotImplementedError()
 
@@ -676,7 +685,7 @@ class DateValue(with_metaclass(abc.ABCMeta)):
 
 
 class _DateValueSingle(DateValue):
-    """Implementation of DateValue for single-value date.
+    """Implementation of :class:`DateValue` interface for single-value date.
     """
     def __init__(self, date):
         DateValue.__init__(self, date)
@@ -692,7 +701,7 @@ class _DateValueSingle(DateValue):
 
 
 class _DateValueDual(DateValue):
-    """Implementation of DateValue for dual-value date.
+    """Implementation of :class:`DateValue` interface for dual-value date.
     """
     def __init__(self, date1, date2):
         DateValue.__init__(self, date1)
@@ -714,7 +723,7 @@ class _DateValueDual(DateValue):
 
 
 class DateValueSimple(_DateValueSingle):
-    """Implementation of DateValue for simple single-value DATE.
+    """Implementation of :class:`DateValue` interface for simple single-value DATE.
     """
     @property
     def kind(self):
@@ -728,7 +737,7 @@ class DateValueSimple(_DateValueSingle):
 
 
 class DateValueFrom(_DateValueSingle):
-    """Implementation of DateValue for FROM date.
+    """Implementation of :class:`DateValue` interface for FROM date.
     """
     @property
     def kind(self):
@@ -742,7 +751,7 @@ class DateValueFrom(_DateValueSingle):
 
 
 class DateValueTo(_DateValueSingle):
-    """Implementation of DateValue for TO date.
+    """Implementation of :class:`DateValue` interface for TO date.
     """
     @property
     def kind(self):
@@ -756,7 +765,7 @@ class DateValueTo(_DateValueSingle):
 
 
 class DateValuePeriod(_DateValueDual):
-    """Implementation of DateValue for FROM ... TO date.
+    """Implementation of :class:`DateValue` interface for FROM ... TO date.
     """
     @property
     def kind(self):
@@ -770,7 +779,7 @@ class DateValuePeriod(_DateValueDual):
 
 
 class DateValueBefore(_DateValueSingle):
-    """Implementation of DateValue for BEF date.
+    """Implementation of :class:`DateValue` interface for BEF date.
     """
     @property
     def kind(self):
@@ -784,7 +793,7 @@ class DateValueBefore(_DateValueSingle):
 
 
 class DateValueAfter(_DateValueSingle):
-    """Implementation of DateValue for AFTE date.
+    """Implementation of :class:`DateValue` interface for AFT date.
     """
     @property
     def kind(self):
@@ -798,7 +807,7 @@ class DateValueAfter(_DateValueSingle):
 
 
 class DateValueRange(_DateValueDual):
-    """Implementation of DateValue for BET .. AND ... date.
+    """Implementation of :class:`DateValue` interface for BET ... AND ... date.
     """
     @property
     def kind(self):
@@ -812,7 +821,7 @@ class DateValueRange(_DateValueDual):
 
 
 class DateValueAbout(_DateValueSingle):
-    """Implementation of DateValue for ABT date.
+    """Implementation of :class:`DateValue` interface for ABT date.
     """
     @property
     def kind(self):
@@ -826,7 +835,7 @@ class DateValueAbout(_DateValueSingle):
 
 
 class DateValueCalculated(_DateValueSingle):
-    """Implementation of DateValue for CAL date.
+    """Implementation of :class:`DateValue` interface for CAL date.
     """
     @property
     def kind(self):
@@ -840,7 +849,7 @@ class DateValueCalculated(_DateValueSingle):
 
 
 class DateValueEstimated(_DateValueSingle):
-    """Implementation of DateValue for EST date.
+    """Implementation of :class:`DateValue` interface for EST date.
     """
     @property
     def kind(self):
@@ -854,7 +863,7 @@ class DateValueEstimated(_DateValueSingle):
 
 
 class DateValueInterpreted(_DateValueSingle):
-    """Implementation of DateValue for INT date.
+    """Implementation of :class:`DateValue` interface for INT date.
     """
     def __init__(self, date, phrase):
         _DateValueSingle.__init__(self, date)
@@ -881,7 +890,7 @@ class DateValueInterpreted(_DateValueSingle):
 
 
 class DateValuePhrase(_DateValueSingle):
-    """Implementation of DateValue for INT date.
+    """Implementation of :class:`DateValue` interface for phrase-date.
     """
     def __init__(self, phrase):
         _DateValueSingle.__init__(self, None)
@@ -927,12 +936,13 @@ DATES = (
 
 
 class DateValueVisitor(with_metaclass(abc.ABCMeta)):
-    """Interface for implementation of Visitor pattern for DateValue classes.
+    """Interface for implementation of Visitor pattern for :class:`DateValue`
+    classes.
 
-    One can easily extend behavior of the DateValue class hierarchy without
-    modifying classes themselves. Clients need to implement new behavior by
-    sub-classing ``DateValueVisitor`` and calling :meth:`DateValue.accept`
-    method, e.g.::
+    One can easily extend behavior of the :class:`DateValue` class hierarchy
+    without modifying classes themselves. Clients need to implement new
+    behavior by sub-classing ``DateValueVisitor`` and calling
+    :meth:`DateValue.accept` method, e.g.::
 
         class FormatterVisitor(DateValueVisitor):
 
