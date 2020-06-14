@@ -8,7 +8,7 @@ __all__ = [
     "HebrewDate", "JulianDate", "DateValueTypes", "DateValue",
     "DateValueAbout", "DateValueAfter", "DateValueBefore", "DateValueCalculated",
     "DateValueEstimated", "DateValueFrom", "DateValueInterpreted", "DateValuePeriod",
-    "DateValuePhrase", "DateValueRange", "DateValueSimple", "DateValueTo", "DateValueTypes",
+    "DateValuePhrase", "DateValueRange", "DateValueSimple", "DateValueTo",
     "CalendarDateVisitor", "DateValueVisitor"
 ]
 
