@@ -5,12 +5,15 @@
 
 import unittest
 
-from ged4py.date import (
+from ged4py.calendar import (
     CalendarTypes, CalendarDate, FrenchDate, GregorianDate, HebrewDate, JulianDate,
+    CalendarDateVisitor
+)
+from ged4py.date import (
     DateValue, DateValueAbout, DateValueAfter, DateValueBefore, DateValueCalculated,
     DateValueEstimated, DateValueFrom, DateValueInterpreted, DateValuePeriod,
     DateValuePhrase, DateValueRange, DateValueSimple, DateValueTo, DateValueTypes,
-    CalendarDateVisitor, DateValueVisitor
+    DateValueVisitor
 )
 
 
