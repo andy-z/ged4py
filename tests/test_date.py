@@ -341,7 +341,6 @@ class TestDetailDate(unittest.TestCase):
         date = DateValue.parse("not a date")
         self.assertIsInstance(date, DateValuePhrase)
         self.assertEqual(date.kind, DateValueTypes.PHRASE)
-        self.assertIsNone(date.date)
         self.assertEqual(date.phrase, "not a date")
         self.assertEqual(str(date), "(not a date)")
 
@@ -502,7 +501,6 @@ class TestDetailDate(unittest.TestCase):
             date = DateValue.parse(value)
             self.assertIsInstance(date, DateValuePhrase)
             self.assertEqual(date.kind, DateValueTypes.PHRASE)
-            self.assertIsNone(date.date)
             self.assertIsNone(date.phrase)
             self.assertEqual(str(date), "")
 

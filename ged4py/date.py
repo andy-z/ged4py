@@ -88,13 +88,31 @@ class CalendarTypes(object):
     """Namespace for constants defining names of calendars.
 
     Note that it does not define constants for ``ROMAN`` calendar which is
-    declared in GEDCOM standrad as a placeholder for future definition, or
+    declared in GEDCOM standard as a placeholder for future definition, or
     ``UNKNOWN`` calendar which is not supported by this library.
+
+    The constants defined in this namespace are used for the values of the
+    :attr:`CalendarDate.calendar` attribute. Each separate class implementing
+    :class:`CalendarDate` interface uses distinct value for that attribute,
+    and this value can be used to deduce actual type of the
+    :class:`CalendarDate` instance.
     """
+
     GREGORIAN = "GREGORIAN"
+    """This is the value assigned to :attr:`GregorianDate.calendar` attribute.
+    """
+
     JULIAN = "JULIAN"
+    """This is the value assigned to :attr:`JulianDate.calendar` attribute.
+    """
+
     HEBREW = "HEBREW"
+    """This is the value assigned to :attr:`HebrewDate.calendar` attribute.
+    """
+
     FRENCH_R = "FRENCH R"
+    """This is the value assigned to :attr:`FrenchDate.calendar` attribute.
+    """
 
 
 class CalendarDate(with_metaclass(abc.ABCMeta)):
@@ -120,13 +138,22 @@ class CalendarDate(with_metaclass(abc.ABCMeta)):
     Implementation for different calendars are provided by subclasses which
     can implement additional attributes or methods. All subclasses need to
     implement :meth:`key` method to support ordering of the dates from
-    different calendars. To implement type-specific code on client side one
-    can use one of these approaches:
+    different calendars. There are presently four implementations defined
+    in this module:
+
+        - :class:`GregorianDate` for "GREGORIAN" calendar
+        - :class:`JulianDate` for "JULIAN" calendar
+        - :class:`HebrewDate` for "HEBREW" calendar
+        - :class:`FrenchDate` for "FRENCH R" calendar
+
+    To implement type-specific code on client side one can use one of these
+    approaches:
 
         - dispatch based on the value of :attr:`calendar` attribute, it has
-          one of the values defined in :class:`CalendarTypes` enum,
+          one of the values defined in :class:`CalendarTypes` namespace,
+          the value maps uniquely to an implementation class;
         - dispatch based on the type of the instance using ``isinstance``
-          method to check the type (e.g. ``isinstance(date, GregorianDate)``)
+          method to check the type (e.g. ``isinstance(date, GregorianDate)``);
         - double dispatch (visitor pattern) by implementing
           :class:`CalendarDateVisitor` interface.
     """
@@ -196,7 +223,7 @@ class CalendarDate(with_metaclass(abc.ABCMeta)):
 
     @abc.abstractmethod
     def accept(self, visitor):
-        """Support visitor pattern.
+        """Implementation of visitor pattern.
 
         Each concrete sub-class will implement this method by dispatching the
         call to corresponding visitor method.
@@ -289,7 +316,7 @@ class CalendarDate(with_metaclass(abc.ABCMeta)):
 
 
 class GregorianDate(CalendarDate):
-    """Implementation of CalendarDate for Gregorian calendar.
+    """Implementation of :class:`CalendarDate` for Gregorian calendar.
 
     Parameter ``dual_year`` (and corresponding attribute) is used for dual
     year. Other parameters have the same meaning as in :class:`CalendarDate`
@@ -321,6 +348,9 @@ class GregorianDate(CalendarDate):
 
     @property
     def calendar(self):
+        """Calendar name used for this date, for GregorianDate this is always
+        :attr:`CalendarTypes.GREGORIAN` (`str`)
+        """
         return CalendarTypes.GREGORIAN
 
     def key(self):
@@ -374,7 +404,7 @@ class GregorianDate(CalendarDate):
 
 
 class JulianDate(CalendarDate):
-    """Implementation of CalendarDate for Julian calendar.
+    """Implementation of :class:`CalendarDate` for Julian calendar.
 
     All parameters have the same meaning as in :class:`CalendarDate` class.
     """
@@ -414,6 +444,9 @@ class JulianDate(CalendarDate):
 
     @property
     def calendar(self):
+        """Calendar name used for this date, for JulianDate this is always
+        :attr:`CalendarTypes.JULIAN` (`str`)
+        """
         return CalendarTypes.JULIAN
 
     def accept(self, visitor):
@@ -421,7 +454,7 @@ class JulianDate(CalendarDate):
 
 
 class HebrewDate(CalendarDate):
-    """Implementation of CalendarDate for Hebrew calendar.
+    """Implementation of :class:`CalendarDate` for Hebrew calendar.
 
     All parameters have the same meaning as in :class:`CalendarDate` class.
     """
@@ -447,6 +480,9 @@ class HebrewDate(CalendarDate):
 
     @property
     def calendar(self):
+        """Calendar name used for this date, for HebrewDate this is always
+        :attr:`CalendarTypes.HEBREW` (`str`)
+        """
         return CalendarTypes.HEBREW
 
     def accept(self, visitor):
@@ -454,7 +490,7 @@ class HebrewDate(CalendarDate):
 
 
 class FrenchDate(CalendarDate):
-    """Implementation of CalendarDate for French republican calendar.
+    """Implementation of :class:`CalendarDate` for French Republican calendar.
 
     All parameters have the same meaning as in :class:`CalendarDate` class.
     """
@@ -486,6 +522,9 @@ class FrenchDate(CalendarDate):
 
     @property
     def calendar(self):
+        """Calendar name used for this date, for FrenchDate this is always
+        :attr:`CalendarTypes.FRENCH` (`str`)
+        """
         return CalendarTypes.FRENCH_R
 
     def accept(self, visitor):
@@ -537,43 +576,73 @@ class CalendarDateVisitor(with_metaclass(abc.ABCMeta)):
 
 class DateValueTypes(object):
     """Namespace for constants defining types of date values.
+
+    The constants defined in this namespace are used for the values of the
+    :attr:`DateValue.kind` attribute. Each separate class implementing
+    :class:`DateValue` interface uses distinct value for that attribute,
+    and this value can be used to deduce actual type of the date
+    :class:`DateValue` instance.
     """
 
-    SIMPLE = 0
-    "Date value consists of a single CalendarDate"
+    SIMPLE = "SIMPLE"
+    """Date value consists of a single CalendarDate, corresponding
+    implementation class is :class:`DateValueSimple`.
+    """
 
-    FROM = 1
-    "Period of dates starting at specified date, end date is unknown"
+    FROM = "FROM"
+    """Period of dates starting at specified date, end date is unknown,
+    corresponding implementation class is :class:`DateValueFrom`
+    """
 
-    TO = 2
-    "Period of dates ending at specified date, start date is unknown"
+    TO = "TO"
+    """Period of dates ending at specified date, start date is unknown,
+    corresponding implementation class is :class:`DateValueTo`.
+    """
 
-    PERIOD = 3
-    "Period of dates starting at one date and ending at another"
+    PERIOD = "PERIOD"
+    """Period of dates starting at one date and ending at another,
+    corresponding implementation class is :class:`DateValuePeriod`.
+    """
 
-    BEFORE = 4
-    "Date value for an event known to happen before given date"
+    BEFORE = "BEFORE"
+    """Date value for an event known to happen before given date,
+    corresponding implementation class is :class:`DateValueBefore`.
+    """
 
-    AFTER = 5
-    "Date value for an event known to happen after given date"
+    AFTER = "AFTER"
+    """Date value for an event known to happen after given date,
+    corresponding implementation class is :class:`DateValueAfter`.
+    """
 
-    RANGE = 6
-    "Date value for an event known to happen between given dates"
+    RANGE = "RANGE"
+    """Date value for an event known to happen between given dates,
+    corresponding implementation class is :class:`DateValueRange`.
+    """
 
-    ABOUT = 7
-    "Date value for an event known to happen at approximate date"
+    ABOUT = "ABOUT"
+    """Date value for an event known to happen at approximate date,
+    corresponding implementation class is :class:`DateValueAbout`.
+    """
 
-    CALCULATED = 8
-    "Date value for an event calculated from other known information"
+    CALCULATED = "CALCULATED"
+    """Date value for an event calculated from other known information,
+    corresponding implementation class is :class:`DateValueCalculated`.
+    """
 
-    ESTIMATED = 9
-    "Date value for an event estimated from other known information"
+    ESTIMATED = "ESTIMATED"
+    """Date value for an event estimated from other known information,
+    corresponding implementation class is :class:`DateValueEstimated`.
+    """
 
-    INTERPRETED = 10
-    "Date value for an event interpreted from a specified phrase"
+    INTERPRETED = "INTERPRETED"
+    """Date value for an event interpreted from a specified phrase,
+    corresponding implementation class is :class:`DateValueInterpreted`.
+    """
 
-    PHRASE = 11
-    "Date value for an event is a phrase"
+    PHRASE = "PHRASE"
+    """Date value for an event is a phrase, corresponding implementation
+    class is :class:`DateValuePhrase`.
+    """
 
 
 class DateValue(with_metaclass(abc.ABCMeta)):
@@ -584,16 +653,22 @@ class DateValue(with_metaclass(abc.ABCMeta)):
             :class:`CalendarDate` but can be ``None``.
 
     ``DateValue`` is an abstract base class, for each separate kind of GEDCOM
-    date there is a separate concrete class (e.g. ``DateValueRange``). Class
-    method :meth:`parse` is used to parse a date string and return an
-    instance of corresponding ``DateValue`` type. Different types have
-    different attributes, to implement type-specific code on client side one
-    can use one of these approaches:
+    date there is a separate concrete class. Class method :meth:`parse` is
+    used to parse a date string and return an instance of corresponding
+    sub-class of ``DateValue`` type.
+
+    There are presently 12 concrete classes implementing this interface (e.g.
+    :class:`DateValueSimple`, :class:`DateValueRange`, etc.) Different types
+    have somewhat different set of attributes, to implement type-specific code
+    on client side one can use one of these approaches:
 
         - dispatch based on the value of :attr:`kind` attribute, it has one of
-          the values defined in :class:`DateValueTypes` enum,
+          the values defined in :class:`DateValueTypes` namespace, and that
+          value maps uniquely to a corresponding sub-class of
+          :class:`DateValue`;
         - dispatch based on the type of the instance using ``isinstance``
-          method to check the type (e.g. ``isinstance(date, DateValueRange)``)
+          method to check the type (e.g.
+          ``isinstance(date, DateValueRange)``);
         - double dispatch (visitor pattern) by implementing
           :class:`DateValueVisitor` interface.
     """
@@ -628,7 +703,7 @@ class DateValue(with_metaclass(abc.ABCMeta)):
     @abc.abstractmethod
     def kind(self):
         """The type of GEDCOM date, one of the constants defined in
-        :class:`DateValueTypes` (`int`).
+        :class:`DateValueTypes` (`str`).
         """
         raise NotImplementedError()
 
@@ -665,7 +740,7 @@ class DateValue(with_metaclass(abc.ABCMeta)):
 
     @abc.abstractmethod
     def accept(self, visitor):
-        """Support visitor pattern.
+        """Implementation of visitor pattern.
 
         Each concrete sub-class will implement this method by dispatching the
         call to corresponding visitor method.
@@ -684,29 +759,116 @@ class DateValue(with_metaclass(abc.ABCMeta)):
         raise NotImplementedError()
 
 
-class _DateValueSingle(DateValue):
-    """Implementation of :class:`DateValue` interface for single-value date.
+class DateValueSimple(DateValue):
+    """Implementation of :class:`DateValue` interface for simple single-value DATE.
+
+    :param CalendarDate date: Corresponding date.
     """
     def __init__(self, date):
         DateValue.__init__(self, date)
         self._date = date
 
     @property
+    def kind(self):
+        """For DateValueSimple class this is always
+        :attr:`DateValueTypes.SIMPLE`.
+        """
+        return DateValueTypes.SIMPLE
+
+    @property
     def date(self):
         "Date of this instance (`CalendarDate`)"
         return self._date
+
+    def accept(self, visitor):
+        return visitor.visitSimple(self)
+
+    def __str__(self):
+        return str(self.date)
 
     def __repr__(self):
         return "{}(date={})".format(self.__class__.__name__, self.date)
 
 
-class _DateValueDual(DateValue):
-    """Implementation of :class:`DateValue` interface for dual-value date.
+class DateValueFrom(DateValue):
+    """Implementation of :class:`DateValue` interface for FROM date.
+
+    :param CalendarDate date: Corresponding date.
+    """
+    def __init__(self, date):
+        DateValue.__init__(self, date)
+        self._date = date
+
+    @property
+    def kind(self):
+        """For DateValueFrom class this is always
+        :attr:`DateValueTypes.FROM`.
+        """
+        return DateValueTypes.FROM
+
+    @property
+    def date(self):
+        "Date of this instance (`CalendarDate`)"
+        return self._date
+
+    def accept(self, visitor):
+        return visitor.visitFrom(self)
+
+    def __str__(self):
+        return "FROM {}".format(self.date)
+
+    def __repr__(self):
+        return "{}(date={})".format(self.__class__.__name__, self.date)
+
+
+class DateValueTo(DateValue):
+    """Implementation of :class:`DateValue` interface for TO date.
+
+    :param CalendarDate date: Corresponding date.
+    """
+    def __init__(self, date):
+        DateValue.__init__(self, date)
+        self._date = date
+
+    @property
+    def kind(self):
+        """For DateValueTo class this is always
+        :attr:`DateValueTypes.TO`.
+        """
+        return DateValueTypes.TO
+
+    @property
+    def date(self):
+        "Date of this instance (`CalendarDate`)"
+        return self._date
+
+    def accept(self, visitor):
+        return visitor.visitTo(self)
+
+    def __str__(self):
+        return "TO {}".format(self.date)
+
+    def __repr__(self):
+        return "{}(date={})".format(self.__class__.__name__, self.date)
+
+
+class DateValuePeriod(DateValue):
+    """Implementation of :class:`DateValue` interface for FROM ... TO date.
+
+    :param CalendarDate date1: FROM date.
+    :param CalendarDate date2: TO date.
     """
     def __init__(self, date1, date2):
         DateValue.__init__(self, date1)
         self._date1 = date1
         self._date2 = date2
+
+    @property
+    def kind(self):
+        """For DateValuePeriod class this is always
+        :attr:`DateValueTypes.PERIOD`.
+        """
+        return DateValueTypes.PERIOD
 
     @property
     def date1(self):
@@ -718,72 +880,36 @@ class _DateValueDual(DateValue):
         "Second date of this instance (`CalendarDate`)"
         return self._date2
 
-    def __repr__(self):
-        return "{}(date1={}, date2={})".format(self.__class__.__name__, self.date1, self.date2)
-
-
-class DateValueSimple(_DateValueSingle):
-    """Implementation of :class:`DateValue` interface for simple single-value DATE.
-    """
-    @property
-    def kind(self):
-        return DateValueTypes.SIMPLE
-
-    def accept(self, visitor):
-        return visitor.visitSimple(self)
-
-    def __str__(self):
-        return str(self.date)
-
-
-class DateValueFrom(_DateValueSingle):
-    """Implementation of :class:`DateValue` interface for FROM date.
-    """
-    @property
-    def kind(self):
-        return DateValueTypes.FROM
-
-    def accept(self, visitor):
-        return visitor.visitFrom(self)
-
-    def __str__(self):
-        return "FROM {}".format(self.date)
-
-
-class DateValueTo(_DateValueSingle):
-    """Implementation of :class:`DateValue` interface for TO date.
-    """
-    @property
-    def kind(self):
-        return DateValueTypes.TO
-
-    def accept(self, visitor):
-        return visitor.visitTo(self)
-
-    def __str__(self):
-        return "TO {}".format(self.date)
-
-
-class DateValuePeriod(_DateValueDual):
-    """Implementation of :class:`DateValue` interface for FROM ... TO date.
-    """
-    @property
-    def kind(self):
-        return DateValueTypes.PERIOD
-
     def accept(self, visitor):
         return visitor.visitPeriod(self)
 
     def __str__(self):
         return "FROM {} TO {}".format(self.date1, self.date2)
 
+    def __repr__(self):
+        return "{}(date1={}, date2={})".format(self.__class__.__name__, self.date1, self.date2)
 
-class DateValueBefore(_DateValueSingle):
+
+class DateValueBefore(DateValue):
     """Implementation of :class:`DateValue` interface for BEF date.
+
+    :param CalendarDate date: Corresponding date.
     """
+    def __init__(self, date):
+        DateValue.__init__(self, date)
+        self._date = date
+
     @property
     def kind(self):
+        """For DateValueBefore class this is always
+        :attr:`DateValueTypes.BEFORE`.
+        """
         return DateValueTypes.BEFORE
+
+    @property
+    def date(self):
+        "Date of this instance (`CalendarDate`)"
+        return self._date
 
     def accept(self, visitor):
         return visitor.visitBefore(self)
@@ -791,13 +917,30 @@ class DateValueBefore(_DateValueSingle):
     def __str__(self):
         return "BEFORE {}".format(self.date)
 
+    def __repr__(self):
+        return "{}(date={})".format(self.__class__.__name__, self.date)
 
-class DateValueAfter(_DateValueSingle):
+
+class DateValueAfter(DateValue):
     """Implementation of :class:`DateValue` interface for AFT date.
+
+    :param CalendarDate date: Corresponding date.
     """
+    def __init__(self, date):
+        DateValue.__init__(self, date)
+        self._date = date
+
     @property
     def kind(self):
+        """For DateValueAfter class this is always
+        :attr:`DateValueTypes.AFTER`.
+        """
         return DateValueTypes.AFTER
+
+    @property
+    def date(self):
+        "Date of this instance (`CalendarDate`)"
+        return self._date
 
     def accept(self, visitor):
         return visitor.visitAfter(self)
@@ -805,13 +948,37 @@ class DateValueAfter(_DateValueSingle):
     def __str__(self):
         return "AFTER {}".format(self.date)
 
+    def __repr__(self):
+        return "{}(date={})".format(self.__class__.__name__, self.date)
 
-class DateValueRange(_DateValueDual):
+
+class DateValueRange(DateValue):
     """Implementation of :class:`DateValue` interface for BET ... AND ... date.
+
+    :param CalendarDate date1: First date.
+    :param CalendarDate date2: Second date.
     """
+    def __init__(self, date1, date2):
+        DateValue.__init__(self, date1)
+        self._date1 = date1
+        self._date2 = date2
+
     @property
     def kind(self):
+        """For DateValueRange class this is always
+        :attr:`DateValueTypes.RANGE`.
+        """
         return DateValueTypes.RANGE
+
+    @property
+    def date1(self):
+        "First date of this instance (`CalendarDate`)"
+        return self._date1
+
+    @property
+    def date2(self):
+        "Second date of this instance (`CalendarDate`)"
+        return self._date2
 
     def accept(self, visitor):
         return visitor.visitRange(self)
@@ -819,13 +986,30 @@ class DateValueRange(_DateValueDual):
     def __str__(self):
         return "BETWEEN {} AND {}".format(self.date1, self.date2)
 
+    def __repr__(self):
+        return "{}(date1={}, date2={})".format(self.__class__.__name__, self.date1, self.date2)
 
-class DateValueAbout(_DateValueSingle):
+
+class DateValueAbout(DateValue):
     """Implementation of :class:`DateValue` interface for ABT date.
+
+    :param CalendarDate date: Corresponding date.
     """
+    def __init__(self, date):
+        DateValue.__init__(self, date)
+        self._date = date
+
     @property
     def kind(self):
+        """For DateValueAbout class this is always
+        :attr:`DateValueTypes.ABOUT`.
+        """
         return DateValueTypes.ABOUT
+
+    @property
+    def date(self):
+        "Date of this instance (`CalendarDate`)"
+        return self._date
 
     def accept(self, visitor):
         return visitor.visitAbout(self)
@@ -833,13 +1017,30 @@ class DateValueAbout(_DateValueSingle):
     def __str__(self):
         return "ABOUT {}".format(self.date)
 
+    def __repr__(self):
+        return "{}(date={})".format(self.__class__.__name__, self.date)
 
-class DateValueCalculated(_DateValueSingle):
+
+class DateValueCalculated(DateValue):
     """Implementation of :class:`DateValue` interface for CAL date.
+
+    :param CalendarDate date: Corresponding date.
     """
+    def __init__(self, date):
+        DateValue.__init__(self, date)
+        self._date = date
+
     @property
     def kind(self):
+        """For DateValueCalculated class this is always
+        :attr:`DateValueTypes.CALCULATED`.
+        """
         return DateValueTypes.CALCULATED
+
+    @property
+    def date(self):
+        "Date of this instance (`CalendarDate`)"
+        return self._date
 
     def accept(self, visitor):
         return visitor.visitCalculated(self)
@@ -847,13 +1048,30 @@ class DateValueCalculated(_DateValueSingle):
     def __str__(self):
         return "CALCULATED {}".format(self.date)
 
+    def __repr__(self):
+        return "{}(date={})".format(self.__class__.__name__, self.date)
 
-class DateValueEstimated(_DateValueSingle):
+
+class DateValueEstimated(DateValue):
     """Implementation of :class:`DateValue` interface for EST date.
+
+    :param CalendarDate date: Corresponding date.
     """
+    def __init__(self, date):
+        DateValue.__init__(self, date)
+        self._date = date
+
     @property
     def kind(self):
+        """For DateValueEstimated class this is always
+        :attr:`DateValueTypes.ESTIMATED`.
+        """
         return DateValueTypes.ESTIMATED
+
+    @property
+    def date(self):
+        "Date of this instance (`CalendarDate`)"
+        return self._date
 
     def accept(self, visitor):
         return visitor.visitEstimated(self)
@@ -861,17 +1079,32 @@ class DateValueEstimated(_DateValueSingle):
     def __str__(self):
         return "ESTIMATED {}".format(self.date)
 
+    def __repr__(self):
+        return "{}(date={})".format(self.__class__.__name__, self.date)
 
-class DateValueInterpreted(_DateValueSingle):
+
+class DateValueInterpreted(DateValue):
     """Implementation of :class:`DateValue` interface for INT date.
+
+    :param CalendarDate date: Corresponding date.
+    :param str phrase: Phrase string associated with this date.
     """
     def __init__(self, date, phrase):
-        _DateValueSingle.__init__(self, date)
+        DateValue.__init__(self, date)
+        self._date = date
         self._phrase = phrase
 
     @property
     def kind(self):
+        """For DateValueInterpreted class this is always
+        :attr:`DateValueTypes.INTERPRETED`.
+        """
         return DateValueTypes.INTERPRETED
+
+    @property
+    def date(self):
+        "Date of this instance (`CalendarDate`)"
+        return self._date
 
     @property
     def phrase(self):
@@ -882,22 +1115,27 @@ class DateValueInterpreted(_DateValueSingle):
     def accept(self, visitor):
         return visitor.visitInterpreted(self)
 
-    def __repr__(self):
-        return "{}(date={}, phrase={})".format(self.__class__.__name__, self.date, self.phrase)
-
     def __str__(self):
         return "INTERPRETED {} ({})".format(self.date, self.phrase)
 
+    def __repr__(self):
+        return "{}(date={}, phrase={})".format(self.__class__.__name__, self.date, self.phrase)
 
-class DateValuePhrase(_DateValueSingle):
+
+class DateValuePhrase(DateValue):
     """Implementation of :class:`DateValue` interface for phrase-date.
+
+    :param str phrase: Phrase string associated with this date.
     """
     def __init__(self, phrase):
-        _DateValueSingle.__init__(self, None)
+        DateValue.__init__(self, None)
         self._phrase = phrase
 
     @property
     def kind(self):
+        """For DateValuePhrase class this is always
+        :attr:`DateValueTypes.PHRASE`.
+        """
         return DateValueTypes.PHRASE
 
     @property
@@ -909,14 +1147,14 @@ class DateValuePhrase(_DateValueSingle):
     def accept(self, visitor):
         return visitor.visitPhrase(self)
 
-    def __repr__(self):
-        return "{}(phrase={})".format(self.__class__.__name__, self.phrase)
-
     def __str__(self):
         if self.phrase is None:
             return ""
         else:
             return "({})".format(self.phrase)
+
+    def __repr__(self):
+        return "{}(phrase={})".format(self.__class__.__name__, self.phrase)
 
 
 DATES = (
