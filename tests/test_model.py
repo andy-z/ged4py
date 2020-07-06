@@ -6,7 +6,7 @@
 import unittest
 
 from ged4py import model
-from ged4py.detail.date import DateValue
+from ged4py.date import DateValue
 
 
 class TestModel(unittest.TestCase):
@@ -329,12 +329,10 @@ class TestModel(unittest.TestCase):
         date = model.make_record(1, None, "DATE", None, [], 0, dialect).freeze()
         self.assertIsInstance(date, model.Date)
         self.assertIsInstance(date.value, DateValue)
-        self.assertEqual(date.value.template, "")
 
         date = model.make_record(1, None, "DATE", "", [], 0, dialect).freeze()
         self.assertIsInstance(date, model.Date)
         self.assertIsInstance(date.value, DateValue)
-        self.assertEqual(date.value.template, "")
 
     def test_040_Pointer(self):
         """Test Pointer class."""

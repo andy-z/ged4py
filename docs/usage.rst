@@ -106,7 +106,7 @@ each corresponding to specific record tag:
   last, maiden) and has attributes for accessing those.
 - DATE records generate :py:class:`ged4py.model.Date` instances, the
   ``value`` attribute of this class is converted into
-  :py:class:`ged4py.detail.date.DateValue` instance.
+  :py:class:`ged4py.date.DateValue` instance.
 - INDI records are represented by :py:class:`ged4py.model.Individual` class.
 - "pointer" records whose ``value`` has special GEDCOM <POINTER> syntax
   (``@xref_id@``) are represented by :py:class:`ged4py.model.Pointer`
