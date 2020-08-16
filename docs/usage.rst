@@ -57,9 +57,9 @@ method, e.g.::
 Main mode of operation for parser is iterating over records in a file in
 sequential manner. GEDCOM records are organized in hierarchical structures,
 and ged4py parser facilitates access to these hierarchies by grouping
-records in tree-like structures. Instead providing iterator over every
+records in tree-like structures. Instead of providing iterator over every
 record in a file parser iterates over top-level (level 0) records, and
-for each level-0 record it returns nested structure consisting of the
+for each level-0 record it returns record structure which includes nested
 records below level 0.
 
 The main method of the parser is the method
@@ -67,7 +67,7 @@ The main method of the parser is the method
 level-0 records. Method takes an optional argument for a tag name, without
 argument all level-0 records are returned by iterator (starting with "HEAD"
 and ending with "TRLR"). If tag is given then only the records with
-corresponding tag are returned::
+matching tag are returned::
 
     with GedcomReader(path) as parser:
         # iterate over all INDI records
@@ -87,6 +87,27 @@ instance has a small set of attributes:
   record, it is easier to access items in this list using methods described
   below.
 
+If, for example, GEDCOM file contains sequence of records like this::
+
+    0 @ID12345@ INDI
+    1 NAME John /Smith/
+    1 BIRT
+    2 DATE 1 JAN 1901
+    2 PLAC Some place
+    1 FAMC @ID45623@
+    1 FAMS @ID7612@
+
+then the record object returned from iterator will have these attributes:
+
+- ``level`` is 0 (true for all records returned by
+  :py:meth:`~ged4py.parser.GedcomReader.records0`),
+- ``xref_id`` - "@ID12345@",
+- ``tag`` - "INDI",
+- ``value`` - ``None``,
+- ``sub_records`` - list of :py:class:`~ged4py.model.Record` instances
+  corresponding to "NAME", "BIRT", "FAMC", and "FAMS" tags (but not "DATE" or
+  "PLAC", records for these tags will be in ``sub_records`` of "BIRT" record).
+
 :py:class:`~ged4py.model.Record` class has few convenience methods:
 
 - :py:meth:`~ged4py.model.Record.sub_tags` - return all direct subordinate
@@ -97,6 +118,12 @@ instance has a small set of attributes:
 - :py:meth:`~ged4py.model.Record.sub_tag_value` - return value of subordinate
   record with a given tag name (or tag "path"), or ``None`` if record is not
   found or its value is ``None``.
+
+With the example records from above one can do ``record.sub_tag("BIRT/DATE")``
+on level-0 record to retrieve a :py:class:`~ged4py.model.Record` instance
+corresponding to level-2 "DATE" record, or alternatively use
+``record.sub_tag_value("BIRT/DATE")`` to retrieve the ``value`` attribute of
+the same record.
 
 There are few specialized sub-classes of :py:class:`~ged4py.model.Record`
 each corresponding to specific record tag:

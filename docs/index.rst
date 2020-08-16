@@ -11,6 +11,7 @@ Contents:
    usage
    modules
    techinfo
+   examples
    contributing
    authors
    history
