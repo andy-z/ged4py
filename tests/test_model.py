@@ -6,7 +6,7 @@
 import unittest
 
 from ged4py import model
-from ged4py.date import DateValue
+from ged4py.date import DateValue, DateValueSimple
 
 
 class TestModel(unittest.TestCase):
@@ -333,6 +333,11 @@ class TestModel(unittest.TestCase):
         date = model.make_record(1, None, "DATE", "", [], 0, dialect).freeze()
         self.assertIsInstance(date, model.Date)
         self.assertIsInstance(date.value, DateValue)
+
+        # dates can have leading whitespaces
+        date = model.make_record(1, None, "DATE", "   DEC 1999", [], 0, dialect).freeze()
+        self.assertIsInstance(date, model.Date)
+        self.assertIsInstance(date.value, DateValueSimple)
 
     def test_040_Pointer(self):
         """Test Pointer class."""

@@ -162,6 +162,9 @@ class DateValue(with_metaclass(abc.ABCMeta)):
         :param str datestr: String with GEDCOM date, range, period, etc.
         :returns: :class:`DateValue` instance
         """
+        # In some cases date strings can have leadin/trailing spaces
+        if datestr:
+            datestr = datestr.strip()
         # some apps generate DATE recods without any value, which is
         # non-standard, return empty DateValue for those
         if not datestr:

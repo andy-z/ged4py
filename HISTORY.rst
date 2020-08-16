@@ -2,6 +2,11 @@
 History
 =======
 
+Next release
+------------
+
+* Fix parsing of DATE records with leading blanks
+
 0.2.1 (2020-08-15)
 ------------------
 
