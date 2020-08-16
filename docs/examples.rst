@@ -31,7 +31,7 @@ records contained in FAM records to retrieve corresponding INDI records.
 .. literalinclude:: example_code/example2.py
 
 
-Example 2
+Example 3
 ---------
 
 This example shows how to specialize date formatting. Date representation in
