@@ -2,6 +2,12 @@
 History
 =======
 
+0.2.1 (2020-08-15)
+------------------
+
+* Extend documentation with examples
+* Extend docstrings for few classes
+
 0.2.0 (2020-07-05)
 ------------------
 * Improve support for GEDCOM date types
