@@ -178,6 +178,22 @@ class GedcomReader(object):
     :param bool require_char: If True then exception is thrown if CHAR
         record is not found in a header, if False and CHAR is not in the
         header then codec determined from BOM or "gedcom" is used.
+
+
+    Instance of this class is used to read and parse single GEDCOM file.
+    Records in GEDCOM file are transformed into instances of types defined
+    in :py:mod:`ged4py.model` module, either :py:class:`ged4py.model.Record`
+    class or one of its sub-classes. Main method of access to the data in
+    the file is by iterating over level-0 records, optionally restricted by
+    the tag name. The method which does this is
+    :py:meth:`GedcomReader.records0`. Most commonly the code which reads
+    GEDCOM file at the top-level loop will look like this::
+
+        with GedcomReader(path) as parser:
+            # iterate over each INDI record in a file
+            for record in parser.records0("INDI"):
+                # do something with the record or navigate to other linked records
+
     """
 
     def __init__(self, file, encoding=None, errors="strict",
@@ -218,7 +234,7 @@ class GedcomReader(object):
 
     @property
     def index0(self):
-        """List of level=0 record positions and tag names.
+        """List of level=0 record positions and tag names (``list[(int, str)]``).
         """
         if self._index0 is None:
             self._init_index()
@@ -227,7 +243,7 @@ class GedcomReader(object):
     @property
     def xref0(self):
         """Dictionary which maps xref_id to level=0 record position and
-        tag name.
+        tag name (``dict[str, (int, str)]``).
         """
         if self._xref0 is None:
             self._init_index()
@@ -235,7 +251,7 @@ class GedcomReader(object):
 
     @property
     def header(self):
-        """Header record.
+        """Header record (:py:class:`ged4py.model.Record`).
         """
         if self._index0 is None:
             self._init_index()
@@ -259,7 +275,7 @@ class GedcomReader(object):
 
     @property
     def dialect(self):
-        """File dialect as one of model.DIALECT_* constants
+        """File dialect as one of ``model.DIALECT_*`` constants.
         """
         if self._dialect is None:
             self._dialect = model.DIALECT_DEFAULT
@@ -289,7 +305,9 @@ class GedcomReader(object):
         returning the lines in their order in file.
 
         This method iterates over all lines in input file and converts each
-        line into :py:class:`gedcom_line` class.
+        line into :py:class:`gedcom_line` class. It is an implementation
+        detail used by other methods, most clients will not need to use this
+        method.
 
         :param int offset: Position in the file to start reading.
         :returns: Iterator for gedcom_lines.
@@ -355,10 +373,16 @@ class GedcomReader(object):
             prev_gline = gline
 
     def records0(self, tag=None):
-        """Iterator over all level=0 records.
+        """Iterator over level=0 records with given tag.
 
-        :param str tag: If ``None`` is given (default) then return all level=0
+        This is the main method of this class. Clients access data in GEDCOM
+        files by iterating over level=0 records and then navigating to
+        sub-records using the methods of the :py:class:`~ged4py.model.Record`
+        class.
+
+        :param str tag: If tag is ``None`` (default) then return all level=0
             records, otherwise return level=0 records with the given tag.
+        :return: Iterator for :py:class:`~ged4py.model.Record` instances.
         """
         _log.debug("in records0")
         for offset, xtag in self.index0:
@@ -373,6 +397,8 @@ class GedcomReader(object):
         reading at EOF or next record with the same or higher (smaller) level
         number. File position after return from this method is not specified,
         re-position file if you want to read other records.
+
+        This is mostly for internal use, regular clients don't need to use it.
 
         :param int offset: Position in file to start reading from.
         :return: :py:class:`model.Record` instance or None if offset points
