@@ -94,6 +94,16 @@ class TestModel(unittest.TestCase):
         self.assertEqual(rec.sub_tag("SUBB/SUB").tag, "SUB")
         self.assertEqual(rec.sub_tag_value("SUBB/SUB"), "VALUE")
 
+    def test_003_record_nohash(self):
+        """Test that records are non-hashable"""
+
+        rec = model.Record()
+        with self.assertRaises(TypeError):
+            d = {}
+            d[rec] = ""
+        with self.assertRaises(TypeError):
+            hash(rec)
+
     def test_010_namerec_default(self):
         """Test NameRec class with default dialect."""
 
