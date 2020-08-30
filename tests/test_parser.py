@@ -200,6 +200,11 @@ class TestParser(unittest.TestCase):
             with parser.GedcomReader(fname) as reader:
                 self.assertEqual(reader.dialect, model.DIALECT_ALTREE)
 
+        data = b"0 HEAD\n1 SOUR AgelongTree\n0 TRLR"
+        with _temp_file(data) as fname:
+            with parser.GedcomReader(fname) as reader:
+                self.assertEqual(reader.dialect, model.DIALECT_ALTREE)
+
         data = b"0 HEAD\n1 SOUR ANCESTRIS\n0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:

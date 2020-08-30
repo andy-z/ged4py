@@ -284,7 +284,7 @@ class GedcomReader(object):
                 if source:
                     if source.value == "MYHERITAGE":
                         self._dialect = model.DIALECT_MYHERITAGE
-                    elif source.value == "ALTREE":
+                    elif source.value in ("ALTREE", "AgelongTree"):
                         self._dialect = model.DIALECT_ALTREE
                     elif source.value == "ANCESTRIS":
                         self._dialect = model.DIALECT_ANCESTRIS
