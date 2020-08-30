@@ -479,25 +479,39 @@ class TestDetailDate(unittest.TestCase):
         """Test date.Date class."""
 
         dv = DateValue.parse("2016")
-        self.assertIsInstance(dv.key(), CalendarDate)
-        self.assertEqual(dv.key(), GregorianDate(2016))
+        self.assertIsInstance(dv.key(), tuple)
+        self.assertEqual(dv.key(), (GregorianDate(2016), GregorianDate(2016)))
 
         dv = DateValue.parse("31 DEC 2000")
-        self.assertIsInstance(dv.key(), CalendarDate)
-        self.assertEqual(dv.key(), GregorianDate(2000, "DEC", 31))
+        self.assertIsInstance(dv.key(), tuple)
+        self.assertEqual(dv.key(), (GregorianDate(2000, "DEC", 31), GregorianDate(2000, "DEC", 31)))
 
         dv = DateValue.parse("BET 31 DEC 2000 AND 1 JAN 2001")
-        self.assertIsInstance(dv.key(), CalendarDate)
-        self.assertEqual(dv.key(), GregorianDate(2000, "DEC", 31))
+        self.assertIsInstance(dv.key(), tuple)
+        self.assertEqual(dv.key(), (GregorianDate(2000, "DEC", 31), GregorianDate(2001, "JAN", 1)))
 
-        # first date, even though it is not earliest
+        # order of dates is messed up
         dv = DateValue.parse("BET 31 DEC 2000 AND 1 JAN 2000")
-        self.assertIsInstance(dv.key(), CalendarDate)
-        self.assertEqual(dv.key(), GregorianDate(2000, "DEC", 31))
+        self.assertIsInstance(dv.key(), tuple)
+        self.assertEqual(dv.key(), (GregorianDate(2000, "DEC", 31), GregorianDate(2000, "JAN", 1)))
 
         self.assertTrue(DateValue.parse("2016") < DateValue.parse("2017"))
         self.assertTrue(DateValue.parse("2 JAN 2016") > DateValue.parse("1 JAN 2016"))
         self.assertTrue(DateValue.parse("BET 1900 AND 2000") < DateValue.parse("FROM 1920 TO 1999"))
+
+        # comparing simple date with range
+        self.assertTrue(DateValue.parse("1 JAN 2000") > DateValue.parse("BET 1 JAN 1999 AND 1 JAN 2000"))
+        self.assertNotEqual(DateValue.parse("1 JAN 2000"), DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001"))
+        self.assertTrue(DateValue.parse("1 JAN 2000") < DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001"))
+        self.assertTrue(DateValue.parse("1 JAN 2000") > DateValue.parse("BEF 1 JAN 2000"))
+        self.assertTrue(DateValue.parse("1 JAN 2000") > DateValue.parse("TO 1 JAN 2000"))
+        self.assertTrue(DateValue.parse("1 JAN 2000") < DateValue.parse("AFT 1 JAN 2000"))
+        self.assertTrue(DateValue.parse("1 JAN 2000") < DateValue.parse("FROM 1 JAN 2000"))
+
+        # comparing ranges
+        self.assertEqual(DateValue.parse("FROM 1 JAN 2000 TO 1 JAN 2001"), DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001"))
+        self.assertTrue(DateValue.parse("FROM 1 JAN 1999 TO 1 JAN 2001") < DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001"))
+        self.assertTrue(DateValue.parse("FROM 1 JAN 2000 TO 1 JAN 2002") > DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001"))
 
         # Less specific date compares later than more specific
         self.assertTrue(DateValue.parse("2000") > DateValue.parse("31 DEC 2000"))
