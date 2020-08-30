@@ -52,6 +52,10 @@ DATE_PHRASE = r"^\((?P<phrase>.*)\)$"
 # <DATE>
 DATE_SIMPLE = r"^(?P<date>" + DATE + ")$"
 
+# plus/minus infinity (kinda)
+_START_OF_TIME = GregorianDate(5000, bc=True)
+_END_OF_TIME = GregorianDate(5000)
+
 
 class DateValueTypes(object):
     """Namespace for constants defining types of date values.
@@ -128,8 +132,9 @@ class DateValue(with_metaclass(abc.ABCMeta)):
     """Representation of the <DATE_VALUE>, can be exact date, range,
     period, etc.
 
-    :param key: Object that is used for ordering, usually
-            :class:`~ged4py.calendar.CalendarDate` but can be ``None``.
+    :param key: Object that is used for ordering, usually it is a pair
+            of :class:`~ged4py.calendar.CalendarDate` instances but can be
+            ``None``.
 
     ``DateValue`` is an abstract base class, for each separate kind of GEDCOM
     date there is a separate concrete class. Class method :meth:`parse` is
@@ -192,14 +197,16 @@ class DateValue(with_metaclass(abc.ABCMeta)):
     def key(self):
         """Return ordering key for this instance.
 
-        If this instance has a date or range of dates associated with it then
-        this method returns first or only date associated with this instance.
-        For other dates (``PHRASE`` is the only instance without date) it
-        returns a fixed but arbitrary date in the future.
+        If this instance has a range of dates associated with it then this
+        method returns the range as pair of dates. If this instance has a
+        single date associated with it then this method returns pair which
+        includes the date twice. For other dates (``PHRASE`` is the only
+        instance without date) it returns a a pair of fixed but arbitrary
+        dates in the future.
         """
         if self._key is None:
-            # Use year 2999 so that it is ordered after all real dates
-            return GregorianDate(2999)
+            # Use _END_OF_TIME so that it is ordered after all real dates
+            return _END_OF_TIME, _END_OF_TIME
         return self._key
 
     def __lt__(self, other):
@@ -219,6 +226,9 @@ class DateValue(with_metaclass(abc.ABCMeta)):
 
     def __ge__(self, other):
         return self.key() >= other.key()
+
+    def __hash__(self):
+        return hash(self.key())
 
     @abc.abstractmethod
     def accept(self, visitor):
@@ -247,7 +257,7 @@ class DateValueSimple(DateValue):
     :param CalendarDate date: Corresponding date.
     """
     def __init__(self, date):
-        DateValue.__init__(self, date)
+        DateValue.__init__(self, (date, date))
         self._date = date
 
     @property
@@ -278,7 +288,7 @@ class DateValueFrom(DateValue):
     :param CalendarDate date: Corresponding date.
     """
     def __init__(self, date):
-        DateValue.__init__(self, date)
+        DateValue.__init__(self, (date, _END_OF_TIME))
         self._date = date
 
     @property
@@ -309,7 +319,7 @@ class DateValueTo(DateValue):
     :param CalendarDate date: Corresponding date.
     """
     def __init__(self, date):
-        DateValue.__init__(self, date)
+        DateValue.__init__(self, (_START_OF_TIME, date))
         self._date = date
 
     @property
@@ -341,7 +351,7 @@ class DateValuePeriod(DateValue):
     :param CalendarDate date2: TO date.
     """
     def __init__(self, date1, date2):
-        DateValue.__init__(self, date1)
+        DateValue.__init__(self, (date1, date2))
         self._date1 = date1
         self._date2 = date2
 
@@ -378,7 +388,7 @@ class DateValueBefore(DateValue):
     :param CalendarDate date: Corresponding date.
     """
     def __init__(self, date):
-        DateValue.__init__(self, date)
+        DateValue.__init__(self, (_START_OF_TIME, date))
         self._date = date
 
     @property
@@ -409,7 +419,7 @@ class DateValueAfter(DateValue):
     :param CalendarDate date: Corresponding date.
     """
     def __init__(self, date):
-        DateValue.__init__(self, date)
+        DateValue.__init__(self, (date, _END_OF_TIME))
         self._date = date
 
     @property
@@ -441,7 +451,7 @@ class DateValueRange(DateValue):
     :param CalendarDate date2: Second date.
     """
     def __init__(self, date1, date2):
-        DateValue.__init__(self, date1)
+        DateValue.__init__(self, (date1, date2))
         self._date1 = date1
         self._date2 = date2
 
@@ -478,7 +488,7 @@ class DateValueAbout(DateValue):
     :param CalendarDate date: Corresponding date.
     """
     def __init__(self, date):
-        DateValue.__init__(self, date)
+        DateValue.__init__(self, (date, date))
         self._date = date
 
     @property
@@ -509,7 +519,7 @@ class DateValueCalculated(DateValue):
     :param CalendarDate date: Corresponding date.
     """
     def __init__(self, date):
-        DateValue.__init__(self, date)
+        DateValue.__init__(self, (date, date))
         self._date = date
 
     @property
@@ -540,7 +550,7 @@ class DateValueEstimated(DateValue):
     :param CalendarDate date: Corresponding date.
     """
     def __init__(self, date):
-        DateValue.__init__(self, date)
+        DateValue.__init__(self, (date, date))
         self._date = date
 
     @property
@@ -572,7 +582,7 @@ class DateValueInterpreted(DateValue):
     :param str phrase: Phrase string associated with this date.
     """
     def __init__(self, date, phrase):
-        DateValue.__init__(self, date)
+        DateValue.__init__(self, (date, date))
         self._date = date
         self._phrase = phrase
 

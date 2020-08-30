@@ -2,6 +2,10 @@
 History
 =======
 
+* Disable hashing for Record types
+* Add hash method for DateValue and CalendarDate classes
+* Improve ordering of DateValue instances
+
 0.2.2 (2020-08-16)
 ------------------
 

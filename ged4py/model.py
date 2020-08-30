@@ -67,6 +67,11 @@ class Record(object):
     There are few sub-classes of the ``Record`` class providing additional
     methods or facilities for specific tag types.
 
+    In general it is impossible to define what constitutes value or identity
+    of GEDCOM record, so comparison of the records does not make sense.
+    Similarly hashing operation cannot be used on Record instances, and the
+    class is explicitly marked as non-hashable.
+
     Client code usually does not need to create instances of this class
     directly, :py:meth:`make_record` should be used instead. If you create
     an instance of this class (or its subclass) then you are responsible for
@@ -167,7 +172,7 @@ class Record(object):
         value = self.value
         if isinstance(value, (type(""), type(u""))) and len(value) > 32:
             value = value[:32] + "..."
-        n_sub = len(self.sub_records)
+        n_sub = 0 if self.sub_records is None else len(self.sub_records)
         if self.xref_id:
             fmt = "{0}(level={1.level}, xref_id={1.xref_id}, tag={1.tag}, " \
                 "value={2!r}, offset={1.offset}, #subrec={3})"
@@ -175,6 +180,9 @@ class Record(object):
             fmt = "{0}(level={1.level}, tag={1.tag}, " \
                 "value={2!r}, offset={1.offset}, #subrec={3})"
         return fmt.format(self.__class__.__name__, self, value, n_sub)
+
+    # Records cannot be hashed
+    __hash__ = None
 
 
 class Pointer(Record):

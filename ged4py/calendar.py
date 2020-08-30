@@ -265,6 +265,9 @@ class CalendarDate(with_metaclass(abc.ABCMeta)):
     def __ge__(self, other):
         return self.key() >= other.key()
 
+    def __hash__(self):
+        return hash(self.key())
+
     def __str__(self):
         """Make printable representation out of this instance.
         """
