@@ -2,6 +2,8 @@
 History
 =======
 
+* Extend dialect detection for new genery.com SOUR format
+
 0.2.3 (2020-08-29)
 ------------------
 
