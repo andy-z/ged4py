@@ -338,6 +338,18 @@ class TestDetailDate(unittest.TestCase):
         value = date.accept(visitor)
         self.assertEqual(value, ("julian", date))
 
+    def test_007_cal_date_hash(self):
+        """Test date.CalendarDate hash."""
+
+        self.assertEqual(hash(GregorianDate(2017, "OCT", 9)),
+                         hash(GregorianDate(2017, "OCT", 9)))
+        self.assertEqual(hash(GregorianDate(2017, "OCT", 9, bc=True)),
+                         hash(GregorianDate(2017, "OCT", 9, bc=True)))
+        self.assertEqual(hash(FrenchDate(1, "VEND", 1)),
+                         hash(FrenchDate(1, "VEND", 1)))
+        self.assertEqual(hash(FrenchDate(1)),
+                         hash(FrenchDate(1)))
+
     def test_010_date_no_date(self):
         """Test date.DateValue class."""
 
@@ -550,3 +562,18 @@ class TestDetailDate(unittest.TestCase):
 
         value = DateValuePhrase("phrase").accept(visitor)
         self.assertEqual(value, ("phrase", "phrase"))
+
+    def test_020_date_hash(self):
+        """Test date.Date hash"""
+
+        dv1 = DateValue.parse("2016")
+        dv2 = DateValue.parse("2016")
+        self.assertEqual(hash(dv1), hash(dv2))
+
+        dv1 = DateValue.parse("31 DEC 2000")
+        dv2 = DateValue.parse("31 DEC 2000")
+        self.assertEqual(hash(dv1), hash(dv2))
+
+        dv1 = DateValue.parse("BET 31 DEC 2000 AND 1 JAN 2001")
+        dv2 = DateValue.parse("BET 31 DEC 2000 AND 1 JAN 2001")
+        self.assertEqual(hash(dv1), hash(dv2))

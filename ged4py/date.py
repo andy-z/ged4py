@@ -220,6 +220,9 @@ class DateValue(with_metaclass(abc.ABCMeta)):
     def __ge__(self, other):
         return self.key() >= other.key()
 
+    def __hash__(self):
+        return hash(self.key())
+
     @abc.abstractmethod
     def accept(self, visitor):
         """Implementation of visitor pattern.
