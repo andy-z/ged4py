@@ -2,6 +2,9 @@
 History
 =======
 
+0.3.0 (2020-09-28)
+------------------
+
 * Drop Python2 support
 * Python3 supported versions are 3.6 - 3.8
 
