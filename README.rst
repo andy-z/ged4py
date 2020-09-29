@@ -26,7 +26,7 @@ Features
 * Parsing of GEDCOM files as defined by 5.5.1 version of GEDCOM standard
 * Supported file encodings are UTF-8 (with or without BOM), ASCII or ANSEL
 * Designed to parse large files efficiently
-* Supports Python 2.7 and 3.3+
+* Supports Python 3.6+
 
 Credits
 ---------

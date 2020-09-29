@@ -2,6 +2,9 @@
 History
 =======
 
+* Drop Python2 support
+* Python3 supported versions are 3.6 - 3.8
+
 0.2.4 (2020-08-30)
 ------------------
 

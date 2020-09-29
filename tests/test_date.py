@@ -509,9 +509,12 @@ class TestDetailDate(unittest.TestCase):
         self.assertTrue(DateValue.parse("1 JAN 2000") < DateValue.parse("FROM 1 JAN 2000"))
 
         # comparing ranges
-        self.assertEqual(DateValue.parse("FROM 1 JAN 2000 TO 1 JAN 2001"), DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001"))
-        self.assertTrue(DateValue.parse("FROM 1 JAN 1999 TO 1 JAN 2001") < DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001"))
-        self.assertTrue(DateValue.parse("FROM 1 JAN 2000 TO 1 JAN 2002") > DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001"))
+        self.assertEqual(DateValue.parse("FROM 1 JAN 2000 TO 1 JAN 2001"),
+                         DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001"))
+        self.assertTrue(DateValue.parse("FROM 1 JAN 1999 TO 1 JAN 2001") <
+                        DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001"))
+        self.assertTrue(DateValue.parse("FROM 1 JAN 2000 TO 1 JAN 2002") >
+                        DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001"))
 
         # Less specific date compares later than more specific
         self.assertTrue(DateValue.parse("2000") > DateValue.parse("31 DEC 2000"))
