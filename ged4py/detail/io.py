@@ -1,8 +1,6 @@
 """Internal module for I/O related methods.
 """
 
-from __future__ import print_function, absolute_import, division
-
 import codecs
 import io
 import os

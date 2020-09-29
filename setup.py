@@ -14,7 +14,6 @@ with open('HISTORY.rst') as history_file:
 requirements = [
     "ansel",
     "convertdate",
-    "six"
 ]
 
 setup_requirements = [

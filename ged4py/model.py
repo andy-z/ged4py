@@ -3,8 +3,6 @@
 """Module containing Python in-memory model for GEDCOM data.
 """
 
-from __future__ import print_function, absolute_import, division
-
 __all__ = ['make_record', 'Record', 'Pointer', 'NameRec', 'Name',
            'Date', 'Individual']
 

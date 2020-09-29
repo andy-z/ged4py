@@ -1,9 +1,6 @@
 """Module containing methods for parsing GEDCOM files.
 """
 
-
-from __future__ import print_function, absolute_import, division
-
 __all__ = ['GedcomReader', 'ParserError', 'CodecError', 'IntegrityError',
            'guess_codec']
 
