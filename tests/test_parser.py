@@ -425,7 +425,7 @@ class TestParser(unittest.TestCase):
                 note = reader.read_record(19)
                 self.assertEqual(note.level, 0)
                 self.assertEqual(note.tag, "TAG")
-                self.assertEqual(note.value, u"Иван Иванович")
+                self.assertEqual(note.value, "Иван Иванович")
 
         # encoded string split
         data = b"0 HEAD\n1 CHAR UTF8\n"\
@@ -437,7 +437,7 @@ class TestParser(unittest.TestCase):
                 note = reader.read_record(19)
                 self.assertEqual(note.level, 0)
                 self.assertEqual(note.tag, "TAG")
-                self.assertEqual(note.value, u"Иван Иванович")
+                self.assertEqual(note.value, "Иван Иванович")
 
         # encoded string split in the middle of multi-byte character
         data = b"0 HEAD\n1 CHAR UTF8\n"\
@@ -449,7 +449,7 @@ class TestParser(unittest.TestCase):
                 note = reader.read_record(19)
                 self.assertEqual(note.level, 0)
                 self.assertEqual(note.tag, "TAG")
-                self.assertEqual(note.value, u"Иван Иванович")
+                self.assertEqual(note.value, "Иван Иванович")
 
         # encoded string split in between combining characters (UTF-8)
         data = b"0 HEAD\n1 CHAR UTF8\n"\
@@ -461,7 +461,7 @@ class TestParser(unittest.TestCase):
                 note = reader.read_record(19)
                 self.assertEqual(note.level, 0)
                 self.assertEqual(note.tag, "TAG")
-                self.assertEqual(note.value, u"Pål")
+                self.assertEqual(note.value, "Pål")
 
         # encoded string split in between combining characters (ANSEL)
         data = b"0 HEAD\n1 CHAR ANSEL\n"\
@@ -474,7 +474,7 @@ class TestParser(unittest.TestCase):
                 note = reader.read_record(20)
                 self.assertEqual(note.level, 0)
                 self.assertEqual(note.tag, "TAG")
-                self.assertEqual(note.value, u"Pål")
+                self.assertEqual(note.value, "Pål")
 
     def test_035_read_record_errors(self):
         """Test read_record method"""

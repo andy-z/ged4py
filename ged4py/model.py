@@ -168,7 +168,7 @@ class Record(object):
 
     def __str__(self):
         value = self.value
-        if isinstance(value, (type(""), type(u""))) and len(value) > 32:
+        if isinstance(value, str) and len(value) > 32:
             value = value[:32] + "..."
         n_sub = 0 if self.sub_records is None else len(self.sub_records)
         if self.xref_id:
