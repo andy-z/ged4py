@@ -30,7 +30,7 @@ ORDER_LIST = [ORDER_SURNAME_GIVEN, ORDER_GIVEN_SURNAME,
               ORDER_MAIDEN_GIVEN, ORDER_GIVEN_MAIDEN]
 
 
-class Record(object):
+class Record:
     """Class representing a parsed GEDCOM record in a generic format.
 
     This is the main element of the data model, it represents records in
@@ -271,7 +271,7 @@ class NameRec(Record):
         return Record.__str__(self)
 
 
-class Name(object):
+class Name:
     """Class representing "summary" of person names.
 
     Person in GEDCOM can have multiple NAME records, e.g. "aka" name,

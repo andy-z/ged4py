@@ -43,7 +43,7 @@ DATE = r"""
 DATE_RE = re.compile("^" + DATE + "$", re.X | re.I)
 
 
-class CalendarTypes(object):
+class CalendarTypes:
     """Namespace for constants defining names of calendars.
 
     Note that it does not define constants for ``ROMAN`` calendar which is

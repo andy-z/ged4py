@@ -181,7 +181,7 @@ each individual's name:
 - maiden name, only applies to married females who changed their name in
   marriage
 
-Here is the algorithm that ged4py` uses for extracting these pieces:
+Here is the algorithm that ged4py uses for extracting these pieces:
 
 - for Agelong dialect:
 

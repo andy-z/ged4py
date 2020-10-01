@@ -54,7 +54,7 @@ _START_OF_TIME = GregorianDate(5000, bc=True)
 _END_OF_TIME = GregorianDate(5000)
 
 
-class DateValueTypes(object):
+class DateValueTypes:
     """Namespace for constants defining types of date values.
 
     The constants defined in this namespace are used for the values of the
