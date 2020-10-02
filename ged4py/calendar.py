@@ -1,8 +1,6 @@
 """Module for parsing and representing calendar dates in gedcom format.
 """
 
-from __future__ import print_function, absolute_import, division
-
 __all__ = [
     "CalendarTypes", "CalendarDate", "FrenchDate", "GregorianDate",
     "HebrewDate", "JulianDate", "CalendarDateVisitor",
@@ -10,7 +8,6 @@ __all__ = [
 
 import abc
 import re
-from six import with_metaclass
 
 import convertdate.french_republican
 import convertdate.gregorian
@@ -46,7 +43,7 @@ DATE = r"""
 DATE_RE = re.compile("^" + DATE + "$", re.X | re.I)
 
 
-class CalendarTypes(object):
+class CalendarTypes:
     """Namespace for constants defining names of calendars.
 
     Note that it does not define constants for ``ROMAN`` calendar which is
@@ -77,7 +74,7 @@ class CalendarTypes(object):
     """
 
 
-class CalendarDate(with_metaclass(abc.ABCMeta)):
+class CalendarDate(metaclass=abc.ABCMeta):
     """Interface for calendar date representation.
 
     :param int year: Calendar year number. If ``bc`` parameter is ``True``
@@ -496,7 +493,7 @@ class FrenchDate(CalendarDate):
         return visitor.visitFrench(self)
 
 
-class CalendarDateVisitor(with_metaclass(abc.ABCMeta)):
+class CalendarDateVisitor(metaclass=abc.ABCMeta):
     """Interface for implementation of Visitor pattern for
     :class:`CalendarDate` classes.
 

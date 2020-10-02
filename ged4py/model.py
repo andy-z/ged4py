@@ -3,8 +3,6 @@
 """Module containing Python in-memory model for GEDCOM data.
 """
 
-from __future__ import print_function, absolute_import, division
-
 __all__ = ['make_record', 'Record', 'Pointer', 'NameRec', 'Name',
            'Date', 'Individual']
 
@@ -32,7 +30,7 @@ ORDER_LIST = [ORDER_SURNAME_GIVEN, ORDER_GIVEN_SURNAME,
               ORDER_MAIDEN_GIVEN, ORDER_GIVEN_MAIDEN]
 
 
-class Record(object):
+class Record:
     """Class representing a parsed GEDCOM record in a generic format.
 
     This is the main element of the data model, it represents records in
@@ -170,7 +168,7 @@ class Record(object):
 
     def __str__(self):
         value = self.value
-        if isinstance(value, (type(""), type(u""))) and len(value) > 32:
+        if isinstance(value, str) and len(value) > 32:
             value = value[:32] + "..."
         n_sub = 0 if self.sub_records is None else len(self.sub_records)
         if self.xref_id:
@@ -273,7 +271,7 @@ class NameRec(Record):
         return Record.__str__(self)
 
 
-class Name(object):
+class Name:
     """Class representing "summary" of person names.
 
     Person in GEDCOM can have multiple NAME records, e.g. "aka" name,

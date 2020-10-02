@@ -1,8 +1,6 @@
 """Module for parsing and representing dates in gedcom format.
 """
 
-from __future__ import print_function, absolute_import, division
-
 __all__ = [
     "DateValueTypes", "DateValue",
     "DateValueAbout", "DateValueAfter", "DateValueBefore", "DateValueCalculated",
@@ -13,7 +11,6 @@ __all__ = [
 
 import abc
 import re
-from six import with_metaclass
 
 from .calendar import CalendarDate, GregorianDate, DATE
 
@@ -57,7 +54,7 @@ _START_OF_TIME = GregorianDate(5000, bc=True)
 _END_OF_TIME = GregorianDate(5000)
 
 
-class DateValueTypes(object):
+class DateValueTypes:
     """Namespace for constants defining types of date values.
 
     The constants defined in this namespace are used for the values of the
@@ -128,7 +125,7 @@ class DateValueTypes(object):
     """
 
 
-class DateValue(with_metaclass(abc.ABCMeta)):
+class DateValue(metaclass=abc.ABCMeta):
     """Representation of the <DATE_VALUE>, can be exact date, range,
     period, etc.
 
@@ -665,7 +662,7 @@ DATES = (
 )
 
 
-class DateValueVisitor(with_metaclass(abc.ABCMeta)):
+class DateValueVisitor(metaclass=abc.ABCMeta):
     """Interface for implementation of Visitor pattern for :class:`DateValue`
     classes.
 

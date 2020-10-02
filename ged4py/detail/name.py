@@ -1,8 +1,6 @@
 """Internal module for parsing names in gedcom format.
 """
 
-from __future__ import print_function, absolute_import, division
-
 
 def split_name(name):
     """Extracts pieces of name from full name string.

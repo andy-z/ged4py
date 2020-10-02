@@ -1,9 +1,6 @@
 """Module containing methods for parsing GEDCOM files.
 """
 
-
-from __future__ import print_function, absolute_import, division
-
 __all__ = ['GedcomReader', 'ParserError', 'CodecError', 'IntegrityError',
            'guess_codec']
 
@@ -165,7 +162,7 @@ def guess_codec(file, errors="strict", require_char=False, warn=True):
     return codec, bom_size
 
 
-class GedcomReader(object):
+class GedcomReader:
     """Main interface for reading GEDCOM files.
 
     :param file: File name or file object open in binary mode, file must
