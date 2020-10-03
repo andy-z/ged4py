@@ -40,24 +40,22 @@ import ged4py
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'numpydoc']
 
 
-def run_apidoc(_):
-    from sphinx.ext.apidoc import main
-    parentFolder = os.path.join(os.path.dirname(__file__), '..')
-    cur_dir = os.path.abspath(os.path.dirname(__file__))
-    sys.path.append(parentFolder)
-    module = os.path.join(parentFolder, 'ged4py')
-    main(['-e', '-f', '-o', cur_dir, module])
+autosummary_generate = ["api.rst"]
 
+autodoc_default_options = {
+    'members': True,
+    'member-order': 'bysource',
+    'undoc-members': True,
+    'inherited-members': False,
+    'show-inheritance': True
+}
 
-def setup(app):
-    # overrides for wide tables in RTD theme
-    app.add_css_file('theme_overrides.css')
-    # trigger the run_apidoc
-    app.connect('builder-inited', run_apidoc)
+autodoc_member_order = 'bysource'
 
+default_role = "py:obj"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

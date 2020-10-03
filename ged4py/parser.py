@@ -2,7 +2,7 @@
 """
 
 __all__ = ['GedcomReader', 'ParserError', 'CodecError', 'IntegrityError',
-           'guess_codec']
+           'guess_codec', 'gedcom_line']
 
 import codecs
 import collections
@@ -25,14 +25,19 @@ _re_gedcom_line = re.compile(br"""
         $
 """, re.X)
 
-# tuple class for gedcom_line grammar:
-#   level: int
-#   xref_id: str, possibly empty or None
-#   tag: str, required, non-empty
-#   value: bytes, possibly empty or None
-#   offset: int
 gedcom_line = collections.namedtuple("gedcom_line",
                                      "level xref_id tag value offset")
+"""
+Class representing single line in a GEDCOM file.
+
+Attributes
+----------
+level : `int`
+xref_id : `str`, possibly empty or ``None``
+tag : `str`, required, non-empty
+value : `bytes`, possibly empty or ``None``
+offset : `int`
+"""
 
 
 class ParserError(Exception):
@@ -63,19 +68,36 @@ def guess_codec(file, errors="strict", require_char=False, warn=True):
     is extracted from it, if BOM record is present then CHAR record
     must match BOM-defined encoding.
 
-    :param file: File object, must be open in binary mode.
-    :param str errors: Controls error handling behavior during string
-        decoding, accepts same values as standard `codecs.decode` method.
-    :param bool require_char: If True then exception is thrown if CHAR
-        record is not found in a header, if False and CHAR is not in the
-        header then codec determined from BOM or "gedcom" is returned.
-    :param bool warn: If True (default) then generate error/warning messages
-        for illegal encodings.
-    :returns: Tuple (codec_name, bom_size)
-    :raises: :py:class:`CodecError` when codec name in file is unknown or
-        when codec name in file contradicts codec determined from BOM.
-    :raises: :py:class:`UnicodeDecodeError` when codec fails to decode
-        input lines and `errors` is set to "strict" (default).
+    Parameters
+    ----------
+    file
+        File object, must be open in binary mode.
+    errors : `str`, optional
+        Controls error handling behavior during string decoding, accepts same
+        values as standard `codecs.decode` method.
+    require_char : `bool`, optional
+        If ``True`` then exception is thrown if CHAR record is not found in a
+        header, if False and CHAR is not in the header then codec determined
+        from BOM or "gedcom" is returned.
+    warn : `bool`, optional
+        If True (default) then generate error/warning messages for illegal
+        encodings.
+
+    Returns
+    -------
+    codec_name : `str`
+        The name of the codec in this file.
+    bom_size : `int`
+        Size of the BOM record, 0 if no BOM record.
+
+    Raises
+    ------
+    CodecError
+        Raised if codec name in file is unknown or when codec name in file
+        contradicts codec determined from BOM.
+    UnicodeDecodeError
+        Raised if codec fails to decode input lines and `errors` is set to
+        "strict" (default).
     """
 
     # set of illegal but unambiguous encodings and their corresponding codecs
@@ -165,26 +187,31 @@ def guess_codec(file, errors="strict", require_char=False, warn=True):
 class GedcomReader:
     """Main interface for reading GEDCOM files.
 
-    :param file: File name or file object open in binary mode, file must
-        be seekable.
-    :param str encoding: If None (default) then file is analyzed using
-        `guess_codec()` method to determine correct codec. Otherwise
-        file is open using specified codec.
-    :param str errors: Controls error handling behavior during string
-        decoding, accepts same values as standard `codecs.decode` method.
-    :param bool require_char: If True then exception is thrown if CHAR
-        record is not found in a header, if False and CHAR is not in the
-        header then codec determined from BOM or "gedcom" is used.
+    Parameters
+    ----------
+    file
+        File name or file object open in binary mode, file must be seekable.
+    encoding : `str`, optional
+        If ``None`` (default) then file is analyzed using `guess_codec()`
+        method to determine correct codec. Otherwise file is open using
+        specified codec.
+    errors : `str`, optional
+        Controls error handling behavior during string decoding, accepts same
+        values as standard `codecs.decode` method.
+    require_char : `bool`, optional
+        If True then exception is thrown if CHAR record is not found in a
+        header, if False and CHAR is not in the header then codec determined
+        from BOM or "gedcom" is used.
 
-
+    Notes
+    -----
     Instance of this class is used to read and parse single GEDCOM file.
-    Records in GEDCOM file are transformed into instances of types defined
-    in :py:mod:`ged4py.model` module, either :py:class:`ged4py.model.Record`
-    class or one of its sub-classes. Main method of access to the data in
-    the file is by iterating over level-0 records, optionally restricted by
-    the tag name. The method which does this is
-    :py:meth:`GedcomReader.records0`. Most commonly the code which reads
-    GEDCOM file at the top-level loop will look like this::
+    Records in GEDCOM file are transformed into instances of types defined in
+    `ged4py.model` module, either `ged4py.model.Record` class or one of its
+    sub-classes. Main method of access to the data in the file is by iterating
+    over level-0 records, optionally restricted by the tag name. The method
+    which does this is `GedcomReader.records0()`. Most commonly the code which
+    reads GEDCOM file at the top-level loop will look like this::
 
         with GedcomReader(path) as parser:
             # iterate over each INDI record in a file
@@ -231,7 +258,7 @@ class GedcomReader:
 
     @property
     def index0(self):
-        """List of level=0 record positions and tag names (``list[(int, str)]``).
+        """List of level=0 record positions and tag names (`list[(int, str)]`).
         """
         if self._index0 is None:
             self._init_index()
@@ -240,7 +267,7 @@ class GedcomReader:
     @property
     def xref0(self):
         """Dictionary which maps xref_id to level=0 record position and
-        tag name (``dict[str, (int, str)]``).
+        tag name (`dict[str, (int, str)]`).
         """
         if self._xref0 is None:
             self._init_index()
@@ -248,7 +275,7 @@ class GedcomReader:
 
     @property
     def header(self):
-        """Header record (:py:class:`ged4py.model.Record`).
+        """Header record (`ged4py.model.Record`).
         """
         if self._index0 is None:
             self._init_index()
@@ -272,7 +299,7 @@ class GedcomReader:
 
     @property
     def dialect(self):
-        """File dialect as one of ``model.DIALECT_*`` constants.
+        """File dialect as one of ``ged4py.model.DIALECT_*`` constants.
         """
         if self._dialect is None:
             self._dialect = model.DIALECT_DEFAULT
@@ -294,6 +321,23 @@ class GedcomReader:
     def gedcom_lines(self, offset):
         """Generator method for *gedcom lines*.
 
+        Parameters
+        ----------
+        offset : `int`
+            Position in the file to start reading.
+
+        Yields
+        ------
+        line : `gedcom_line`
+            An object representing one line of GEDCOM file.
+
+        Raises
+        ------
+        ParserError
+            Raised if lines have incorrect syntax.
+
+        Notes
+        -----
         GEDCOM line grammar is defined in Chapter 1 of GEDCOM standard, it
         consists of the level number, optional reference ID, tag name, and
         optional value separated by spaces. Chaper 1 is pure grammar level,
@@ -302,13 +346,8 @@ class GedcomReader:
         returning the lines in their order in file.
 
         This method iterates over all lines in input file and converts each
-        line into :py:class:`gedcom_line` class. It is an implementation
-        detail used by other methods, most clients will not need to use this
-        method.
-
-        :param int offset: Position in the file to start reading.
-        :returns: Iterator for gedcom_lines.
-        :raises: :py:class:`ParserError` when lines have incorrect syntax.
+        line into `gedcom_line` class. It is an implementation detail used by
+        other methods, most clients will not need to use this method.
         """
 
         self._file.seek(offset)
@@ -374,12 +413,18 @@ class GedcomReader:
 
         This is the main method of this class. Clients access data in GEDCOM
         files by iterating over level=0 records and then navigating to
-        sub-records using the methods of the :py:class:`~ged4py.model.Record`
-        class.
+        sub-records using the methods of the `~ged4py.model.Record` class.
 
-        :param str tag: If tag is ``None`` (default) then return all level=0
-            records, otherwise return level=0 records with the given tag.
-        :return: Iterator for :py:class:`~ged4py.model.Record` instances.
+        Parameters
+        ----------
+        tag : `str`, optional
+            If tag is ``None`` (default) then return all level=0 records,
+            otherwise return level=0 records with the given tag.
+
+        Yields
+        ------
+        record : `~ged4py.model.Record`
+            Instances of `~ged4py.model.Record` or its subclasses.
         """
         _log.debug("in records0")
         for offset, xtag in self.index0:
@@ -397,11 +442,21 @@ class GedcomReader:
 
         This is mostly for internal use, regular clients don't need to use it.
 
-        :param int offset: Position in file to start reading from.
-        :return: :py:class:`model.Record` instance or None if offset points
-            past EOF.
-        :raises: :py:exc:`ParserError` if `offsets` does not point to the
-            beginning of a record or for any parsing errors.
+        Parameters
+        ----------
+        offset : `int`
+            Position in the file to start reading.
+
+        Returns
+        -------
+        record : `~ged4py.model.Record` or ``None``
+            `model.Record` instance or None if offset points past EOF.
+
+        Raises
+        ------
+        ParserError
+            Raised if `offsets` does not point to the beginning of a record or
+            for any parsing errors.
         """
         _log.debug("in read_record(%s)", offset)
         stack = []  # stores per-level current records
@@ -460,14 +515,14 @@ class GedcomReader:
 
         Parameters
         ----------
-        parent : `model.Record`
+        parent : `ged4py.model.Record`
             Parent record of the new record
         gline : `gedcom_line`
             Current parsed line
 
         Returns
         -------
-        `model.Record` or None
+        record : `ged4py.model.Record` or None
         """
 
         if parent and gline.tag in ("CONT", "CONC"):

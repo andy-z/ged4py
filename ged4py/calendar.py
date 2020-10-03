@@ -51,41 +51,50 @@ class CalendarTypes:
     ``UNKNOWN`` calendar which is not supported by this library.
 
     The constants defined in this namespace are used for the values of the
-    :attr:`CalendarDate.calendar` attribute. Each separate class implementing
-    :class:`CalendarDate` interface uses distinct value for that attribute,
+    `CalendarDate.calendar` attribute. Each separate class implementing
+    `CalendarDate` interface uses distinct value for that attribute,
     and this value can be used to deduce actual type of the
-    :class:`CalendarDate` instance.
+    `CalendarDate` instance.
     """
 
     GREGORIAN = "GREGORIAN"
-    """This is the value assigned to :attr:`GregorianDate.calendar` attribute.
+    """This is the value assigned to `GregorianDate.calendar` attribute.
     """
 
     JULIAN = "JULIAN"
-    """This is the value assigned to :attr:`JulianDate.calendar` attribute.
+    """This is the value assigned to `JulianDate.calendar` attribute.
     """
 
     HEBREW = "HEBREW"
-    """This is the value assigned to :attr:`HebrewDate.calendar` attribute.
+    """This is the value assigned to `HebrewDate.calendar` attribute.
     """
 
     FRENCH_R = "FRENCH R"
-    """This is the value assigned to :attr:`FrenchDate.calendar` attribute.
+    """This is the value assigned to `FrenchDate.calendar` attribute.
     """
 
 
 class CalendarDate(metaclass=abc.ABCMeta):
     """Interface for calendar date representation.
 
-    :param int year: Calendar year number. If ``bc`` parameter is ``True``
-        then this year is before "epoch" of that calendar.
-    :param str month: Name of the month. Optional, but if day is given then
-        month cannot be None.
-    :param int day: Day in a month, optional.
-    :param bool bc: `True` if year has "B.C."
-    :param str original: Original string representation of this date as it was
-        specified in GEDCOM file, could be ``None``.
+    Parameters
+    ----------
+    year : `int`
+        Calendar year number. If ``bc`` parameter is ``True`` then this year
+        is before "epoch" of that calendar.
+    month : `str`
+        Name of the month. Optional, but if day is given then month cannot be
+        None.
+    day : `int`
+        Day in a month, optional.
+    bc : `bool`
+        ``True`` if year has "B.C."
+    original : `str`
+        Original string representation of this date as it was specified in
+        GEDCOM file, could be ``None``.
 
+    Notes
+    -----
     This class defines attributes and methods that are common for all
     calendars defined in GEDCOM (though the meaning and representation can be
     different in different calendars). In GEDCOM date consists of year, month,
@@ -96,25 +105,25 @@ class CalendarDate(metaclass=abc.ABCMeta):
 
     Implementation for different calendars are provided by subclasses which
     can implement additional attributes or methods. All subclasses need to
-    implement :meth:`key` method to support ordering of the dates from
+    implement `key()` method to support ordering of the dates from
     different calendars. There are presently four implementations defined
     in this module:
 
-        - :class:`GregorianDate` for "GREGORIAN" calendar
-        - :class:`JulianDate` for "JULIAN" calendar
-        - :class:`HebrewDate` for "HEBREW" calendar
-        - :class:`FrenchDate` for "FRENCH R" calendar
+        - `GregorianDate` for "GREGORIAN" calendar
+        - `JulianDate` for "JULIAN" calendar
+        - `HebrewDate` for "HEBREW" calendar
+        - `FrenchDate` for "FRENCH R" calendar
 
     To implement type-specific code on client side one can use one of these
     approaches:
 
-        - dispatch based on the value of :attr:`calendar` attribute, it has
-          one of the values defined in :class:`CalendarTypes` namespace,
+        - dispatch based on the value of `calendar` attribute, it has
+          one of the values defined in `CalendarTypes` namespace,
           the value maps uniquely to an implementation class;
         - dispatch based on the type of the instance using ``isinstance``
           method to check the type (e.g. ``isinstance(date, GregorianDate)``);
         - double dispatch (visitor pattern) by implementing
-          :class:`CalendarDateVisitor` interface.
+          `CalendarDateVisitor` interface.
     """
 
     def __init__(self, year, month=None, day=None, bc=False, original=None):
@@ -176,7 +185,7 @@ class CalendarDate(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def calendar(self):
         """Calendar name used for this date, one of the constants defined in
-        :class:`CalendarTypes` (`str`)
+        `CalendarTypes` (`str`)
         """
         raise NotImplementedError()
 
@@ -187,18 +196,36 @@ class CalendarDate(metaclass=abc.ABCMeta):
         Each concrete sub-class will implement this method by dispatching the
         call to corresponding visitor method.
 
-        :param CalendarDateVisitor visitor: visitor instance.
-        :returns: Value returned from a visitor method.
+        Parameters
+        ----------
+        visitor : `CalendarDateVisitor`
+            Visitor instance.
+
+        Returns
+        -------
+        value : `object`
+            Value returned from a visitor method.
         """
         raise NotImplementedError()
 
     @classmethod
     def parse(cls, datestr):
-        """Parse <DATE> string and make :class:`CalendarDate` from it.
+        """Parse ``<DATE>`` string and make `CalendarDate` from it.
 
-        :param str datestr: String with GEDCOM date.
-        :returns: :class:`CalendarDate` instance
-        :raises: ValueError is raised if parsing fails.
+        Parameters
+        ----------
+        datestr : `str`
+            String with GEDCOM date.
+
+        Returns
+        -------
+        date : `CalendarDate`
+            Date instance.
+
+        Raises
+        ------
+        ValueError
+            Raised if parsing fails.
         """
 
         def _dual_year(year_str, dual_year_str):
@@ -278,15 +305,20 @@ class CalendarDate(metaclass=abc.ABCMeta):
 
 
 class GregorianDate(CalendarDate):
-    """Implementation of :class:`CalendarDate` for Gregorian calendar.
+    """Implementation of `CalendarDate` for Gregorian calendar.
 
     Parameter ``dual_year`` (and corresponding attribute) is used for dual
-    year. Other parameters have the same meaning as in :class:`CalendarDate`
+    year. Other parameters have the same meaning as in `CalendarDate`
     class.
 
-    :param int dual_year: Dual year number or ``None``. Actual year should be
-        given, not just two last digits.
+    Parameters
+    ----------
+    dual_year : `int`, optional
+        Dual year number or ``None``. Actual year should be given, not just
+        two last digits.
 
+    Notes
+    -----
     In GEDCOM Gregorian calendar dates are allowed to specify year in the
     form YEAR1/YEAR2 (a.k.a.) dual-dating. Second number is used to specify
     year as if calendar year starts in January, while the first number is
@@ -311,7 +343,7 @@ class GregorianDate(CalendarDate):
     @property
     def calendar(self):
         """Calendar name used for this date, for GregorianDate this is always
-        :attr:`CalendarTypes.GREGORIAN` (`str`)
+        `CalendarTypes.GREGORIAN` (`str`)
         """
         return CalendarTypes.GREGORIAN
 
@@ -366,9 +398,9 @@ class GregorianDate(CalendarDate):
 
 
 class JulianDate(CalendarDate):
-    """Implementation of :class:`CalendarDate` for Julian calendar.
+    """Implementation of `CalendarDate` for Julian calendar.
 
-    All parameters have the same meaning as in :class:`CalendarDate` class.
+    All parameters have the same meaning as in `CalendarDate` class.
     """
     def __init__(self, year, month=None, day=None, bc=False, original=None):
         CalendarDate.__init__(self, year, month, day, bc, original)
@@ -407,7 +439,7 @@ class JulianDate(CalendarDate):
     @property
     def calendar(self):
         """Calendar name used for this date, for JulianDate this is always
-        :attr:`CalendarTypes.JULIAN` (`str`)
+        `CalendarTypes.JULIAN` (`str`)
         """
         return CalendarTypes.JULIAN
 
@@ -416,9 +448,9 @@ class JulianDate(CalendarDate):
 
 
 class HebrewDate(CalendarDate):
-    """Implementation of :class:`CalendarDate` for Hebrew calendar.
+    """Implementation of `CalendarDate` for Hebrew calendar.
 
-    All parameters have the same meaning as in :class:`CalendarDate` class.
+    All parameters have the same meaning as in `CalendarDate` class.
     """
     def __init__(self, year, month=None, day=None, bc=False, original=None):
         CalendarDate.__init__(self, year, month, day, bc, original)
@@ -443,7 +475,7 @@ class HebrewDate(CalendarDate):
     @property
     def calendar(self):
         """Calendar name used for this date, for HebrewDate this is always
-        :attr:`CalendarTypes.HEBREW` (`str`)
+        `CalendarTypes.HEBREW` (`str`)
         """
         return CalendarTypes.HEBREW
 
@@ -452,9 +484,9 @@ class HebrewDate(CalendarDate):
 
 
 class FrenchDate(CalendarDate):
-    """Implementation of :class:`CalendarDate` for French Republican calendar.
+    """Implementation of `CalendarDate` for French Republican calendar.
 
-    All parameters have the same meaning as in :class:`CalendarDate` class.
+    All parameters have the same meaning as in `CalendarDate` class.
     """
     def __init__(self, year, month=None, day=None, bc=False, original=None):
         CalendarDate.__init__(self, year, month, day, bc, original)
@@ -485,7 +517,7 @@ class FrenchDate(CalendarDate):
     @property
     def calendar(self):
         """Calendar name used for this date, for FrenchDate this is always
-        :attr:`CalendarTypes.FRENCH` (`str`)
+        `CalendarTypes.FRENCH` (`str`)
         """
         return CalendarTypes.FRENCH_R
 
@@ -495,12 +527,12 @@ class FrenchDate(CalendarDate):
 
 class CalendarDateVisitor(metaclass=abc.ABCMeta):
     """Interface for implementation of Visitor pattern for
-    :class:`CalendarDate` classes.
+    `CalendarDate` classes.
 
-    One can easily extend behavior of the :class:`CalendarDate` class
+    One can easily extend behavior of the `CalendarDate` class
     hierarchy without modifying classes themselves. Clients need to implement
-    new behavior by sub-classing :class:`CalendarDateVisitor` and calling
-    :meth:`CalendarDate.accept()` method, e.g.::
+    new behavior by sub-classing `CalendarDateVisitor` and calling
+    `CalendarDate.accept()` method, e.g.::
 
         class FormatterVisitor(CalendarDateVisitor):
 
@@ -515,22 +547,70 @@ class CalendarDateVisitor(metaclass=abc.ABCMeta):
         formatted = date.accept(visitor)
     """
 
+    @abc.abstractmethod
     def visitGregorian(self, date):
-        """Visit an instance of :class:`GregorianDate` type.
+        """Visit an instance of `GregorianDate` type.
+
+        Parameters
+        ----------
+        date : `GregorianDate`
+            Date instance.
+
+        Returns
+        -------
+        value : `object`
+            Implementation of this method can return anything, value will be
+            returned from `CalendarDate.accept()` method.
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def visitJulian(self, date):
-        """Visit an instance of :class:`JulianDate` type.
+        """Visit an instance of `JulianDate` type.
+
+        Parameters
+        ----------
+        date : `JulianDate`
+            Date instance.
+
+        Returns
+        -------
+        value : `object`
+            Implementation of this method can return anything, value will be
+            returned from `CalendarDate.accept()` method.
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def visitHebrew(self, date):
-        """Visit an instance of :class:`HebrewDate` type.
+        """Visit an instance of `HebrewDate` type.
+
+        Parameters
+        ----------
+        date : `HebrewDate`
+            Date instance.
+
+        Returns
+        -------
+        value : `object`
+            Implementation of this method can return anything, value will be
+            returned from `CalendarDate.accept()` method.
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def visitFrench(self, date):
-        """Visit an instance of :class:`FrenchDate` type.
+        """Visit an instance of `FrenchDate` type.
+
+        Parameters
+        ----------
+        date : `FrenchDate`
+            Date instance.
+
+        Returns
+        -------
+        value : `object`
+            Implementation of this method can return anything, value will be
+            returned from `CalendarDate.accept()` method.
         """
         raise NotImplementedError()

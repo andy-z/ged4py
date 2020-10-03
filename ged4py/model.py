@@ -15,9 +15,13 @@ from .date import DateValue
 # produced GEDCOM file. Constants define different known dialect which
 # are handled by classes below.
 DIALECT_DEFAULT = "DEF"
+"""Constant used for default dialect (`str`)."""
 DIALECT_MYHERITAGE = "MYHER"  # myheritage.com
+"""Constant used for myheritage.com dialect (`str`)."""
 DIALECT_ALTREE = "AGELONG"  # Agelong Tree (genery.com)
+"""Constant used for genery.com dialect (`str`)."""
 DIALECT_ANCESTRIS = "ANCESTRIS"  # Ancestris (ancestris.org)
+"""Constant used for ancestris.org dialect (`str`)."""
 
 # Names/Individuals can be ordered differently, e.g. by surname first,
 # by given name first, or by maiden name first. This few constants define
@@ -50,15 +54,15 @@ class Record:
 
     - ``sub_records`` attribute contains the list of all immediate subordinate
       records of this record.
-    - :py:meth:`sub_tag` method find subordinate record given its tag, it can
+    - `sub_tag` method find subordinate record given its tag, it can
       do it recursively if tag name contains multiple levels separated by
       slashes, and it can navigate through the pointer records transparently
       if ``follow`` argument is ``True``.
-    - :py:meth:`sub_tag_value` is a convenience method that finds a
-      subordinate record (via :py:meth:`~Record.sub_tag` call) but returns
+    - `sub_tag_value` is a convenience method that finds a
+      subordinate record (via `~Record.sub_tag` call) but returns
       value of the record instead of record itself. This simplifies handling
       of missing tags.
-    - :py:meth:`sub_tags` returns the list of immediate subordinate records
+    - `sub_tags` returns the list of immediate subordinate records
       (no recursion). It is useful when multiple sub-records with the same tag
       can exist.
 
@@ -71,19 +75,28 @@ class Record:
     class is explicitly marked as non-hashable.
 
     Client code usually does not need to create instances of this class
-    directly, :py:meth:`make_record` should be used instead. If you create
+    directly, `make_record()` should be used instead. If you create
     an instance of this class (or its subclass) then you are responsible for
     filling its attributes.
 
-    :ivar int level: Record level number
-    :ivar str xref_id: Record reference ID, possibly empty.
-    :ivar str tag: Tag name
-    :ivar object value: Record value, possibly None, for many record types
-        value is a string or None, some subclasses can define different type
-        of record value.
-    :ivar list sub_records: List of subordinate records, possibly empty
-    :ivar int offset: Record location in a file
-    :ivar dialect: GEDCOM source dialect, one of the DIALECT_* values
+    Attributes
+    ----------
+    level : `int`
+        Record level number
+    xref_id : `str`
+        Record reference ID, possibly empty.
+    tag : `str`
+        Tag name
+    value : `object`
+        Record value, possibly ``None``, for many record types value is a
+        string or ``None``, some subclasses can define different type of
+        record value.
+    sub_records : `list` [ `Record` ]
+        List of subordinate records, possibly empty.
+    offset : `int`
+        Record location in a file.
+    dialect: `str`
+        GEDCOM source dialect, one of the DIALECT_* values.
     """
     def __init__(self):
         self.level = None
@@ -97,7 +110,13 @@ class Record:
     def freeze(self):
         """Method called by parser when updates to this record finish.
 
-        :return: self
+        Some sub-classes will override this method to implement conversion
+        of record data to different representation.
+
+        Returns
+        -------
+        self : `Record`
+            Finalized record instance.
         """
         return self
 
@@ -113,10 +132,18 @@ class Record:
         record is used instead of pointer record, this also works for all
         intermediate records in a path.
 
-        :param str path: One or more tag names separated by slashes.
-        :param boolean follow: If True then resolve pointers.
-        :return: :py:class:`Record` instance or ``None`` if sub-record with a
-            given tag does not exist.
+        Parameters
+        ----------
+        path : `str`
+            One or more tag names separated by slashes.
+        follow : `bool`
+            If True then resolve pointers.
+
+        Returns
+        -------
+        record : `Record`
+            Subordinate record or ``None`` if sub-record with a given tag does
+            not exist.
         """
         tags = path.split('/')
         rec = self
@@ -132,33 +159,48 @@ class Record:
     def sub_tag_value(self, path, follow=True):
         """Returns value of a direct sub-record.
 
-        Works as :py:meth:`sub_tag` but returns value of a sub-record
-        instead of sub-record itself.
+        Works as `sub_tag()` but returns value of a sub-record instead of
+        sub-record itself.
 
-        :param str path: tag names separated by slashes.
-        :param boolean follow: If True then resolve pointers.
-        :return: String or `None` if sub-record with a given
-            tag does not exist.
+        Parameters
+        ----------
+        path : `str`
+            One or more tag names separated by slashes.
+        follow : `bool`
+            If True then resolve pointers.
+
+        Returns
+        -------
+        value : `object`
+            Subordinate record value or `None` if sub-record with a given tag
+            does not exist.
         """
         rec = self.sub_tag(path, follow)
         if rec:
             return rec.value
         return None
 
-    def sub_tags(self, *tags, **kw):
+    def sub_tags(self, *tags, follow=True):
         """Returns list of immediate sub-records matching any tag name.
 
-        Unlike :py:meth:`sub_tag` method this method does not support
+        Unlike `sub_tag` method this method does not support
         hierarchical paths. It resolves pointer records if ``follow``
         keyword argument is ``True`` (default).
 
-        :param str tags: Names of the sub-record tag
-        :param kw: Keyword arguments, only recognized keyword is `follow`
-            with the same meaning as in :py:meth:`sub_tag`.
-        :return: List of `Records`, possibly empty.
+        Parameters
+        ----------
+        *tags : `str`
+            Names of the sub-record tag
+        follow : `bool`, optional
+            If True then resolve pointers.
+
+        Returns
+        -------
+        records : `list` [ `Record` ]
+            List of records, possibly empty.
         """
         records = [x for x in self.sub_records if x.tag in tags]
-        if kw.get('follow', True):
+        if follow:
             records = [rec.ref if isinstance(rec, Pointer) else rec
                        for rec in records]
         return records
@@ -184,19 +226,25 @@ class Record:
 
 
 class Pointer(Record):
-    """Sub-class of :py:class:`Record` representing a pointer to a record in
+    """Sub-class of `Record` representing a pointer to a record in
     a GEDCOM file.
 
     This class wraps a GEDCOM pointer value and adds a ``ref`` property which
     retrieves pointed object. Instance of this class will be used in place of
     the GEDCOM pointers in the objects created by parser.
 
-    :param parser: Instance of `GedcomReader` class.
+    Parameters
+    ----------
+    parser : `ged4py.parser.GedcomReader`
+        Instance of parser class.
 
-    :ivar str value: Value of the GEDCOM pointer (e.g. "@I1234@")
-    :ivar Record ref: Pointed GEDCOM record
+    Attributes
+    ----------
+    value : `str`
+        Value of the GEDCOM pointer (e.g. "@I1234@")
+    ref : `Record`
+        Referenced GEDCOM record.
     """
-
     def __init__(self, parser):
         Record.__init__(self)
         self.parser = parser
@@ -214,7 +262,7 @@ class Pointer(Record):
 
 
 class NameRec(Record):
-    """Sub-class of :py:class:`Record` representing the NAME record.
+    """Sub-class of `Record` representing the NAME record.
 
     This class adds an additional method for determining type of the name.
     It also redefines the type of the `value` attribute, it's type is tuple.
@@ -232,7 +280,7 @@ class NameRec(Record):
         ("", "", "")                             # empty NAME record
 
     Client code usually does not need to create instances of this class
-    directly, :py:meth:`make_record` should be used instead.
+    directly, `make_record()` should be used instead.
     """
 
     def __init__(self):
@@ -241,7 +289,10 @@ class NameRec(Record):
     def freeze(self):
         """Method called by parser when updates to this record finish.
 
-        :return: self
+        Returns
+        -------
+        self : `NameRec`
+            Finalized record instance.
         """
         # None is the same as empty string
         if self.value is None:
@@ -274,6 +325,15 @@ class NameRec(Record):
 class Name:
     """Class representing "summary" of person names.
 
+    Parameters
+    ----------
+    names : `list` [ `NameRec` ]
+        List of NAME records (`NameRec` instances).
+    dialect : `str`
+        One of ``DIALECT_*`` constants.
+
+    Notes
+    -----
     Person in GEDCOM can have multiple NAME records, e.g. "aka" name,
     "maiden" name, etc. This class provides simple interface for selecting
     "best" name from all existing names. The algorithm for choosing best
@@ -285,9 +345,6 @@ class Name:
     - If there are multiple NAME records then the first record without TYPE
       sub-record is used, or if all records have TYPE sub-records then first
       NAME record is used.
-
-    :param list names: List of NAME records (:py:class:`NameRec` instances).
-    :param dialect: One of ``DIALECT_*`` constants.
     """
 
     def __init__(self, names, dialect):
@@ -311,12 +368,12 @@ class Name:
 
     @property
     def surname(self):
-        """Person surname (``str``)"""
+        """Person surname (`str`)"""
         return self._primary.value[1]
 
     @property
     def given(self):
-        """Given name could include both first and middle name (``str``)"""
+        """Given name could include both first and middle name (`str`)"""
         if self._primary.value[0] and self._primary.value[2]:
             return self._primary.value[0] + ' ' + self._primary.value[2]
         return self._primary.value[0] or self._primary.value[2]
@@ -331,7 +388,7 @@ class Name:
 
     @property
     def maiden(self):
-        """Maiden last name, can be None (``str``)"""
+        """Maiden last name, can be ``None`` (`str`)"""
         if self._dialect == DIALECT_DEFAULT:
             # for default/unknown dialect try "maiden" name record first
             for name in self._names:
@@ -343,15 +400,22 @@ class Name:
         return None
 
     def order(self, order):
-        """Returns name order key.
+        """Return name order key.
 
         Returns tuple with two strings that can be compared to other such
         tuple obtained from different name. Note that if you want
         locale-dependent ordering then you need to compare strings using
         locale-aware method (e.g. ``locale.strxfrm``).
 
-        :param order: One of the ``ORDER_*`` constants.
-        :returns: tuple of two strings
+        Parameters
+        ----------
+        order : `str`
+            One of the ``ORDER_*`` constants.
+
+        Returns
+        -------
+        order : `tuple` [ `str` ]
+            Tuple of two strings.
         """
         given = self.given
         surname = self.surname
@@ -376,7 +440,10 @@ class Name:
         There is no single correct way to represent name, values returned from
         this method are only useful in limited context, e.g. for logging.
 
-        :return: Formatted name representation.
+        Returns
+        -------
+        name : `str`
+            Formatted name representation.
         """
         name = self._primary.value[0]
         if self.surname:
@@ -395,10 +462,10 @@ class Name:
 
 
 class Date(Record):
-    """Sub-class of :py:class:`Record` representing the DATE record.
+    """Sub-class of `Record` representing the DATE record.
 
     After `freeze()` method is called by parser the `value` attribute contains
-    instance of :py:class:`ged4py.date.DateValue` class.
+    instance of `ged4py.date.DateValue` class.
     """
     def __init__(self):
         Record.__init__(self)
@@ -406,21 +473,24 @@ class Date(Record):
     def freeze(self):
         """Method called by parser when updates to this record finish.
 
-        :return: self
+        Returns
+        -------
+        self : `Date`
+            Finalized record instance.
         """
         self.value = DateValue.parse(self.value)
         return self
 
 
 class Individual(Record):
-    """Sub-class of :py:class:`Record` representing the INDI record.
+    """Sub-class of `Record` representing the INDI record.
 
     INDI record represents a single person in GEDCOM. This class defines
     few methods that are useful shortcuts for accessing person information,
     such as navigation to parent records, name, etc.
 
     Client code usually does not need to create instances of this class
-    directly, :py:meth:`make_record` should be used instead.
+    directly, `make_record()` should be used instead.
     """
     def __init__(self):
         Record.__init__(self)
@@ -429,14 +499,14 @@ class Individual(Record):
 
     @property
     def name(self):
-        """:py:class:`Name` instance.
+        """Person name (`Name`).
         """
         # +1 <<PERSONAL_NAME_STRUCTURE>> {0:M}
         return Name(self.sub_tags("NAME"), self.dialect)
 
     @property
     def sex(self):
-        """Person sex, "M", "F", or "U"."""
+        """Person sex, one of "M", "F", or "U" for unknown (`str`)."""
         # +1 SEX <SEX_VALUE>
         sex_rec = self.sub_tag("SEX")
         if sex_rec:
@@ -445,14 +515,14 @@ class Individual(Record):
 
     @property
     def mother(self):
-        """Parent of this individual (:py:class:`Individual` or ``None``)"""
+        """Parent of this individual (`Individual` or ``None``)"""
         if self._mother == []:
             self._mother = self.sub_tag("FAMC/WIFE")
         return self._mother
 
     @property
     def father(self):
-        """Parent of this individual (:py:class:`Individual` or ``None``)"""
+        """Parent of this individual (`Individual` or ``None``)"""
         if self._father == []:
             self._father = self.sub_tag("FAMC/HUSB")
         return self._father
@@ -466,36 +536,51 @@ _tag_class = dict(INDI=Individual,
 
 def make_record(level, xref_id, tag, value, sub_records, offset, dialect,
                 parser=None):
-    """Create Record instance based on parameters.
+    """Create `Record` instance based on parameters.
 
-    :param int level: Record level number.
-    :param str xref_id: Record reference ID, possibly empty.
-    :param str tag: Tag name.
-    :param value: Record value, possibly empty. Value can be None, bytes, or
-        string object, if it is bytes then it should be decoded into strings
-        before calling freeze(), this is normally done by the parser which
-        knows about encodings.
-    :param list sub_records: Initial list of subordinate records,
-        possibly empty. List can be updated later.
-    :param int offset: Record location in a file.
-    :param dialect: One of ``DIALECT_*`` constants.
-    :param parser: Instance of :py:class:`~ged4py.parser.GedcomReader` class,
-        only needed for records whose value is a pointer.
-    :return: Instance of :py:class:`Record` (or one of its subclasses).
+    Parameters
+    ----------
+    level : `int`
+        Record level number.
+    xref_id : `str`
+        Record reference ID, possibly empty.
+    tag : `str`
+        Tag name.
+    value : `str`
+        Record value, possibly empty. Value can be ``None``, bytes, or string
+        object, if it is bytes then it should be decoded into strings before
+        calling freeze(), this is normally done by the parser which knows
+        about encodings.
+    sub_records : `list` [ `Record` ]
+        Initial list of subordinate records, possibly empty. List can be
+        updated later.
+    offset : `int`
+        Record location in a file.
+    dialect : `str`
+        One of ``DIALECT_*`` constants.
+    parser : `~ged4py.parser.GedcomReader`
+        Parser instance, only needed for pointer records.
 
+    Returns
+    -------
+    record : `Record`
+        Instance of `Record` (or one of its subclasses).
+
+    Notes
+    -----
     This is the factory method for record instances, it can create different
     types of record based on tag of value:
 
-        - if value has a pointer form (``@ref_id@``) then :py:class:`Pointer`
+        - if value has a pointer form (``@ref_id@``) then `Pointer`
           instance is created
-        - if tag is "INDI" then :py:class:`Individual` instance is created
-        - if tag is "NAME" then :py:class:`NameRec` instance is created
-        - if tag is "DATE" then :py:class:`Date` instance is created
-        - otherwise  :py:class:`Record` instance is created
+        - if tag is "INDI" then `Individual` instance is created
+        - if tag is "NAME" then `NameRec` instance is created
+        - if tag is "DATE" then `Date` instance is created
+        - otherwise  `Record` instance is created
 
     Returned record is not complete, it could be updated by parser. When
-    parser finishes updates it calls :py:meth:`Record.freeze` method to
-    finalize record construction.
+    parser finishes updates it calls `Record.freeze()` method to finalize
+    record construction.
     """
     # value can be bytes or string so we check for both, 64 is code for '@'
     if value and len(value) > 2 and \
