@@ -5,7 +5,8 @@ watchdog
 flake8
 tox
 coverage
-Sphinx
+Sphinx>=3.0
 cryptography
 PyYAML
 pytest
+numpydoc

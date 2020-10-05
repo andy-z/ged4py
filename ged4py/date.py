@@ -58,70 +58,69 @@ class DateValueTypes:
     """Namespace for constants defining types of date values.
 
     The constants defined in this namespace are used for the values of the
-    :attr:`DateValue.kind` attribute. Each separate class implementing
-    :class:`DateValue` interface uses distinct value for that attribute,
-    and this value can be used to deduce actual type of the date
-    :class:`DateValue` instance.
+    `DateValue.kind` attribute. Each separate class implementing `DateValue`
+    interface uses distinct value for that attribute, and this value can be
+    used to deduce actual type of the date `DateValue` instance.
     """
 
     SIMPLE = "SIMPLE"
     """Date value consists of a single CalendarDate, corresponding
-    implementation class is :class:`DateValueSimple`.
+    implementation class is `DateValueSimple`.
     """
 
     FROM = "FROM"
     """Period of dates starting at specified date, end date is unknown,
-    corresponding implementation class is :class:`DateValueFrom`
+    corresponding implementation class is `DateValueFrom`
     """
 
     TO = "TO"
     """Period of dates ending at specified date, start date is unknown,
-    corresponding implementation class is :class:`DateValueTo`.
+    corresponding implementation class is `DateValueTo`.
     """
 
     PERIOD = "PERIOD"
     """Period of dates starting at one date and ending at another,
-    corresponding implementation class is :class:`DateValuePeriod`.
+    corresponding implementation class is `DateValuePeriod`.
     """
 
     BEFORE = "BEFORE"
     """Date value for an event known to happen before given date,
-    corresponding implementation class is :class:`DateValueBefore`.
+    corresponding implementation class is `DateValueBefore`.
     """
 
     AFTER = "AFTER"
     """Date value for an event known to happen after given date,
-    corresponding implementation class is :class:`DateValueAfter`.
+    corresponding implementation class is `DateValueAfter`.
     """
 
     RANGE = "RANGE"
     """Date value for an event known to happen between given dates,
-    corresponding implementation class is :class:`DateValueRange`.
+    corresponding implementation class is `DateValueRange`.
     """
 
     ABOUT = "ABOUT"
     """Date value for an event known to happen at approximate date,
-    corresponding implementation class is :class:`DateValueAbout`.
+    corresponding implementation class is `DateValueAbout`.
     """
 
     CALCULATED = "CALCULATED"
     """Date value for an event calculated from other known information,
-    corresponding implementation class is :class:`DateValueCalculated`.
+    corresponding implementation class is `DateValueCalculated`.
     """
 
     ESTIMATED = "ESTIMATED"
     """Date value for an event estimated from other known information,
-    corresponding implementation class is :class:`DateValueEstimated`.
+    corresponding implementation class is `DateValueEstimated`.
     """
 
     INTERPRETED = "INTERPRETED"
     """Date value for an event interpreted from a specified phrase,
-    corresponding implementation class is :class:`DateValueInterpreted`.
+    corresponding implementation class is `DateValueInterpreted`.
     """
 
     PHRASE = "PHRASE"
     """Date value for an event is a phrase, corresponding implementation
-    class is :class:`DateValuePhrase`.
+    class is `DateValuePhrase`.
     """
 
 
@@ -129,40 +128,51 @@ class DateValue(metaclass=abc.ABCMeta):
     """Representation of the <DATE_VALUE>, can be exact date, range,
     period, etc.
 
-    :param key: Object that is used for ordering, usually it is a pair
-            of :class:`~ged4py.calendar.CalendarDate` instances but can be
-            ``None``.
+    Parameters
+    ----------
+    key : `object`
+        Object that is used for ordering, usually it is a pair of
+        `~ged4py.calendar.CalendarDate` instances but can be ``None``.
 
+    Notes
+    -----
     ``DateValue`` is an abstract base class, for each separate kind of GEDCOM
-    date there is a separate concrete class. Class method :meth:`parse` is
+    date there is a separate concrete class. Class method `parse` is
     used to parse a date string and return an instance of corresponding
     sub-class of ``DateValue`` type.
 
     There are presently 12 concrete classes implementing this interface (e.g.
-    :class:`DateValueSimple`, :class:`DateValueRange`, etc.) Different types
+    `DateValueSimple`, `DateValueRange`, etc.) Different types
     have somewhat different set of attributes, to implement type-specific code
     on client side one can use one of these approaches:
 
-        - dispatch based on the value of :attr:`kind` attribute, it has one of
-          the values defined in :class:`DateValueTypes` namespace, and that
-          value maps uniquely to a corresponding sub-class of
-          :class:`DateValue`;
-        - dispatch based on the type of the instance using ``isinstance``
-          method to check the type (e.g.
-          ``isinstance(date, DateValueRange)``);
-        - double dispatch (visitor pattern) by implementing
-          :class:`DateValueVisitor` interface.
+    - dispatch based on the value of `kind` attribute, it has one of
+      the values defined in `DateValueTypes` namespace, and that
+      value maps uniquely to a corresponding sub-class of
+      `DateValue`;
+    - dispatch based on the type of the instance using ``isinstance``
+      method to check the type (e.g.
+      ``isinstance(date, DateValueRange)``);
+    - double dispatch (visitor pattern) by implementing
+      `DateValueVisitor` interface.
     """
     def __init__(self, key):
         self._key = key
 
     @classmethod
     def parse(cls, datestr):
-        """Parse string <DATE_VALUE> string and make :class:`DateValue`
+        """Parse string <DATE_VALUE> string and make `DateValue`
         instance out of it.
 
-        :param str datestr: String with GEDCOM date, range, period, etc.
-        :returns: :class:`DateValue` instance
+        Parameters
+        ----------
+        datestr : `str`
+            String with GEDCOM date, range, period, etc.
+
+        Returns
+        -------
+        date_value : `DateValue`
+            Object representing the date value.
         """
         # In some cases date strings can have leadin/trailing spaces
         if datestr:
@@ -187,7 +197,7 @@ class DateValue(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def kind(self):
         """The type of GEDCOM date, one of the constants defined in
-        :class:`DateValueTypes` (`str`).
+        `DateValueTypes` (`str`).
         """
         raise NotImplementedError()
 
@@ -200,6 +210,11 @@ class DateValue(metaclass=abc.ABCMeta):
         includes the date twice. For other dates (``PHRASE`` is the only
         instance without date) it returns a a pair of fixed but arbitrary
         dates in the future.
+
+        Returns
+        -------
+        key : `tuple` [ `~ged4py.calendar.CalendarDate` ]
+            Key used for ordering.
         """
         if self._key is None:
             # Use _END_OF_TIME so that it is ordered after all real dates
@@ -234,8 +249,15 @@ class DateValue(metaclass=abc.ABCMeta):
         Each concrete sub-class will implement this method by dispatching the
         call to corresponding visitor method.
 
-        :param DateValueVisitor visitor: visitor instance.
-        :returns: Value returned from a visitor method.
+        Parameters
+        ----------
+        visitor : `DateValueVisitor`
+            Visitor instance.
+
+        Returns
+        -------
+        value : `object`
+            Value returned from a visitor method.
         """
         raise NotImplementedError()
 
@@ -249,9 +271,12 @@ class DateValue(metaclass=abc.ABCMeta):
 
 
 class DateValueSimple(DateValue):
-    """Implementation of :class:`DateValue` interface for simple single-value DATE.
+    """Implementation of `DateValue` interface for simple single-value DATE.
 
-    :param CalendarDate date: Corresponding date.
+    Parameters
+    ----------
+    date : `~ged4py.calendar.CalendarDate`
+        Corresponding date.
     """
     def __init__(self, date):
         DateValue.__init__(self, (date, date))
@@ -260,16 +285,17 @@ class DateValueSimple(DateValue):
     @property
     def kind(self):
         """For DateValueSimple class this is always
-        :attr:`DateValueTypes.SIMPLE`.
+        `DateValueTypes.SIMPLE`.
         """
         return DateValueTypes.SIMPLE
 
     @property
     def date(self):
-        "Calendar date corresponding to this instance (:class:`~ged4py.calendar.CalendarDate`)"
+        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
     def accept(self, visitor):
+        # docstring inherited from DateValue class
         return visitor.visitSimple(self)
 
     def __str__(self):
@@ -280,9 +306,12 @@ class DateValueSimple(DateValue):
 
 
 class DateValueFrom(DateValue):
-    """Implementation of :class:`DateValue` interface for FROM date.
+    """Implementation of `DateValue` interface for FROM date.
 
-    :param CalendarDate date: Corresponding date.
+    Parameters
+    ----------
+    date : `~ged4py.calendar.CalendarDate`
+        Corresponding date.
     """
     def __init__(self, date):
         DateValue.__init__(self, (date, _END_OF_TIME))
@@ -291,16 +320,17 @@ class DateValueFrom(DateValue):
     @property
     def kind(self):
         """For DateValueFrom class this is always
-        :attr:`DateValueTypes.FROM`.
+        `DateValueTypes.FROM`.
         """
         return DateValueTypes.FROM
 
     @property
     def date(self):
-        "Calendar date corresponding to this instance (:class:`~ged4py.calendar.CalendarDate`)"
+        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
     def accept(self, visitor):
+        # docstring inherited from DateValue class
         return visitor.visitFrom(self)
 
     def __str__(self):
@@ -311,9 +341,12 @@ class DateValueFrom(DateValue):
 
 
 class DateValueTo(DateValue):
-    """Implementation of :class:`DateValue` interface for TO date.
+    """Implementation of `DateValue` interface for TO date.
 
-    :param CalendarDate date: Corresponding date.
+    Parameters
+    ----------
+    date : `~ged4py.calendar.CalendarDate`
+        Corresponding date.
     """
     def __init__(self, date):
         DateValue.__init__(self, (_START_OF_TIME, date))
@@ -322,16 +355,17 @@ class DateValueTo(DateValue):
     @property
     def kind(self):
         """For DateValueTo class this is always
-        :attr:`DateValueTypes.TO`.
+        `DateValueTypes.TO`.
         """
         return DateValueTypes.TO
 
     @property
     def date(self):
-        "Calendar date corresponding to this instance (:class:`~ged4py.calendar.CalendarDate`)"
+        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
     def accept(self, visitor):
+        # docstring inherited from DateValue class
         return visitor.visitTo(self)
 
     def __str__(self):
@@ -342,10 +376,14 @@ class DateValueTo(DateValue):
 
 
 class DateValuePeriod(DateValue):
-    """Implementation of :class:`DateValue` interface for FROM ... TO date.
+    """Implementation of `DateValue` interface for FROM ... TO date.
 
-    :param CalendarDate date1: FROM date.
-    :param CalendarDate date2: TO date.
+    Parameters
+    ----------
+    date1 : `~ged4py.calendar.CalendarDate`
+        FROM date.
+    date2 : `~ged4py.calendar.CalendarDate`
+        TO date.
     """
     def __init__(self, date1, date2):
         DateValue.__init__(self, (date1, date2))
@@ -355,21 +393,22 @@ class DateValuePeriod(DateValue):
     @property
     def kind(self):
         """For DateValuePeriod class this is always
-        :attr:`DateValueTypes.PERIOD`.
+        `DateValueTypes.PERIOD`.
         """
         return DateValueTypes.PERIOD
 
     @property
     def date1(self):
-        "First Calendar date corresponding to this instance (:class:`~ged4py.calendar.CalendarDate`)"
+        "First Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date1
 
     @property
     def date2(self):
-        "Second Calendar date corresponding to this instance (:class:`~ged4py.calendar.CalendarDate`)"
+        "Second Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date2
 
     def accept(self, visitor):
+        # docstring inherited from DateValue class
         return visitor.visitPeriod(self)
 
     def __str__(self):
@@ -380,9 +419,12 @@ class DateValuePeriod(DateValue):
 
 
 class DateValueBefore(DateValue):
-    """Implementation of :class:`DateValue` interface for BEF date.
+    """Implementation of `DateValue` interface for BEF date.
 
-    :param CalendarDate date: Corresponding date.
+    Parameters
+    ----------
+    date : `~ged4py.calendar.CalendarDate`
+        Corresponding date.
     """
     def __init__(self, date):
         DateValue.__init__(self, (_START_OF_TIME, date))
@@ -391,16 +433,17 @@ class DateValueBefore(DateValue):
     @property
     def kind(self):
         """For DateValueBefore class this is always
-        :attr:`DateValueTypes.BEFORE`.
+        `DateValueTypes.BEFORE`.
         """
         return DateValueTypes.BEFORE
 
     @property
     def date(self):
-        "Calendar date corresponding to this instance (:class:`~ged4py.calendar.CalendarDate`)"
+        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
     def accept(self, visitor):
+        # docstring inherited from DateValue class
         return visitor.visitBefore(self)
 
     def __str__(self):
@@ -411,9 +454,12 @@ class DateValueBefore(DateValue):
 
 
 class DateValueAfter(DateValue):
-    """Implementation of :class:`DateValue` interface for AFT date.
+    """Implementation of `DateValue` interface for AFT date.
 
-    :param CalendarDate date: Corresponding date.
+    Parameters
+    ----------
+    date : `~ged4py.calendar.CalendarDate`
+        Corresponding date.
     """
     def __init__(self, date):
         DateValue.__init__(self, (date, _END_OF_TIME))
@@ -422,16 +468,17 @@ class DateValueAfter(DateValue):
     @property
     def kind(self):
         """For DateValueAfter class this is always
-        :attr:`DateValueTypes.AFTER`.
+        `DateValueTypes.AFTER`.
         """
         return DateValueTypes.AFTER
 
     @property
     def date(self):
-        "Calendar date corresponding to this instance (:class:`~ged4py.calendar.CalendarDate`)"
+        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
     def accept(self, visitor):
+        # docstring inherited from DateValue class
         return visitor.visitAfter(self)
 
     def __str__(self):
@@ -442,10 +489,14 @@ class DateValueAfter(DateValue):
 
 
 class DateValueRange(DateValue):
-    """Implementation of :class:`DateValue` interface for BET ... AND ... date.
+    """Implementation of `DateValue` interface for BET ... AND ... date.
 
-    :param CalendarDate date1: First date.
-    :param CalendarDate date2: Second date.
+    Parameters
+    ----------
+    date1 : `~ged4py.calendar.CalendarDate`
+        First date.
+    date2 : `~ged4py.calendar.CalendarDate`
+        Second date.
     """
     def __init__(self, date1, date2):
         DateValue.__init__(self, (date1, date2))
@@ -455,21 +506,22 @@ class DateValueRange(DateValue):
     @property
     def kind(self):
         """For DateValueRange class this is always
-        :attr:`DateValueTypes.RANGE`.
+        `DateValueTypes.RANGE`.
         """
         return DateValueTypes.RANGE
 
     @property
     def date1(self):
-        "First Calendar date corresponding to this instance (:class:`~ged4py.calendar.CalendarDate`)"
+        "First Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date1
 
     @property
     def date2(self):
-        "Second Calendar date corresponding to this instance (:class:`~ged4py.calendar.CalendarDate`)"
+        "Second Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date2
 
     def accept(self, visitor):
+        # docstring inherited from DateValue class
         return visitor.visitRange(self)
 
     def __str__(self):
@@ -480,9 +532,12 @@ class DateValueRange(DateValue):
 
 
 class DateValueAbout(DateValue):
-    """Implementation of :class:`DateValue` interface for ABT date.
+    """Implementation of `DateValue` interface for ABT date.
 
-    :param CalendarDate date: Corresponding date.
+    Parameters
+    ----------
+    date : `~ged4py.calendar.CalendarDate`
+        Corresponding date.
     """
     def __init__(self, date):
         DateValue.__init__(self, (date, date))
@@ -491,16 +546,17 @@ class DateValueAbout(DateValue):
     @property
     def kind(self):
         """For DateValueAbout class this is always
-        :attr:`DateValueTypes.ABOUT`.
+        `DateValueTypes.ABOUT`.
         """
         return DateValueTypes.ABOUT
 
     @property
     def date(self):
-        "Calendar date corresponding to this instance (:class:`~ged4py.calendar.CalendarDate`)"
+        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
     def accept(self, visitor):
+        # docstring inherited from DateValue class
         return visitor.visitAbout(self)
 
     def __str__(self):
@@ -511,9 +567,12 @@ class DateValueAbout(DateValue):
 
 
 class DateValueCalculated(DateValue):
-    """Implementation of :class:`DateValue` interface for CAL date.
+    """Implementation of `DateValue` interface for CAL date.
 
-    :param CalendarDate date: Corresponding date.
+    Parameters
+    ----------
+    date : `~ged4py.calendar.CalendarDate`
+        Corresponding date.
     """
     def __init__(self, date):
         DateValue.__init__(self, (date, date))
@@ -522,16 +581,17 @@ class DateValueCalculated(DateValue):
     @property
     def kind(self):
         """For DateValueCalculated class this is always
-        :attr:`DateValueTypes.CALCULATED`.
+        `DateValueTypes.CALCULATED`.
         """
         return DateValueTypes.CALCULATED
 
     @property
     def date(self):
-        "Calendar date corresponding to this instance (:class:`~ged4py.calendar.CalendarDate`)"
+        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
     def accept(self, visitor):
+        # docstring inherited from DateValue class
         return visitor.visitCalculated(self)
 
     def __str__(self):
@@ -542,9 +602,12 @@ class DateValueCalculated(DateValue):
 
 
 class DateValueEstimated(DateValue):
-    """Implementation of :class:`DateValue` interface for EST date.
+    """Implementation of `DateValue` interface for EST date.
 
-    :param CalendarDate date: Corresponding date.
+    Parameters
+    ----------
+    date : `~ged4py.calendar.CalendarDate`
+        Corresponding date.
     """
     def __init__(self, date):
         DateValue.__init__(self, (date, date))
@@ -553,16 +616,17 @@ class DateValueEstimated(DateValue):
     @property
     def kind(self):
         """For DateValueEstimated class this is always
-        :attr:`DateValueTypes.ESTIMATED`.
+        `DateValueTypes.ESTIMATED`.
         """
         return DateValueTypes.ESTIMATED
 
     @property
     def date(self):
-        "Calendar date corresponding to this instance (:class:`~ged4py.calendar.CalendarDate`)"
+        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
     def accept(self, visitor):
+        # docstring inherited from DateValue class
         return visitor.visitEstimated(self)
 
     def __str__(self):
@@ -573,10 +637,14 @@ class DateValueEstimated(DateValue):
 
 
 class DateValueInterpreted(DateValue):
-    """Implementation of :class:`DateValue` interface for INT date.
+    """Implementation of `DateValue` interface for INT date.
 
-    :param CalendarDate date: Corresponding date.
-    :param str phrase: Phrase string associated with this date.
+    Parameters
+    ----------
+    date : `~ged4py.calendar.CalendarDate`
+        Corresponding date.
+    phrase : `str`
+        Phrase string associated with this date.
     """
     def __init__(self, date, phrase):
         DateValue.__init__(self, (date, date))
@@ -586,13 +654,13 @@ class DateValueInterpreted(DateValue):
     @property
     def kind(self):
         """For DateValueInterpreted class this is always
-        :attr:`DateValueTypes.INTERPRETED`.
+        `DateValueTypes.INTERPRETED`.
         """
         return DateValueTypes.INTERPRETED
 
     @property
     def date(self):
-        "Calendar date corresponding to this instance (:class:`~ged4py.calendar.CalendarDate`)"
+        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
     @property
@@ -602,6 +670,7 @@ class DateValueInterpreted(DateValue):
         return self._phrase
 
     def accept(self, visitor):
+        # docstring inherited from DateValue class
         return visitor.visitInterpreted(self)
 
     def __str__(self):
@@ -612,9 +681,12 @@ class DateValueInterpreted(DateValue):
 
 
 class DateValuePhrase(DateValue):
-    """Implementation of :class:`DateValue` interface for phrase-date.
+    """Implementation of `DateValue` interface for phrase-date.
 
-    :param str phrase: Phrase string associated with this date.
+    Parameters
+    ----------
+    phrase : `str`
+        Phrase string associated with this date.
     """
     def __init__(self, phrase):
         DateValue.__init__(self, None)
@@ -623,7 +695,7 @@ class DateValuePhrase(DateValue):
     @property
     def kind(self):
         """For DateValuePhrase class this is always
-        :attr:`DateValueTypes.PHRASE`.
+        `DateValueTypes.PHRASE`.
         """
         return DateValueTypes.PHRASE
 
@@ -634,6 +706,7 @@ class DateValuePhrase(DateValue):
         return self._phrase
 
     def accept(self, visitor):
+        # docstring inherited from DateValue class
         return visitor.visitPhrase(self)
 
     def __str__(self):
@@ -663,13 +736,13 @@ DATES = (
 
 
 class DateValueVisitor(metaclass=abc.ABCMeta):
-    """Interface for implementation of Visitor pattern for :class:`DateValue`
+    """Interface for implementation of Visitor pattern for `DateValue`
     classes.
 
-    One can easily extend behavior of the :class:`DateValue` class hierarchy
+    One can easily extend behavior of the `DateValue` class hierarchy
     without modifying classes themselves. Clients need to implement new
     behavior by sub-classing ``DateValueVisitor`` and calling
-    :meth:`DateValue.accept` method, e.g.::
+    `DateValue.accept` method, e.g.::
 
         class FormatterVisitor(DateValueVisitor):
 
@@ -686,72 +759,204 @@ class DateValueVisitor(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def visitSimple(self, date):
-        """Visit an instance of :class:`DateValueSimple` type.
+        """Visit an instance of `DateValueSimple` type.
+
+        Parameters
+        ----------
+        date : `DateValueSimple`
+            Date value instance.
+
+        Returns
+        -------
+        value : `object`
+            Implementation of this method can return anything, value will be
+            returned from `DateValue.accept()` method.
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
     def visitPeriod(self, date):
-        """Visit an instance of :class:`DateValuePeriod` type.
+        """Visit an instance of `DateValuePeriod` type.
+
+        Parameters
+        ----------
+        date : `DateValuePeriod`
+            Date value instance.
+
+        Returns
+        -------
+        value : `object`
+            Implementation of this method can return anything, value will be
+            returned from `DateValue.accept()` method.
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
     def visitFrom(self, date):
-        """Visit an instance of :class:`DateValueFrom` type.
+        """Visit an instance of `DateValueFrom` type.
+
+        Parameters
+        ----------
+        date : `DateValueFrom`
+            Date value instance.
+
+        Returns
+        -------
+        value : `object`
+            Implementation of this method can return anything, value will be
+            returned from `DateValue.accept()` method.
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
     def visitTo(self, date):
-        """Visit an instance of :class:`DateValueTo` type.
+        """Visit an instance of `DateValueTo` type.
+
+        Parameters
+        ----------
+        date : `DateValueTo`
+            Date value instance.
+
+        Returns
+        -------
+        value : `object`
+            Implementation of this method can return anything, value will be
+            returned from `DateValue.accept()` method.
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
     def visitRange(self, date):
-        """Visit an instance of :class:`DateValueRange` type.
+        """Visit an instance of `DateValueRange` type.
+
+        Parameters
+        ----------
+        date : `DateValueRange`
+            Date value instance.
+
+        Returns
+        -------
+        value : `object`
+            Implementation of this method can return anything, value will be
+            returned from `DateValue.accept()` method.
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
     def visitBefore(self, date):
-        """Visit an instance of :class:`DateValueBefore` type.
+        """Visit an instance of `DateValueBefore` type.
+
+        Parameters
+        ----------
+        date : `DateValueBefore`
+            Date value instance.
+
+        Returns
+        -------
+        value : `object`
+            Implementation of this method can return anything, value will be
+            returned from `DateValue.accept()` method.
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
     def visitAfter(self, date):
-        """Visit an instance of :class:`DateValueAfter` type.
+        """Visit an instance of `DateValueAfter` type.
+
+        Parameters
+        ----------
+        date : `DateValueAfter`
+            Date value instance.
+
+        Returns
+        -------
+        value : `object`
+            Implementation of this method can return anything, value will be
+            returned from `DateValue.accept()` method.
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
     def visitAbout(self, date):
-        """Visit an instance of :class:`DateValueAbout` type.
+        """Visit an instance of `DateValueAbout` type.
+
+        Parameters
+        ----------
+        date : `DateValueAbout`
+            Date value instance.
+
+        Returns
+        -------
+        value : `object`
+            Implementation of this method can return anything, value will be
+            returned from `DateValue.accept()` method.
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
     def visitCalculated(self, date):
-        """Visit an instance of :class:`DateValueCalculated` type.
+        """Visit an instance of `DateValueCalculated` type.
+
+        Parameters
+        ----------
+        date : `DateValueCalculated`
+            Date value instance.
+
+        Returns
+        -------
+        value : `object`
+            Implementation of this method can return anything, value will be
+            returned from `DateValue.accept()` method.
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
     def visitEstimated(self, date):
-        """Visit an instance of :class:`DateValueEstimated` type.
+        """Visit an instance of `DateValueEstimated` type.
+
+        Parameters
+        ----------
+        date : `DateValueEstimated`
+            Date value instance.
+
+        Returns
+        -------
+        value : `object`
+            Implementation of this method can return anything, value will be
+            returned from `DateValue.accept()` method.
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
     def visitInterpreted(self, date):
-        """Visit an instance of :class:`DateValueInterpreted` type.
+        """Visit an instance of `DateValueInterpreted` type.
+
+        Parameters
+        ----------
+        date : `DateValueInterpreted`
+            Date value instance.
+
+        Returns
+        -------
+        value : `object`
+            Implementation of this method can return anything, value will be
+            returned from `DateValue.accept()` method.
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
     def visitPhrase(self, date):
-        """Visit an instance of :class:`DateValuePhrase` type.
+        """Visit an instance of `DateValuePhrase` type.
+
+        Parameters
+        ----------
+        date : `DateValuePhrase`
+            Date value instance.
+
+        Returns
+        -------
+        value : `object`
+            Implementation of this method can return anything, value will be
+            returned from `DateValue.accept()` method.
         """
         raise NotImplementedError()

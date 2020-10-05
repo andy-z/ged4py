@@ -2,6 +2,9 @@
 History
 =======
 
+* Use numpydoc style for docstrings, add extension to Sphinx
+* Drop Python2 compatibility code
+
 0.3.1 (2020-09-28)
 ------------------
 

@@ -5,7 +5,21 @@
 def split_name(name):
     """Extracts pieces of name from full name string.
 
-    Full name can have one of these formats:
+    Parameters
+    ----------
+    name : `str`
+        Full name string.
+
+    Returns
+    -------
+    name : `tuple`
+        3-tuple `(given1, surname, given2)`, `surname` or `given` will
+        be empty strings if they are not present in full string.
+
+    Notes
+    -----
+    Full name can have one of these formats::
+
         <NAME_TEXT> |
         /<NAME_TEXT>/ |
         <NAME_TEXT> /<NAME_TEXT>/ |
@@ -17,16 +31,13 @@ def split_name(name):
     Text between slashes is considered a surname, outside slashes - given
     name.
 
-    This method splits full name into pieces at slashes, e.g.:
+    This method splits full name into pieces at slashes, e.g.::
 
         "First /Last/" -> ("First", "Last", "")
         "/Last/ First" -> ("", "Last", "First")
         "First /Last/ Jr." -> ("First", "Last", "Jr.")
         "First Jr." -> ("First Jr.", "", "")
 
-    :param str name: Full name string.
-    :return: 2-tuple `(given1, surname, given2)`, `surname` or `given` will
-        be empty strings if they are not present in full string.
     """
     given1, _, rem = name.partition("/")
     surname, _, given2 = rem.partition("/")
@@ -36,22 +47,36 @@ def split_name(name):
 def parse_name_altree(record):
     """Parse NAME structure assuming ALTREE dialect.
 
+    Parameters
+    ----------
+    record : `ged4py.model.Record`
+        NAME record.
+
+    Returns
+    -------
+    parsed_name : `tuple`
+        Tuple with 3 or 4 elements, first three elements of tuple are
+        the same as returned from `split_name` method, fourth element
+        (if present) denotes maiden name.
+
+    Notes
+    -----
     In ALTREE dialect maiden name (if present) is saved as SURN sub-record
     and is also appended to family name in parens. Given name is saved in
     GIVN sub-record. Few examples:
 
-    No maiden name:
+    No maiden name::
 
         1 NAME John /Smith/
         2 GIVN John
 
-    With maiden name:
+    With maiden name::
 
         1 NAME Jane /Smith (Ivanova)/
         2 GIVN Jane
         2 SURN Ivanova
 
-    No maiden name
+    No maiden name::
 
         1 NAME Mers /Daimler (-Benz)/
         2 GIVN Mers
@@ -61,11 +86,6 @@ def parse_name_altree(record):
     SURN record.
 
     ALTREE also replaces empty names with question mark, we undo that too.
-
-    :param record: NAME record
-    :return: tuple with 3 or 4 elements, first three elements of tuple are
-        the same as returned from :py:meth:`split_name` method, fourth element
-        (if present) denotes maiden name.
     """
     name_tuple = split_name(record.value)
     if name_tuple[1] == '?':
@@ -86,33 +106,44 @@ def parse_name_altree(record):
 def parse_name_myher(record):
     """Parse NAME structure assuming MYHERITAGE dialect.
 
+    Parameters
+    ----------
+    record : `ged4py.model.Record`
+        NAME record.
+
+    Returns
+    -------
+    parsed_name : `tuple`
+        Tuple with 3 or 4 elements, first three elements of tuple are
+        the same as returned from `split_name` method, fourth element
+        (if present) denotes maiden name.
+
+    Notes
+    -----
+
     In MYHERITAGE dialect married name (if present) is saved as _MARNM
     sub-record. Maiden name is stored in SURN record. Few examples:
 
-    No maiden name:
+    No maiden name::
 
         1 NAME John /Smith/
         2 GIVN John
         2 SURN Smith
 
-    With maiden name:
+    With maiden name::
 
         1 NAME Jane /Ivanova/
         2 GIVN Jane
         2 SURN Ivanova
         2 _MARNM Smith
 
-    No maiden name
+    No maiden name::
 
         1 NAME Mers /Daimler (-Benz)/
         2 GIVN Mers
         2 SURN Daimler (-Benz)
 
 
-    :param record: NAME record
-    :return: tuple with 3 or 4 elements, first three elements of tuple are
-        the same as returned from :py:meth:`split_name` method, fourth element
-        (if present) denotes maiden name.
     """
     name_tuple = split_name(record.value)
     married = record.sub_tag_value("_MARNM")
@@ -132,9 +163,16 @@ def parse_name_ancestris(record):
     representing maiden or married names. Best we can do in this situation is
     to use NAME record value and ignore any other fields.
 
-    :param record: NAME record
-    :return: tuple with 3 or 4 elements, first three elements of tuple are
-        the same as returned from :py:meth:`split_name` method, fourth element
+    Parameters
+    ----------
+    record : `ged4py.model.Record`
+        NAME record.
+
+    Returns
+    -------
+    parsed_name : `tuple`
+        Tuple with 3 or 4 elements, first three elements of tuple are
+        the same as returned from `split_name` method, fourth element
         (if present) denotes maiden name.
     """
     name_tuple = split_name(record.value)
