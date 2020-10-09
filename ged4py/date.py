@@ -10,6 +10,7 @@ __all__ = [
 ]
 
 import abc
+import enum
 import re
 
 from .calendar import CalendarDate, GregorianDate, DATE
@@ -54,7 +55,8 @@ _START_OF_TIME = GregorianDate(5000, bc=True)
 _END_OF_TIME = GregorianDate(5000)
 
 
-class DateValueTypes:
+@enum.unique
+class DateValueTypes(enum.Enum):
     """Namespace for constants defining types of date values.
 
     The constants defined in this namespace are used for the values of the
@@ -196,8 +198,8 @@ class DateValue(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def kind(self):
-        """The type of GEDCOM date, one of the constants defined in
-        `DateValueTypes` (`str`).
+        """The type of GEDCOM date, one of the `DateValueTypes` enums
+        (`DateValueTypes`).
         """
         raise NotImplementedError()
 

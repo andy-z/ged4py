@@ -36,7 +36,7 @@ class TestModel(unittest.TestCase):
         rec.value = "value"
         rec.sub_records = []
         rec.offset = 1000
-        rec.dialect = model.DIALECT_DEFAULT
+        rec.dialect = model.Dialect.DEFAULT
 
         rec.freeze()
         self.assertTrue(rec.sub_tag("SUB") is None)
@@ -52,7 +52,7 @@ class TestModel(unittest.TestCase):
         rec.value = "value"
         rec.sub_records = []
         rec.offset = 1000
-        rec.dialect = model.DIALECT_DEFAULT
+        rec.dialect = model.Dialect.DEFAULT
 
         for subtag in ['SUBA', 'SUBB', 'SUBC']:
             for i in range(3):
@@ -63,14 +63,14 @@ class TestModel(unittest.TestCase):
                 sub.value = i
                 sub.sub_records = []
                 sub.offset = 1100 + 100 * i
-                sub.dialect = model.DIALECT_DEFAULT
+                sub.dialect = model.Dialect.DEFAULT
 
                 subsub = model.Record()
                 subsub.level = 2
                 subsub.tag = "SUB"
                 subsub.value = 'VALUE'
                 subsub.sub_records = []
-                subsub.dialect = model.DIALECT_DEFAULT
+                subsub.dialect = model.Dialect.DEFAULT
                 subsub.freeze()
 
                 sub.sub_records.append(subsub)
@@ -110,7 +110,7 @@ class TestModel(unittest.TestCase):
         rec = model.NameRec()
         rec.level = 1
         rec.tag = "NAME"
-        rec.dialect = model.DIALECT_DEFAULT
+        rec.dialect = model.Dialect.DEFAULT
 
         rec.value = ""
         rec.freeze()
@@ -158,7 +158,7 @@ class TestModel(unittest.TestCase):
         rec = model.NameRec()
         rec.level = 1
         rec.tag = "NAME"
-        rec.dialect = model.DIALECT_ALTREE
+        rec.dialect = model.Dialect.ALTREE
 
         rec.value = ""
         rec.freeze()
@@ -191,7 +191,7 @@ class TestModel(unittest.TestCase):
         rec = model.NameRec()
         rec.level = 1
         rec.tag = "NAME"
-        rec.dialect = model.DIALECT_MYHERITAGE
+        rec.dialect = model.Dialect.MYHERITAGE
         rec.sub_records = []
 
         rec.value = ""
@@ -223,7 +223,7 @@ class TestModel(unittest.TestCase):
     def test_020_name_default(self):
         """Test Name class with DEFAULT dialect."""
 
-        dialect = model.DIALECT_DEFAULT
+        dialect = model.Dialect.DEFAULT
         names = [model.make_record(1, None, "NAME", "John /Smith/", [], 0, dialect).freeze()]
         name = model.Name(names, dialect)
 
@@ -232,10 +232,10 @@ class TestModel(unittest.TestCase):
         self.assertEqual(name.given, "John")
         self.assertTrue(name.maiden is None)
 
-        self.assertEqual(name.order(model.ORDER_SURNAME_GIVEN), ("1Smith", "1John"))
-        self.assertEqual(name.order(model.ORDER_GIVEN_SURNAME), ("1John", "1Smith"))
-        self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("1Smith", "1John"))
-        self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1John", "1Smith"))
+        self.assertEqual(name.order(model.NameOrder.SURNAME_GIVEN), ("1Smith", "1John"))
+        self.assertEqual(name.order(model.NameOrder.GIVEN_SURNAME), ("1John", "1Smith"))
+        self.assertEqual(name.order(model.NameOrder.MAIDEN_GIVEN), ("1Smith", "1John"))
+        self.assertEqual(name.order(model.NameOrder.GIVEN_MAIDEN), ("1John", "1Smith"))
 
         self.assertEqual(name.format(), ("John Smith"))
 
@@ -247,10 +247,10 @@ class TestModel(unittest.TestCase):
         self.assertEqual(name.given, "John")
         self.assertTrue(name.maiden is None)
 
-        self.assertEqual(name.order(model.ORDER_SURNAME_GIVEN), ("2", "1John"))
-        self.assertEqual(name.order(model.ORDER_GIVEN_SURNAME), ("1John", "2"))
-        self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("2", "1John"))
-        self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1John", "2"))
+        self.assertEqual(name.order(model.NameOrder.SURNAME_GIVEN), ("2", "1John"))
+        self.assertEqual(name.order(model.NameOrder.GIVEN_SURNAME), ("1John", "2"))
+        self.assertEqual(name.order(model.NameOrder.MAIDEN_GIVEN), ("2", "1John"))
+        self.assertEqual(name.order(model.NameOrder.GIVEN_MAIDEN), ("1John", "2"))
 
         self.assertEqual(name.format(), ("John"))
 
@@ -264,17 +264,17 @@ class TestModel(unittest.TestCase):
         self.assertEqual(name.given, "Jane A.")
         self.assertEqual(name.maiden, "Sawyer")
 
-        self.assertEqual(name.order(model.ORDER_SURNAME_GIVEN), ("1Smith", "1Jane A."))
-        self.assertEqual(name.order(model.ORDER_GIVEN_SURNAME), ("1Jane A.", "1Smith"))
-        self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("1Sawyer", "1Jane A."))
-        self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1Jane A.", "1Sawyer"))
+        self.assertEqual(name.order(model.NameOrder.SURNAME_GIVEN), ("1Smith", "1Jane A."))
+        self.assertEqual(name.order(model.NameOrder.GIVEN_SURNAME), ("1Jane A.", "1Smith"))
+        self.assertEqual(name.order(model.NameOrder.MAIDEN_GIVEN), ("1Sawyer", "1Jane A."))
+        self.assertEqual(name.order(model.NameOrder.GIVEN_MAIDEN), ("1Jane A.", "1Sawyer"))
 
         self.assertEqual(name.format(), ("Jane Smith A."))
 
     def test_021_name_altree(self):
         """Test Name class with ALTREE dialect."""
 
-        dialect = model.DIALECT_ALTREE
+        dialect = model.Dialect.ALTREE
         surn = model.make_record(2, None, "SURN", "Sawyer", [], 0, dialect).freeze()
         names = [model.make_record(1, None, "NAME", "Jane /Smith (Sawyer)/ A.", [surn], 0, dialect).freeze()]
         name = model.Name(names, dialect)
@@ -284,10 +284,10 @@ class TestModel(unittest.TestCase):
         self.assertEqual(name.given, "Jane A.")
         self.assertEqual(name.maiden, "Sawyer")
 
-        self.assertEqual(name.order(model.ORDER_SURNAME_GIVEN), ("1Smith", "1Jane A."))
-        self.assertEqual(name.order(model.ORDER_GIVEN_SURNAME), ("1Jane A.", "1Smith"))
-        self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("1Sawyer", "1Jane A."))
-        self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1Jane A.", "1Sawyer"))
+        self.assertEqual(name.order(model.NameOrder.SURNAME_GIVEN), ("1Smith", "1Jane A."))
+        self.assertEqual(name.order(model.NameOrder.GIVEN_SURNAME), ("1Jane A.", "1Smith"))
+        self.assertEqual(name.order(model.NameOrder.MAIDEN_GIVEN), ("1Sawyer", "1Jane A."))
+        self.assertEqual(name.order(model.NameOrder.GIVEN_MAIDEN), ("1Jane A.", "1Sawyer"))
 
         self.assertEqual(name.format(), ("Jane Smith A."))
 
@@ -299,17 +299,17 @@ class TestModel(unittest.TestCase):
         self.assertEqual(name.given, "Jane A.")
         self.assertTrue(name.maiden is None)
 
-        self.assertEqual(name.order(model.ORDER_SURNAME_GIVEN), ("2", "1Jane A."))
-        self.assertEqual(name.order(model.ORDER_GIVEN_SURNAME), ("1Jane A.", "2"))
-        self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("2", "1Jane A."))
-        self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1Jane A.", "2"))
+        self.assertEqual(name.order(model.NameOrder.SURNAME_GIVEN), ("2", "1Jane A."))
+        self.assertEqual(name.order(model.NameOrder.GIVEN_SURNAME), ("1Jane A.", "2"))
+        self.assertEqual(name.order(model.NameOrder.MAIDEN_GIVEN), ("2", "1Jane A."))
+        self.assertEqual(name.order(model.NameOrder.GIVEN_MAIDEN), ("1Jane A.", "2"))
 
         self.assertEqual(name.format(), ("Jane A."))
 
     def test_022_name_myher(self):
         """Test Name class with MYHERITAGE dialect."""
 
-        dialect = model.DIALECT_MYHERITAGE
+        dialect = model.Dialect.MYHERITAGE
         married = model.make_record(2, None, "_MARNM", "Smith", [], 0, dialect).freeze()
         names = [model.make_record(1, None, "NAME", "Jane /Sawyer/ A.", [married], 0, dialect).freeze()]
         name = model.Name(names, dialect)
@@ -319,23 +319,23 @@ class TestModel(unittest.TestCase):
         self.assertEqual(name.given, "Jane A.")
         self.assertEqual(name.maiden, "Sawyer")
 
-        self.assertEqual(name.order(model.ORDER_SURNAME_GIVEN), ("1Smith", "1Jane A."))
-        self.assertEqual(name.order(model.ORDER_GIVEN_SURNAME), ("1Jane A.", "1Smith"))
-        self.assertEqual(name.order(model.ORDER_MAIDEN_GIVEN), ("1Sawyer", "1Jane A."))
-        self.assertEqual(name.order(model.ORDER_GIVEN_MAIDEN), ("1Jane A.", "1Sawyer"))
+        self.assertEqual(name.order(model.NameOrder.SURNAME_GIVEN), ("1Smith", "1Jane A."))
+        self.assertEqual(name.order(model.NameOrder.GIVEN_SURNAME), ("1Jane A.", "1Smith"))
+        self.assertEqual(name.order(model.NameOrder.MAIDEN_GIVEN), ("1Sawyer", "1Jane A."))
+        self.assertEqual(name.order(model.NameOrder.GIVEN_MAIDEN), ("1Jane A.", "1Sawyer"))
 
         self.assertEqual(name.format(), ("Jane Smith A."))
 
     def test_030_date(self):
         """Test Date class."""
 
-        dialect = model.DIALECT_MYHERITAGE
+        dialect = model.Dialect.MYHERITAGE
         date = model.make_record(1, None, "DATE", "1970", [], 0, dialect).freeze()
         self.assertIsInstance(date, model.Date)
         self.assertIsInstance(date.value, DateValue)
 
         # empty date tag makes Date with empty DateValue
-        dialect = model.DIALECT_DEFAULT
+        dialect = model.Dialect.DEFAULT
         date = model.make_record(1, None, "DATE", None, [], 0, dialect).freeze()
         self.assertIsInstance(date, model.Date)
         self.assertIsInstance(date.value, DateValue)
@@ -367,7 +367,7 @@ class TestModel(unittest.TestCase):
         self.assertEqual(pointer.value, b"@pointer0@")
         self.assertEqual(pointer.ref, "0")
 
-        dialect = model.DIALECT_MYHERITAGE
+        dialect = model.Dialect.MYHERITAGE
         pointer = model.make_record(1, None, "FAMC", b"@pointer1@", [], 0, dialect, Parser()).freeze()
         self.assertIsInstance(pointer, model.Pointer)
         self.assertEqual(pointer.value, b"@pointer1@")
@@ -384,7 +384,7 @@ class TestModel(unittest.TestCase):
             def read_record(self, offset):
                 return str(offset)
 
-        dialect = model.DIALECT_MYHERITAGE
+        dialect = model.Dialect.MYHERITAGE
         parser = Parser()
         husb = model.make_record(1, None, "HUSB", b"@pointer0@", [], 0, dialect, parser).freeze()
         wife = model.make_record(1, None, "WIFE", b"@pointer1@", [], 0, dialect, parser).freeze()
@@ -407,7 +407,7 @@ class TestModel(unittest.TestCase):
         """Test make_record method()"""
 
         rec = model.make_record(0, "@xref@", "TAG", "value", [], 1000,
-                                model.DIALECT_DEFAULT)
+                                model.Dialect.DEFAULT)
         rec.freeze()
         self.assertTrue(type(rec) is model.Record)
         self.assertEqual(rec.level, 0)
@@ -416,10 +416,10 @@ class TestModel(unittest.TestCase):
         self.assertEqual(rec.value, "value")
         self.assertEqual(rec.sub_records, [])
         self.assertEqual(rec.offset, 1000)
-        self.assertEqual(rec.dialect, model.DIALECT_DEFAULT)
+        self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
         rec = model.make_record(1, None, "NAME", "Joe", [], 1000,
-                                model.DIALECT_ALTREE)
+                                model.Dialect.ALTREE)
         rec.freeze()
         self.assertTrue(type(rec) is model.NameRec)
         self.assertEqual(rec.level, 1)
@@ -428,10 +428,10 @@ class TestModel(unittest.TestCase):
         self.assertEqual(rec.value, ("Joe", "", ""))
         self.assertEqual(rec.sub_records, [])
         self.assertEqual(rec.offset, 1000)
-        self.assertEqual(rec.dialect, model.DIALECT_ALTREE)
+        self.assertEqual(rec.dialect, model.Dialect.ALTREE)
 
         rec = model.make_record(0, "@I1@", "INDI", None, [], 1000,
-                                model.DIALECT_MYHERITAGE)
+                                model.Dialect.MYHERITAGE)
         rec.freeze()
         self.assertTrue(type(rec) is model.Individual)
         self.assertEqual(rec.level, 0)
@@ -440,4 +440,4 @@ class TestModel(unittest.TestCase):
         self.assertTrue(rec.value is None)
         self.assertEqual(rec.sub_records, [])
         self.assertEqual(rec.offset, 1000)
-        self.assertEqual(rec.dialect, model.DIALECT_MYHERITAGE)
+        self.assertEqual(rec.dialect, model.Dialect.MYHERITAGE)
