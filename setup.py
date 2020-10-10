@@ -24,7 +24,7 @@ test_requirements = [
 
 setup(
     name='ged4py',
-    version='0.3.2',
+    version='0.4.0',
     description="GEDCOM tools for Python",
     long_description=readme + '\n\n' + history,
 
