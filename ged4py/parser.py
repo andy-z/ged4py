@@ -2,13 +2,13 @@
 """
 
 __all__ = ['GedcomReader', 'ParserError', 'CodecError', 'IntegrityError',
-           'guess_codec', 'gedcom_line']
+           'guess_codec', 'GedcomLine']
 
 import codecs
-import collections
 import io
 import logging
 import re
+from typing import NamedTuple
 
 from .detail.io import check_bom, guess_lineno, BinaryFileCR
 from . import model
@@ -16,7 +16,7 @@ from . import model
 _log = logging.getLogger(__name__)
 
 # records are bytes, regex is for bytes too
-_re_gedcom_line = re.compile(br"""
+_re_GedcomLine = re.compile(br"""
         ^
         [ ]*(?P<level>\d+)                       # integer level number
         (?:[ ]*(?P<xref>@[A-Z-a-z0-9][^@]*@))?    # optional @xref@
@@ -25,19 +25,37 @@ _re_gedcom_line = re.compile(br"""
         $
 """, re.X)
 
-gedcom_line = collections.namedtuple("gedcom_line",
-                                     "level xref_id tag value offset")
-"""
-Class representing single line in a GEDCOM file.
 
-Attributes
-----------
-level : `int`
-xref_id : `str`, possibly empty or ``None``
-tag : `str`, required, non-empty
-value : `bytes`, possibly empty or ``None``
-offset : `int`
-"""
+class GedcomLine(NamedTuple):
+    """Class representing single line in a GEDCOM file.
+
+    .. note::
+
+        Mostly for internal use by parser, most clients do not need to know
+        about this class.
+
+    Attributes
+    ----------
+    level : `int`
+    xref_id : `str`, possibly empty or ``None``
+    tag : `str`, required, non-empty
+    value : `bytes`, possibly empty or ``None``
+    offset : `int`
+    """
+    level: int
+    """Record level number (`int`)"""
+
+    xref_id: str
+    """Reference for this record (`str` or ``None``)"""
+
+    tag: str
+    """Tag name (`str`)"""
+
+    value: bytes
+    """Record value (`bytes`)"""
+
+    offset: int
+    """Record offset in a file (`int`)"""
 
 
 class ParserError(Exception):
@@ -286,7 +304,7 @@ class GedcomReader:
         self._index0 = []
         self._xref0 = {}
         # scan whole file for level=0 records
-        for gline in self.gedcom_lines(self._bom_size):
+        for gline in self.GedcomLines(self._bom_size):
             _log.debug("  _init_index gline: %s", gline)
             if gline.level == 0:
                 self._index0.append((gline.offset, gline.tag))
@@ -299,26 +317,26 @@ class GedcomReader:
 
     @property
     def dialect(self):
-        """File dialect as one of ``ged4py.model.DIALECT_*`` constants.
+        """File dialect as one of `ged4py.model.Dialect` enums.
         """
         if self._dialect is None:
-            self._dialect = model.DIALECT_DEFAULT
+            self._dialect = model.Dialect.DEFAULT
             if self.header:
                 source = self.header.sub_tag("SOUR")
                 if source:
                     if source.value == "MYHERITAGE":
-                        self._dialect = model.DIALECT_MYHERITAGE
+                        self._dialect = model.Dialect.MYHERITAGE
                     elif source.value in ("ALTREE", "AgelongTree"):
-                        self._dialect = model.DIALECT_ALTREE
+                        self._dialect = model.Dialect.ALTREE
                     elif source.value == "ANCESTRIS":
-                        self._dialect = model.DIALECT_ANCESTRIS
+                        self._dialect = model.Dialect.ANCESTRIS
         return self._dialect
 
     @dialect.setter
     def dialect(self, value):
         self._dialect = value
 
-    def gedcom_lines(self, offset):
+    def GedcomLines(self, offset):
         """Generator method for *gedcom lines*.
 
         Parameters
@@ -328,7 +346,7 @@ class GedcomReader:
 
         Yields
         ------
-        line : `gedcom_line`
+        line : `GedcomLine`
             An object representing one line of GEDCOM file.
 
         Raises
@@ -346,7 +364,7 @@ class GedcomReader:
         returning the lines in their order in file.
 
         This method iterates over all lines in input file and converts each
-        line into `gedcom_line` class. It is an implementation detail used by
+        line into `GedcomLine` class. It is an implementation detail used by
         other methods, most clients will not need to use this method.
         """
 
@@ -361,7 +379,7 @@ class GedcomReader:
                 break
             line = line.lstrip().rstrip(b"\r\n")
 
-            match = _re_gedcom_line.match(line)
+            match = _re_GedcomLine.match(line)
             if not match:
                 self._file.seek(offset)
                 lineno = guess_lineno(self._file)
@@ -399,11 +417,11 @@ class GedcomReader:
                                              "CONC/CONT nesting at line "
                                              "{0}: `{1}'".format(lineno, line))
 
-            gline = gedcom_line(level=level,
-                                xref_id=xref_id,
-                                tag=tag,
-                                value=match.group('value'),
-                                offset=offset)
+            gline = GedcomLine(level=level,
+                               xref_id=xref_id,
+                               tag=tag,
+                               value=match.group('value'),
+                               offset=offset)
             yield gline
 
             prev_gline = gline
@@ -461,7 +479,7 @@ class GedcomReader:
         _log.debug("in read_record(%s)", offset)
         stack = []  # stores per-level current records
         reclevel = None
-        for gline in self.gedcom_lines(offset):
+        for gline in self.GedcomLines(offset):
             _log.debug("    read_record, gline: %s", gline)
             level = gline.level
 
@@ -517,7 +535,7 @@ class GedcomReader:
         ----------
         parent : `ged4py.model.Record`
             Parent record of the new record
-        gline : `gedcom_line`
+        gline : `GedcomLine`
             Current parsed line
 
         Returns
@@ -537,7 +555,7 @@ class GedcomReader:
             return None
 
         # avoid infinite cycle
-        dialect = model.DIALECT_DEFAULT
+        dialect = model.Dialect.DEFAULT
         if not (gline.level == 0 and gline.tag == "HEAD") and self._header:
             dialect = self.dialect
         rec = model.make_record(level=gline.level, xref_id=gline.xref_id,

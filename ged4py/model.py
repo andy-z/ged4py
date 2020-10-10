@@ -6,32 +6,51 @@
 __all__ = ['make_record', 'Record', 'Pointer', 'NameRec', 'Name',
            'Date', 'Individual']
 
+import enum
+
 from .detail.name import (split_name, parse_name_altree, parse_name_ancestris,
                           parse_name_myher)
 from .date import DateValue
 
-# Even though the structure of GEDCOM file is more or less fixed,
-# interpretation of some data may vary depending on which application
-# produced GEDCOM file. Constants define different known dialect which
-# are handled by classes below.
-DIALECT_DEFAULT = "DEF"
-"""Constant used for default dialect (`str`)."""
-DIALECT_MYHERITAGE = "MYHER"  # myheritage.com
-"""Constant used for myheritage.com dialect (`str`)."""
-DIALECT_ALTREE = "AGELONG"  # Agelong Tree (genery.com)
-"""Constant used for genery.com dialect (`str`)."""
-DIALECT_ANCESTRIS = "ANCESTRIS"  # Ancestris (ancestris.org)
-"""Constant used for ancestris.org dialect (`str`)."""
 
-# Names/Individuals can be ordered differently, e.g. by surname first,
-# by given name first, or by maiden name first. This few constants define
-# different ordering options.
-ORDER_SURNAME_GIVEN = "last+first"
-ORDER_GIVEN_SURNAME = "first+last"
-ORDER_MAIDEN_GIVEN = "maiden+first"  # uses last name if no maiden name
-ORDER_GIVEN_MAIDEN = "first+maiden"  # uses last name if no maiden name
-ORDER_LIST = [ORDER_SURNAME_GIVEN, ORDER_GIVEN_SURNAME,
-              ORDER_MAIDEN_GIVEN, ORDER_GIVEN_MAIDEN]
+@enum.unique
+class Dialect(enum.Enum):
+    """Even though the structure of GEDCOM file is more or less fixed,
+    interpretation of some data may vary depending on which application
+    produced GEDCOM file. Constants define different known dialect which
+    are handled by classes below.
+    """
+
+    DEFAULT = "DEF"
+    """Constant used for default dialect (`str`)."""
+
+    MYHERITAGE = "MYHER"  # myheritage.com
+    """Constant used for myheritage.com dialect (`str`)."""
+
+    ALTREE = "AGELONG"  # Agelong Tree (genery.com)
+    """Constant used for genery.com dialect (`str`)."""
+
+    ANCESTRIS = "ANCESTRIS"  # Ancestris (ancestris.org)
+    """Constant used for ancestris.org dialect (`str`)."""
+
+
+@enum.unique
+class NameOrder(enum.Enum):
+    """Names/Individuals can be ordered differently, e.g. by surname first,
+    by given name first, or by maiden name first. This few constants define
+    different ordering options.
+    """
+    SURNAME_GIVEN = "last+first"
+    """Order by surname first, given name second."""
+
+    GIVEN_SURNAME = "first+last"
+    """Order by given name first, surname second."""
+
+    MAIDEN_GIVEN = "maiden+first"
+    """Order by maiden name (or surname) first, given name second."""
+
+    GIVEN_MAIDEN = "first+maiden"
+    """Order by given name first, maiden name (or surname) second."""
 
 
 class Record:
@@ -95,8 +114,8 @@ class Record:
         List of subordinate records, possibly empty.
     offset : `int`
         Record location in a file.
-    dialect: `str`
-        GEDCOM source dialect, one of the DIALECT_* values.
+    dialect: `Dialect`
+        GEDCOM source dialect, one of the `Dialect` enums.
     """
     def __init__(self):
         self.level = None
@@ -297,11 +316,11 @@ class NameRec(Record):
         # None is the same as empty string
         if self.value is None:
             self.value = ""
-        if self.dialect in [DIALECT_ALTREE]:
+        if self.dialect in [Dialect.ALTREE]:
             name_tuple = parse_name_altree(self)
-        elif self.dialect in [DIALECT_MYHERITAGE]:
+        elif self.dialect in [Dialect.MYHERITAGE]:
             name_tuple = parse_name_myher(self)
-        elif self.dialect in [DIALECT_ANCESTRIS]:
+        elif self.dialect in [Dialect.ANCESTRIS]:
             name_tuple = parse_name_ancestris(self)
         else:
             name_tuple = split_name(self.value)
@@ -329,8 +348,8 @@ class Name:
     ----------
     names : `list` [ `NameRec` ]
         List of NAME records (`NameRec` instances).
-    dialect : `str`
-        One of ``DIALECT_*`` constants.
+    dialect : `Dialect`
+        One of `Dialect` enums.
 
     Notes
     -----
@@ -355,7 +374,7 @@ class Name:
         if len(names) == 0:
             # make fake name record to simplify logic below
             self._primary = make_record(0, '', "NAME", "",
-                                        [], 0, DIALECT_DEFAULT).freeze()
+                                        [], 0, Dialect.DEFAULT).freeze()
         elif len(names) == 1:
             self._primary = names[0]
         else:
@@ -389,7 +408,7 @@ class Name:
     @property
     def maiden(self):
         """Maiden last name, can be ``None`` (`str`)"""
-        if self._dialect == DIALECT_DEFAULT:
+        if self._dialect == Dialect.DEFAULT:
             # for default/unknown dialect try "maiden" name record first
             for name in self._names:
                 if name.type == "maiden":
@@ -409,8 +428,8 @@ class Name:
 
         Parameters
         ----------
-        order : `str`
-            One of the ``ORDER_*`` constants.
+        order : `NameOrder`
+            One of the `NameOrder` enums.
 
         Returns
         -------
@@ -419,7 +438,7 @@ class Name:
         """
         given = self.given
         surname = self.surname
-        if order in (ORDER_MAIDEN_GIVEN, ORDER_GIVEN_MAIDEN):
+        if order in (NameOrder.MAIDEN_GIVEN, NameOrder.GIVEN_MAIDEN):
             surname = self.maiden or self.surname
 
         # We are collating empty names to come after non-empty,
@@ -427,9 +446,9 @@ class Name:
         given = ("1" + given) if given else "2"
         surname = ("1" + surname) if surname else "2"
 
-        if order in (ORDER_SURNAME_GIVEN, ORDER_MAIDEN_GIVEN):
+        if order in (NameOrder.SURNAME_GIVEN, NameOrder.MAIDEN_GIVEN):
             return (surname, given)
-        elif order in (ORDER_GIVEN_SURNAME, ORDER_GIVEN_MAIDEN):
+        elif order in (NameOrder.GIVEN_SURNAME, NameOrder.GIVEN_MAIDEN):
             return (given, surname)
         else:
             raise ValueError("unexpected order: {}".format(order))
@@ -556,8 +575,8 @@ def make_record(level, xref_id, tag, value, sub_records, offset, dialect,
         updated later.
     offset : `int`
         Record location in a file.
-    dialect : `str`
-        One of ``DIALECT_*`` constants.
+    dialect : `Dialect`
+        One of `Dialect` enums.
     parser : `~ged4py.parser.GedcomReader`
         Parser instance, only needed for pointer records.
 

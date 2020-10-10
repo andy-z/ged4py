@@ -2,11 +2,12 @@
 """
 
 __all__ = [
-    "CalendarTypes", "CalendarDate", "FrenchDate", "GregorianDate",
+    "CalendarType", "CalendarDate", "FrenchDate", "GregorianDate",
     "HebrewDate", "JulianDate", "CalendarDateVisitor",
 ]
 
 import abc
+import enum
 import re
 
 import convertdate.french_republican
@@ -43,7 +44,8 @@ DATE = r"""
 DATE_RE = re.compile("^" + DATE + "$", re.X | re.I)
 
 
-class CalendarTypes:
+@enum.unique
+class CalendarType(enum.Enum):
     """Namespace for constants defining names of calendars.
 
     Note that it does not define constants for ``ROMAN`` calendar which is
@@ -118,7 +120,7 @@ class CalendarDate(metaclass=abc.ABCMeta):
     approaches:
 
         - dispatch based on the value of `calendar` attribute, it has
-          one of the values defined in `CalendarTypes` namespace,
+          one of the values defined in `CalendarType` enum,
           the value maps uniquely to an implementation class;
         - dispatch based on the type of the instance using ``isinstance``
           method to check the type (e.g. ``isinstance(date, GregorianDate)``);
@@ -184,8 +186,8 @@ class CalendarDate(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def calendar(self):
-        """Calendar name used for this date, one of the constants defined in
-        `CalendarTypes` (`str`)
+        """Calendar used for this date, one of the `CalendarType` enums
+        (`CalendarType`)
         """
         raise NotImplementedError()
 
@@ -251,22 +253,26 @@ class CalendarDate(metaclass=abc.ABCMeta):
         if m is None:
             raise ValueError("Failed to parse date: " + datestr)
 
-        calendar = m.group(1) or CalendarTypes.GREGORIAN
+        calendar = m.group(1) or "GREGORIAN"
+        try:
+            calendar = CalendarType(calendar)
+        except ValueError:
+            raise ValueError("Unknown calendar: " + datestr)
         day = None if m.group(2) is None else int(m.group(2))
         month = m.group(3)
         year = int(m.group(4))
         dual_year = _dual_year(m.group(4), m.group(5))
         bc = m.group(6) is not None
-        if dual_year is not None and calendar != CalendarTypes.GREGORIAN:
+        if dual_year is not None and calendar != CalendarType.GREGORIAN:
             raise ValueError("Cannot use dual year (YYYY/YY) in non-Gregorian calendar: " + datestr)
 
-        if calendar == CalendarTypes.GREGORIAN:
+        if calendar == CalendarType.GREGORIAN:
             return GregorianDate(year, month, day, bc=bc, original=datestr, dual_year=dual_year)
-        elif calendar == CalendarTypes.JULIAN:
+        elif calendar == CalendarType.JULIAN:
             return JulianDate(year, month, day, bc=bc, original=datestr)
-        elif calendar == CalendarTypes.FRENCH_R:
+        elif calendar == CalendarType.FRENCH_R:
             return FrenchDate(year, month, day, bc=bc, original=datestr)
-        elif calendar == CalendarTypes.HEBREW:
+        elif calendar == CalendarType.HEBREW:
             return HebrewDate(year, month, day, bc=bc, original=datestr)
         else:
             raise ValueError("Unknown calendar: " + datestr)
@@ -296,8 +302,8 @@ class CalendarDate(metaclass=abc.ABCMeta):
         """Make printable representation out of this instance.
         """
         val = [self.day, self.month, self.year_str]
-        if self.calendar != CalendarTypes.GREGORIAN:
-            val = ["@#D{}@".format(self.calendar)] + val
+        if self.calendar != CalendarType.GREGORIAN:
+            val = ["@#D{}@".format(self.calendar.value)] + val
         return " ".join([str(item) for item in val if item is not None])
 
     def __repr__(self):
@@ -342,10 +348,8 @@ class GregorianDate(CalendarDate):
 
     @property
     def calendar(self):
-        """Calendar name used for this date, for GregorianDate this is always
-        `CalendarTypes.GREGORIAN` (`str`)
-        """
-        return CalendarTypes.GREGORIAN
+        # docstring inherited from base class
+        return CalendarType.GREGORIAN
 
     def key(self):
         """Return ordering key for this instance.
@@ -438,10 +442,8 @@ class JulianDate(CalendarDate):
 
     @property
     def calendar(self):
-        """Calendar name used for this date, for JulianDate this is always
-        `CalendarTypes.JULIAN` (`str`)
-        """
-        return CalendarTypes.JULIAN
+        # docstring inherited from base class
+        return CalendarType.JULIAN
 
     def accept(self, visitor):
         return visitor.visitJulian(self)
@@ -474,10 +476,8 @@ class HebrewDate(CalendarDate):
 
     @property
     def calendar(self):
-        """Calendar name used for this date, for HebrewDate this is always
-        `CalendarTypes.HEBREW` (`str`)
-        """
-        return CalendarTypes.HEBREW
+        # docstring inherited from base class
+        return CalendarType.HEBREW
 
     def accept(self, visitor):
         return visitor.visitHebrew(self)
@@ -516,10 +516,8 @@ class FrenchDate(CalendarDate):
 
     @property
     def calendar(self):
-        """Calendar name used for this date, for FrenchDate this is always
-        `CalendarTypes.FRENCH` (`str`)
-        """
-        return CalendarTypes.FRENCH_R
+        # docstring inherited from base class
+        return CalendarType.FRENCH_R
 
     def accept(self, visitor):
         return visitor.visitFrench(self)

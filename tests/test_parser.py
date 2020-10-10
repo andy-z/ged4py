@@ -188,123 +188,123 @@ class TestParser(unittest.TestCase):
         data = b"0 HEAD\n0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                self.assertEqual(reader.dialect, model.DIALECT_DEFAULT)
+                self.assertEqual(reader.dialect, model.Dialect.DEFAULT)
 
         data = b"0 HEAD\n1 SOUR MYHERITAGE\n0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                self.assertEqual(reader.dialect, model.DIALECT_MYHERITAGE)
+                self.assertEqual(reader.dialect, model.Dialect.MYHERITAGE)
 
         data = b"0 HEAD\n1 SOUR ALTREE\n0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                self.assertEqual(reader.dialect, model.DIALECT_ALTREE)
+                self.assertEqual(reader.dialect, model.Dialect.ALTREE)
 
         data = b"0 HEAD\n1 SOUR AgelongTree\n0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                self.assertEqual(reader.dialect, model.DIALECT_ALTREE)
+                self.assertEqual(reader.dialect, model.Dialect.ALTREE)
 
         data = b"0 HEAD\n1 SOUR ANCESTRIS\n0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                self.assertEqual(reader.dialect, model.DIALECT_ANCESTRIS)
+                self.assertEqual(reader.dialect, model.Dialect.ANCESTRIS)
 
         data = b"0 HEAD\n1 SOUR XXX\n0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                self.assertEqual(reader.dialect, model.DIALECT_DEFAULT)
+                self.assertEqual(reader.dialect, model.Dialect.DEFAULT)
 
-    def test_020_gedcom_lines(self):
-        """Test gedcom_lines method"""
+    def test_020_GedcomLines(self):
+        """Test GedcomLines method"""
 
         # simple content
         data = b"0 HEAD\n1 CHAR ASCII\n1 SOUR PIF PAF\n0 @i1@ INDI\n0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                lines = list(reader.gedcom_lines(0))
-                expect = [parser.gedcom_line(level=0, xref_id=None, tag="HEAD", value=None, offset=0),
-                          parser.gedcom_line(level=1, xref_id=None, tag="CHAR", value=b"ASCII", offset=7),
-                          parser.gedcom_line(level=1, xref_id=None, tag="SOUR", value=b"PIF PAF", offset=20),
-                          parser.gedcom_line(level=0, xref_id="@i1@", tag="INDI", value=None, offset=35),
-                          parser.gedcom_line(level=0, xref_id=None, tag="TRLR", value=None, offset=47)]
+                lines = list(reader.GedcomLines(0))
+                expect = [parser.GedcomLine(level=0, xref_id=None, tag="HEAD", value=None, offset=0),
+                          parser.GedcomLine(level=1, xref_id=None, tag="CHAR", value=b"ASCII", offset=7),
+                          parser.GedcomLine(level=1, xref_id=None, tag="SOUR", value=b"PIF PAF", offset=20),
+                          parser.GedcomLine(level=0, xref_id="@i1@", tag="INDI", value=None, offset=35),
+                          parser.GedcomLine(level=0, xref_id=None, tag="TRLR", value=None, offset=47)]
                 self.assertEqual(lines, expect)
 
         # Unicode characters
         data = b"0 HEAD\n1 CHAR UTF-8\n0 OK \xc2\xb5"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                lines = list(reader.gedcom_lines(0))
-                expect = [parser.gedcom_line(level=0, xref_id=None, tag="HEAD", value=None, offset=0),
-                          parser.gedcom_line(level=1, xref_id=None, tag="CHAR", value=b"UTF-8", offset=7),
-                          parser.gedcom_line(level=0, xref_id=None, tag="OK", value=b"\xc2\xb5", offset=20)]
+                lines = list(reader.GedcomLines(0))
+                expect = [parser.GedcomLine(level=0, xref_id=None, tag="HEAD", value=None, offset=0),
+                          parser.GedcomLine(level=1, xref_id=None, tag="CHAR", value=b"UTF-8", offset=7),
+                          parser.GedcomLine(level=0, xref_id=None, tag="OK", value=b"\xc2\xb5", offset=20)]
                 self.assertEqual(lines, expect)
 
         # Unicode and BOM
         data = b"\xef\xbb\xbf0 HEAD\r\n1 CHAR UTF-8\r\n0 OK \xc2\xb5"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                lines = list(reader.gedcom_lines(3))
-                expect = [parser.gedcom_line(level=0, xref_id=None, tag="HEAD", value=None, offset=3),
-                          parser.gedcom_line(level=1, xref_id=None, tag="CHAR", value=b"UTF-8", offset=11),
-                          parser.gedcom_line(level=0, xref_id=None, tag="OK", value=b"\xc2\xb5", offset=25)]
+                lines = list(reader.GedcomLines(3))
+                expect = [parser.GedcomLine(level=0, xref_id=None, tag="HEAD", value=None, offset=3),
+                          parser.GedcomLine(level=1, xref_id=None, tag="CHAR", value=b"UTF-8", offset=11),
+                          parser.GedcomLine(level=0, xref_id=None, tag="OK", value=b"\xc2\xb5", offset=25)]
                 self.assertEqual(lines, expect)
 
         data = b"\xef\xbb\xbf0 HEAD\r\n1 CHAR UTF-8\r\n0 OK \xc2\xb5"
         with _make_file_object(data) as file:
             with parser.GedcomReader(file) as reader:
-                lines = list(reader.gedcom_lines(3))
-                expect = [parser.gedcom_line(level=0, xref_id=None, tag="HEAD", value=None, offset=3),
-                          parser.gedcom_line(level=1, xref_id=None, tag="CHAR", value=b"UTF-8", offset=11),
-                          parser.gedcom_line(level=0, xref_id=None, tag="OK", value=b"\xc2\xb5", offset=25)]
+                lines = list(reader.GedcomLines(3))
+                expect = [parser.GedcomLine(level=0, xref_id=None, tag="HEAD", value=None, offset=3),
+                          parser.GedcomLine(level=1, xref_id=None, tag="CHAR", value=b"UTF-8", offset=11),
+                          parser.GedcomLine(level=0, xref_id=None, tag="OK", value=b"\xc2\xb5", offset=25)]
                 self.assertEqual(lines, expect)
 
         # simple content with CR-LF terminators
         data = b"0 HEAD\r\n1 CHAR ASCII\r\n1 SOUR PIF PAF\r\n0 @i1@ INDI\r\n0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                lines = list(reader.gedcom_lines(0))
-                expect = [parser.gedcom_line(level=0, xref_id=None, tag="HEAD", value=None, offset=0),
-                          parser.gedcom_line(level=1, xref_id=None, tag="CHAR", value=b"ASCII", offset=8),
-                          parser.gedcom_line(level=1, xref_id=None, tag="SOUR", value=b"PIF PAF", offset=22),
-                          parser.gedcom_line(level=0, xref_id="@i1@", tag="INDI", value=None, offset=38),
-                          parser.gedcom_line(level=0, xref_id=None, tag="TRLR", value=None, offset=51)]
+                lines = list(reader.GedcomLines(0))
+                expect = [parser.GedcomLine(level=0, xref_id=None, tag="HEAD", value=None, offset=0),
+                          parser.GedcomLine(level=1, xref_id=None, tag="CHAR", value=b"ASCII", offset=8),
+                          parser.GedcomLine(level=1, xref_id=None, tag="SOUR", value=b"PIF PAF", offset=22),
+                          parser.GedcomLine(level=0, xref_id="@i1@", tag="INDI", value=None, offset=38),
+                          parser.GedcomLine(level=0, xref_id=None, tag="TRLR", value=None, offset=51)]
                 self.assertEqual(lines, expect)
 
         # simple content with CR terminators
         data = b"0 HEAD\r1 CHAR ASCII\r1 SOUR PIF PAF\r0 @i1@ INDI\r0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                lines = list(reader.gedcom_lines(0))
-                expect = [parser.gedcom_line(level=0, xref_id=None, tag="HEAD", value=None, offset=0),
-                          parser.gedcom_line(level=1, xref_id=None, tag="CHAR", value=b"ASCII", offset=7),
-                          parser.gedcom_line(level=1, xref_id=None, tag="SOUR", value=b"PIF PAF", offset=20),
-                          parser.gedcom_line(level=0, xref_id="@i1@", tag="INDI", value=None, offset=35),
-                          parser.gedcom_line(level=0, xref_id=None, tag="TRLR", value=None, offset=47)]
+                lines = list(reader.GedcomLines(0))
+                expect = [parser.GedcomLine(level=0, xref_id=None, tag="HEAD", value=None, offset=0),
+                          parser.GedcomLine(level=1, xref_id=None, tag="CHAR", value=b"ASCII", offset=7),
+                          parser.GedcomLine(level=1, xref_id=None, tag="SOUR", value=b"PIF PAF", offset=20),
+                          parser.GedcomLine(level=0, xref_id="@i1@", tag="INDI", value=None, offset=35),
+                          parser.GedcomLine(level=0, xref_id=None, tag="TRLR", value=None, offset=47)]
                 self.assertEqual(lines, expect)
 
-    def test_021_gedcom_lines_errors(self):
-        """Test for exceptions raised by gedcom_lines method"""
+    def test_021_GedcomLines_errors(self):
+        """Test for exceptions raised by GedcomLines method"""
 
         # tag name is only letters and digits
         data = b"0 HEAD\n1 CHAR ASCII\n1 SO@UR PIF PAF"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                itr = reader.gedcom_lines(0)
+                itr = reader.GedcomLines(0)
                 self.assertRaises(parser.ParserError, list, itr)
 
         # xref must start with letter or digit
         data = b"0 HEAD\n1 CHAR ASCII\n1 @!ref@ SOUR PIF PAF"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                itr = reader.gedcom_lines(0)
+                itr = reader.GedcomLines(0)
                 self.assertRaises(parser.ParserError, list, itr)
 
         # level must be a number
         data = b"0 HEAD\n1 CHAR ASCII\nX SOUR PIF PAF"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                itr = reader.gedcom_lines(0)
+                itr = reader.GedcomLines(0)
                 self.assertRaises(parser.ParserError, list, itr)
 
         # consistency check - nested levels
@@ -320,7 +320,7 @@ class TestParser(unittest.TestCase):
             print(data)
             with _temp_file(data) as fname:
                 with parser.GedcomReader(fname) as reader:
-                    itr = reader.gedcom_lines(0)
+                    itr = reader.GedcomLines(0)
                     self.assertRaises(parser.IntegrityError, list, itr)
 
     def test_030_read_record(self):
@@ -505,21 +505,21 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(rec.tag, "HEAD")
                 self.assertEqual(rec.value, None)
                 self.assertEqual(len(rec.sub_records), 1)
-                self.assertEqual(rec.dialect, model.DIALECT_DEFAULT)
+                self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
                 rec = recs[1]
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "INDI")
                 self.assertEqual(rec.value, "A")
                 self.assertEqual(len(rec.sub_records), 3)
-                self.assertEqual(rec.dialect, model.DIALECT_DEFAULT)
+                self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
                 rec = recs[2]
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "STOP")
                 self.assertEqual(rec.value, None)
                 self.assertEqual(len(rec.sub_records), 0)
-                self.assertEqual(rec.dialect, model.DIALECT_DEFAULT)
+                self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
     def test_041_header(self):
         """Test header property."""
@@ -532,7 +532,7 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(rec.tag, "HEAD")
                 self.assertEqual(rec.value, None)
                 self.assertEqual(len(rec.sub_records), 1)
-                self.assertEqual(rec.dialect, model.DIALECT_DEFAULT)
+                self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
     def test_042_rec_dialect(self):
         """Test records0 method"""
@@ -550,18 +550,18 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(rec.tag, "HEAD")
                 self.assertEqual(rec.value, None)
                 self.assertEqual(len(rec.sub_records), 2)
-                self.assertEqual(rec.dialect, model.DIALECT_DEFAULT)
+                self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
                 rec = recs[1]
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "INDI")
                 self.assertEqual(rec.value, "A")
                 self.assertEqual(len(rec.sub_records), 3)
-                self.assertEqual(rec.dialect, model.DIALECT_ALTREE)
+                self.assertEqual(rec.dialect, model.Dialect.ALTREE)
 
                 rec = recs[2]
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "STOP")
                 self.assertEqual(rec.value, None)
                 self.assertEqual(len(rec.sub_records), 0)
-                self.assertEqual(rec.dialect, model.DIALECT_ALTREE)
+                self.assertEqual(rec.dialect, model.Dialect.ALTREE)

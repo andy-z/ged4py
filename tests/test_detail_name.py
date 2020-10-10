@@ -49,7 +49,7 @@ class TestDetailName(unittest.TestCase):
         rec = model.NameRec()
         rec.level = 1
         rec.tag = "NAME"
-        rec.dialect = model.DIALECT_ALTREE
+        rec.dialect = model.Dialect.ALTREE
 
         rec.value = "First /Last Name/ Second"
         name_tup = parse_name_altree(rec)
@@ -82,7 +82,7 @@ class TestDetailName(unittest.TestCase):
         rec = model.NameRec()
         rec.level = 1
         rec.tag = "NAME"
-        rec.dialect = model.DIALECT_MYHERITAGE
+        rec.dialect = model.Dialect.MYHERITAGE
 
         rec.value = "First /Last Name/ Second"
         name_tup = parse_name_myher(rec)
@@ -118,7 +118,7 @@ class TestDetailName(unittest.TestCase):
         rec = model.NameRec()
         rec.level = 1
         rec.tag = "NAME"
-        rec.dialect = model.DIALECT_ANCESTRIS
+        rec.dialect = model.Dialect.ANCESTRIS
 
         rec.value = "First /Last Name/ Second"
         name_tup = parse_name_ancestris(rec)
