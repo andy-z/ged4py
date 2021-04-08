@@ -2,6 +2,9 @@
 History
 =======
 
+0.4.1 (2021-04-08)
+------------------
+
 * Improve handling of invalid dates
 
 0.4.0 (2020-10-09)
