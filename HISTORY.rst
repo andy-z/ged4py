@@ -2,6 +2,8 @@
 History
 =======
 
+* Improve handling of invalid dates
+
 0.4.0 (2020-10-09)
 ------------------
 
