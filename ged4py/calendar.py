@@ -354,6 +354,8 @@ class GregorianDate(CalendarDate):
     def key(self):
         """Return ordering key for this instance.
         """
+        calendar = convertdate.gregorian
+
         # In dual dating use second year
         year = self.dual_year if self.dual_year is not None else self.year
         if self.bc:
@@ -374,7 +376,22 @@ class GregorianDate(CalendarDate):
                 year += 1
             day = 1
             offset = 1.
-        jd = convertdate.gregorian.to_jd(year, month, day) - offset
+
+        dates = [
+            (year, month, day, offset),
+            (year, month + 1, 1, 1.),
+            (year + 1, 1, 1, 1.),
+        ]
+        for year, month, day, offset in dates:
+            try:
+                jd = calendar.to_jd(year, month, day) - offset
+                break
+            except ValueError:
+                # Likely a non-existing date, use another
+                pass
+        else:
+            # nothing works, use arbitrary date in the future
+            jd = 2816787.5
 
         flag = 1 if self.day is None or self.month_num is None else 0
         return jd, flag
@@ -418,6 +435,8 @@ class JulianDate(CalendarDate):
     def key(self):
         """Return ordering key for this instance.
         """
+        calendar = convertdate.julian
+
         year = - self.year if self.bc else self.year
         month = self.month_num
         day = self.day
@@ -435,7 +454,22 @@ class JulianDate(CalendarDate):
                 year += 1
             day = 1
             offset = 1.
-        jd = convertdate.julian.to_jd(year, month, day) - offset
+
+        dates = [
+            (year, month, day, offset),
+            (year, month + 1, 1, 1.),
+            (year + 1, 1, 1, 1.),
+        ]
+        for year, month, day, offset in dates:
+            try:
+                jd = calendar.to_jd(year, month, day) - offset
+                break
+            except ValueError:
+                # Likely a non-existing date, use another
+                pass
+        else:
+            # nothing works, use arbitrary date in the future
+            jd = 2816787.5
 
         flag = 1 if self.day is None or self.month_num is None else 0
         return jd, flag
@@ -468,9 +502,25 @@ class HebrewDate(CalendarDate):
         """
         calendar = convertdate.hebrew
         year = - self.year if self.bc else self.year
-        month = self.month_num or convertdate.hebrew.year_months(year)
+        month = self.month_num or calendar.year_months(year)
         day = self.day if self.day is not None else calendar.month_days(year, month)
-        jd = calendar.to_jd(year, month, day)
+
+        dates = [
+            (year, month, day, 0.),
+            (year, month + 1, 1, 1.),
+            (year + 1, 1, 1, 1.),
+        ]
+        for year, month, day, offset in dates:
+            try:
+                jd = calendar.to_jd(year, month, day) - offset
+                break
+            except ValueError:
+                # Likely a non-existing date, use another
+                pass
+        else:
+            # nothing works, use arbitrary date in the future
+            jd = 2816787.5
+
         flag = 1 if self.day is None or self.month_num is None else 0
         return jd, flag
 
@@ -510,7 +560,23 @@ class FrenchDate(CalendarDate):
                 day = 5
             else:
                 day = 30
-        jd = calendar.to_jd(year, month, day)
+
+        dates = [
+            (year, month, day, 0.),
+            (year, month + 1, 1, 1.),
+            (year + 1, 1, 1, 1.),
+        ]
+        for year, month, day, offset in dates:
+            try:
+                jd = calendar.to_jd(year, month, day) - offset
+                break
+            except ValueError:
+                # Likely a non-existing date, use another
+                pass
+        else:
+            # nothing works, use arbitrary date in the future
+            jd = 2816787.5
+
         flag = 1 if self.day is None or self.month_num is None else 0
         return jd, flag
 
