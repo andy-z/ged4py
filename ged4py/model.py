@@ -164,16 +164,24 @@ class Record:
             Subordinate record or ``None`` if sub-record with a given tag does
             not exist.
         """
-        tags = path.split('/')
-        rec = self
-        for tag in tags:
-            recs = [x for x in (rec.sub_records or []) if x.tag == tag]
-            if not recs:
-                return None
-            rec = recs[0]
+        if not self.sub_records:
+            return None
+        head, _, tail = path.partition('/')
+        for rec in self.sub_records:
+            if rec.tag != head:
+                continue
+            # dereference pointers if needed
             if follow and isinstance(rec, Pointer):
                 rec = rec.ref
-        return rec
+            if rec is not None:
+                if tail:
+                    # recurse
+                    sub_tag = rec.sub_tag(tail, follow=follow)
+                    if sub_tag:
+                        return sub_tag
+                else:
+                    return rec
+        return None
 
     def sub_tag_value(self, path, follow=True):
         """Returns value of a direct sub-record.
