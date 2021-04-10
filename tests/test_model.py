@@ -403,6 +403,24 @@ class TestModel(unittest.TestCase):
         self.assertIsInstance(recs[0], model.Pointer)
         self.assertIsInstance(recs[1], model.Pointer)
 
+    def test_042_Pointer_dangling(self):
+        """Test for pointer pointing to non-existing record."""
+
+        class Parser(object):
+            def __init__(self):
+                self.xref0 = {}
+
+            def read_record(self, offset):
+                return str(offset)
+
+        dialect = model.Dialect.MYHERITAGE
+        parser = Parser()
+        famc = model.make_record(1, None, "FAMC", b"@pointer@", [], 100, dialect, parser).freeze()
+        indi = model.make_record(0, "@I1@", "INDI", None, [famc], 1000, dialect).freeze()
+
+        self.assertIsNone(indi.father)
+        self.assertIsNone(indi.mother)
+
     def test_900_make_record(self):
         """Test make_record method()"""
 
