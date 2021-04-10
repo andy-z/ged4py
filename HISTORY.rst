@@ -2,6 +2,9 @@
 History
 =======
 
+0.4.2 (2021-04-09)
+------------------
+
 * Fix crash in `sub_tag()` with broken files
 
 0.4.1 (2021-04-08)
