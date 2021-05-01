@@ -4,6 +4,7 @@
 import codecs
 import io
 import os
+from typing import List
 
 
 def check_bom(file):
@@ -77,7 +78,7 @@ class BinaryFileCR(io.BufferedReader):
     def readline(self, limit=-1):
         if limit == 0:
             return b""
-        data = []
+        data: List[bytes] = []
         while True:
             byte = self.read(1)
             if not byte:

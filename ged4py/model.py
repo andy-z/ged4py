@@ -3,10 +3,13 @@
 """Module containing Python in-memory model for GEDCOM data.
 """
 
+# from __future__ import annotations
+
 __all__ = ['make_record', 'Record', 'Pointer', 'NameRec', 'Name',
            'Date', 'Individual']
 
 import enum
+from typing import Any, Iterator, List, Optional, Union
 
 from .detail.name import (split_name, parse_name_altree, parse_name_ancestris,
                           parse_name_myher)
@@ -126,7 +129,7 @@ class Record:
         self.offset = None
         self.dialect = None
 
-    def freeze(self):
+    def freeze(self) -> 'Record':
         """Method called by parser when updates to this record finish.
 
         Some sub-classes will override this method to implement conversion
@@ -139,7 +142,7 @@ class Record:
         """
         return self
 
-    def sub_tag(self, path, follow=True):
+    def sub_tag(self, path, follow=True) -> Optional['Record']:
         """Finds and returns sub-record with given tag name.
 
         Path can be a simple tag name, in which case the first direct
@@ -183,7 +186,7 @@ class Record:
                     return rec
         return None
 
-    def sub_tag_value(self, path, follow=True):
+    def sub_tag_value(self, path, follow=True) -> Any:
         """Returns value of a direct sub-record.
 
         Works as `sub_tag()` but returns value of a sub-record instead of
@@ -207,17 +210,23 @@ class Record:
             return rec.value
         return None
 
-    def sub_tags(self, *tags, follow=True):
-        """Returns list of immediate sub-records matching any tag name.
+    def sub_tags(self, *tags: str, follow: bool = True) -> List['Record']:
+        """Returns a list of sub-records matching any tag name.
 
-        Unlike `sub_tag` method this method does not support
-        hierarchical paths. It resolves pointer records if ``follow``
-        keyword argument is ``True`` (default).
+        If no positional arguments are provided then all direct sub-records of
+        this record are returned, pointers are resolved if ``follow`` is True.
+        If one or more positional arguments are given then this method returns
+        all sub-records, direct or nested, that match any of the given tags.
+
+        If ``follow`` is True then pointer records are resolved and pointed
+        record is used instead of pointer record, this also works for all
+        intermediate records in a path.
 
         Parameters
         ----------
         *tags : `str`
-            Names of the sub-record tag
+            Each positional argument is one or more tag names separated by
+            slashes.
         follow : `bool`, optional
             If True then resolve pointers.
 
@@ -226,16 +235,40 @@ class Record:
         records : `list` [ `Record` ]
             List of records, possibly empty.
         """
-        records = [x for x in self.sub_records if x.tag in tags]
-        if follow:
-            records = [rec.ref if isinstance(rec, Pointer) else rec
-                       for rec in records]
+        def _sub_tags(record: Record, tag_matches: List[List[str]], my_tag: List[str]) -> Iterator[Record]:
+            assert record.sub_records is not None
+            for rec in record.sub_records:
+                sub_tag = my_tag + [rec.tag]
+                for m in tag_matches:
+                    if m[:len(sub_tag)] == sub_tag:
+                        if follow and isinstance(rec, Pointer):
+                            rec = rec.ref
+                        if len(sub_tag) == len(m):
+                            yield rec
+                        else:
+                            yield from _sub_tags(rec, tag_matches, sub_tag)
+                        break
+
+        assert self.sub_records is not None
+        if not tags:
+            # return all direct sub-tgas
+            records = [x for x in self.sub_records]
+            if follow:
+                records = [rec.ref if isinstance(rec, Pointer) else rec
+                           for rec in records]
+        else:
+            records = []
+
+            # this ignores empty tags
+            tag_matches = [tag.split("/") for tag in tags if tag]
+            records += list(_sub_tags(self, tag_matches, []))
+
         return records
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         value = self.value
         if isinstance(value, str) and len(value) > 32:
             value = value[:32] + "..."
@@ -249,7 +282,7 @@ class Record:
         return fmt.format(self.__class__.__name__, self, value, n_sub)
 
     # Records cannot be hashed
-    __hash__ = None
+    __hash__ = None  # type: ignore
 
 
 class Pointer(Record):
@@ -275,7 +308,7 @@ class Pointer(Record):
     def __init__(self, parser):
         Record.__init__(self)
         self.parser = parser
-        self._value = []  # use non-None to signify non-initialized
+        self._value: Any = []  # use non-None to signify non-initialized
 
     @property
     def ref(self):
@@ -377,7 +410,7 @@ class Name:
     def __init__(self, names, dialect):
         self._names = names
         self._dialect = dialect
-        self._primary = None  # "primary" name record
+        self._primary: Record  # "primary" name record
 
         if len(names) == 0:
             # make fake name record to simplify logic below
@@ -396,11 +429,13 @@ class Name:
     @property
     def surname(self):
         """Person surname (`str`)"""
+        assert self._primary.value is not None
         return self._primary.value[1]
 
     @property
     def given(self):
         """Given name could include both first and middle name (`str`)"""
+        assert self._primary.value is not None
         if self._primary.value[0] and self._primary.value[2]:
             return self._primary.value[0] + ' ' + self._primary.value[2]
         return self._primary.value[0] or self._primary.value[2]
@@ -422,8 +457,8 @@ class Name:
                 if name.type == "maiden":
                     return name.value[1]
         # rely on NameRec extracting it from other source
-        if self._primary and len(self._primary.value) > 3:
-            return self._primary.value[3]
+        if self._primary and len(self._primary.value) > 3:  # type: ignore
+            return self._primary.value[3]  # type: ignore
         return None
 
     def order(self, order):
@@ -472,15 +507,15 @@ class Name:
         name : `str`
             Formatted name representation.
         """
-        name = self._primary.value[0]
+        name = self._primary.value[0]  # type: ignore
         if self.surname:
             if name:
                 name += ' '
             name += self.surname
-        if self._primary.value[2]:
+        if self._primary.value[2]:  # type: ignore
             if name:
                 name += ' '
-            name += self._primary.value[2]
+            name += self._primary.value[2]  # type: ignore
         return name
 
     def __str__(self):
@@ -521,8 +556,8 @@ class Individual(Record):
     """
     def __init__(self):
         Record.__init__(self)
-        self._mother = []  # Non-None as uninitialized
-        self._father = []  # Non-None as uninitialized
+        self._mother: Optional[Union[Record, List]] = []  # Non-None as uninitialized
+        self._father: Optional[Union[Record, List]] = []  # Non-None as uninitialized
 
     @property
     def name(self):
@@ -562,7 +597,7 @@ _tag_class = dict(INDI=Individual,
 
 
 def make_record(level, xref_id, tag, value, sub_records, offset, dialect,
-                parser=None):
+                parser=None) -> Record:
     """Create `Record` instance based on parameters.
 
     Parameters
@@ -610,12 +645,12 @@ def make_record(level, xref_id, tag, value, sub_records, offset, dialect,
     record construction.
     """
     # value can be bytes or string so we check for both, 64 is code for '@'
+    rec: Record
     if value and len(value) > 2 and \
         ((value[0] == '@' and value[-1] == '@') or
          (value[0] == 64 and value[-1] == 64)):
         # this looks like a <pointer>, make a Pointer record
-        klass = Pointer
-        rec = klass(parser)
+        rec = Pointer(parser)
     else:
         klass = _tag_class.get(tag, Record)
         rec = klass()

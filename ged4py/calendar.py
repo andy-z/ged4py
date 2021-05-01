@@ -253,9 +253,9 @@ class CalendarDate(metaclass=abc.ABCMeta):
         if m is None:
             raise ValueError("Failed to parse date: " + datestr)
 
-        calendar = m.group(1) or "GREGORIAN"
+        calendar_name = m.group(1) or "GREGORIAN"
         try:
-            calendar = CalendarType(calendar)
+            calendar = CalendarType(calendar_name)
         except ValueError:
             raise ValueError("Unknown calendar: " + datestr)
         day = None if m.group(2) is None else int(m.group(2))
@@ -360,7 +360,6 @@ class GregorianDate(CalendarDate):
         year = self.dual_year if self.dual_year is not None else self.year
         if self.bc:
             year = - year
-        month = self.month_num
         day = self.day
         offset = 0.
         if self.month_num is None:
@@ -370,12 +369,14 @@ class GregorianDate(CalendarDate):
             day = 1
             offset = 1.
         elif self.day is None:
-            month += 1
+            month = self.month_num + 1
             if month == 13:
                 month -= 12
                 year += 1
             day = 1
             offset = 1.
+        else:
+            month = self.month_num
 
         dates = [
             (year, month, day, offset),
@@ -438,7 +439,6 @@ class JulianDate(CalendarDate):
         calendar = convertdate.julian
 
         year = - self.year if self.bc else self.year
-        month = self.month_num
         day = self.day
         offset = 0.
         if self.month_num is None:
@@ -448,12 +448,14 @@ class JulianDate(CalendarDate):
             day = 1
             offset = 1.
         elif self.day is None:
-            month += 1
+            month = self.month_num + 1
             if month == 13:
                 month -= 12
                 year += 1
             day = 1
             offset = 1.
+        else:
+            month = self.month_num
 
         dates = [
             (year, month, day, offset),

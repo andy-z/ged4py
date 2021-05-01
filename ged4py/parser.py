@@ -8,7 +8,7 @@ import codecs
 import io
 import logging
 import re
-from typing import NamedTuple
+from typing import List, NamedTuple, Optional
 
 from .detail.io import check_bom, guess_lineno, BinaryFileCR
 from . import model
@@ -45,7 +45,7 @@ class GedcomLine(NamedTuple):
     level: int
     """Record level number (`int`)"""
 
-    xref_id: str
+    xref_id: Optional[str]
     """Reference for this record (`str` or ``None``)"""
 
     tag: str
@@ -370,7 +370,7 @@ class GedcomReader:
 
         self._file.seek(offset)
 
-        prev_gline = None
+        prev_gline: Optional[GedcomLine] = None
         while True:
 
             offset = self._file.tell()
@@ -388,9 +388,12 @@ class GedcomReader:
                                   "{0}: `{1}'".format(lineno, line))
 
             level = int(match.group('level'))
-            xref_id = match.group('xref')
-            if xref_id:
-                xref_id = xref_id.decode(self._encoding, self._errors)
+            xref_id_bytes = match.group('xref')
+            xref_id: Optional[str]
+            if xref_id_bytes:
+                xref_id = xref_id_bytes.decode(self._encoding, self._errors)
+            else:
+                xref_id = None
             tag = match.group('tag').decode(self._encoding, self._errors)
 
             # simple structural integrity check
@@ -477,8 +480,8 @@ class GedcomReader:
             for any parsing errors.
         """
         _log.debug("in read_record(%s)", offset)
-        stack = []  # stores per-level current records
-        reclevel = None
+        stack: List[Optional[model.Record]] = []  # stores per-level current records
+        reclevel: Optional[int] = None
         for gline in self.GedcomLines(offset):
             _log.debug("    read_record, gline: %s", gline)
             level = gline.level
@@ -519,7 +522,11 @@ class GedcomReader:
                 rec.freeze()
                 _log.debug("    read_record, rec: %s", rec)
 
-        return stack[reclevel] if stack else None
+        if stack:
+            assert reclevel is not None
+            return stack[reclevel]
+        else:
+            return None
 
     def _make_record(self, parent, gline):
         """Process next record.
