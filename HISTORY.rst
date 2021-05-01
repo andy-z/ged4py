@@ -2,6 +2,11 @@
 History
 =======
 
+0.4.4 (2021-05-01)
+------------------
+
+Add Python3.9 to tox, github test, and classifiers.
+
 0.4.3 (2021-04-30)
 ------------------
 
