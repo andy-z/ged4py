@@ -3,7 +3,7 @@
 """Module containing Python in-memory model for GEDCOM data.
 """
 
-from __future__ import annotations
+# from __future__ import annotations
 
 __all__ = ['make_record', 'Record', 'Pointer', 'NameRec', 'Name',
            'Date', 'Individual']
@@ -129,7 +129,7 @@ class Record:
         self.offset = None
         self.dialect = None
 
-    def freeze(self) -> Record:
+    def freeze(self) -> 'Record':
         """Method called by parser when updates to this record finish.
 
         Some sub-classes will override this method to implement conversion
@@ -142,7 +142,7 @@ class Record:
         """
         return self
 
-    def sub_tag(self, path, follow=True) -> Optional[Record]:
+    def sub_tag(self, path, follow=True) -> Optional['Record']:
         """Finds and returns sub-record with given tag name.
 
         Path can be a simple tag name, in which case the first direct
@@ -210,7 +210,7 @@ class Record:
             return rec.value
         return None
 
-    def sub_tags(self, *tags: str, follow: bool = True) -> List[Record]:
+    def sub_tags(self, *tags: str, follow: bool = True) -> List['Record']:
         """Returns a list of sub-records matching any tag name.
 
         If no positional arguments are provided then all direct sub-records of
