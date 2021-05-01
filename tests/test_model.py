@@ -94,6 +94,26 @@ class TestModel(unittest.TestCase):
         self.assertEqual(rec.sub_tag("SUBB/SUB").tag, "SUB")
         self.assertEqual(rec.sub_tag_value("SUBB/SUB"), "VALUE")
 
+        subs = rec.sub_tags()
+        self.assertCountEqual([sub.tag for sub in subs], ['SUBA', 'SUBB', 'SUBC'] * 3)
+        subs = rec.sub_tags("SUBA")
+        self.assertCountEqual([sub.tag for sub in subs], ['SUBA'] * 3)
+        subs = rec.sub_tags("SUBB", "SUBC")
+        self.assertCountEqual([sub.tag for sub in subs], ['SUBB', 'SUBC'] * 3)
+
+        subs = rec.sub_tags("SUBA/SUB")
+        self.assertCountEqual([sub.tag for sub in subs], ['SUB'] * 3)
+        subs = rec.sub_tags("SUBB/SUB", "SUBC/SUB")
+        self.assertCountEqual([sub.tag for sub in subs], ['SUB'] * 6)
+        subs = rec.sub_tags("SUBB/SUB", "SUBA")
+        self.assertCountEqual([sub.tag for sub in subs], ['SUB', 'SUBA'] * 3)
+        subs = rec.sub_tags("SUBA", "SUBA")
+        self.assertCountEqual([sub.tag for sub in subs], ['SUBA'] * 3)
+        subs = rec.sub_tags("SUBA/SUB", "SUBA/SUB")
+        self.assertCountEqual([sub.tag for sub in subs], ['SUB'] * 3)
+        subs = rec.sub_tags("SUBA/SUB/SUBB")
+        self.assertEqual(len(subs), 0)
+
     def test_003_record_nohash(self):
         """Test that records are non-hashable"""
 
