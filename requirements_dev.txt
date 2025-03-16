@@ -1,9 +1,8 @@
 pip>=9.0.0
-bumpversion
+ansel
+convertdate
+bump-my-version
 wheel
-watchdog
-flake8
-tox
 coverage
 Sphinx>=3.0
 cryptography
