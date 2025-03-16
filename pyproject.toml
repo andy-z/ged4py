@@ -44,6 +44,13 @@ dev = [
 bugs = "https://github.com/andy-z/ged4py/issues"
 homepage = "https://ged4py.readthedocs.io/"
 
+[tool.setuptools]
+zip-safe = true
+license-files = ["LICENSE"]
+
+[tool.setuptools.package-data]
+"ged4py" = ["py.typed"]
+
 [tool.ruff]
 line-length = 110
 target-version = "py312"
