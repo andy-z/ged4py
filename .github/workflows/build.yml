@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         shell: bash -l {0}
         run: |
-          uv pip install --system -r requirements_dev.txt
+          uv pip install --system -r requirements.txt
 
       - name: Install pytest packages
         shell: bash -l {0}

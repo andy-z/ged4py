@@ -33,11 +33,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          if [ -e requirements_dev.txt ]
+          if [ -e requirements.txt ]
           then
-            uv pip install --system -r requirements_dev.txt
+            uv pip install --system -r requirements.txt
           fi
 
       - name: Run mypy
         run: |
-          mypy ged4py
+          mypy ged4py tests
