@@ -61,3 +61,24 @@ target-version = "py312"
 exclude = [
     "docs/conf.py",
 ]
+
+[tool.bumpver]
+current_version = "0.4.4"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message = "Bump version: {old_version} → {new_version}"
+tag_message = "Bump version: {old_version} → {new_version}"
+tag_scope = "default"
+pre_commit_hook = ""
+post_commit_hook = ""
+commit = true
+tag = true
+push = false
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = [
+    '^current_version = "{version}"$',
+    '^version = "{version}"$',
+]
+"ged4py/__init__.py" = [
+    '^__version__ = "{version}"$',
+]
