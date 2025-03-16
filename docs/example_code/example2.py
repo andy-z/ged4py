@@ -4,16 +4,15 @@ from ged4py.parser import GedcomReader
 with GedcomReader(sys.argv[1]) as parser:
     # iterate over each FAM record in a file
     for i, fam in enumerate(parser.records0("FAM")):
-
         print(f"{i}:")
 
         # Get records for spouses, FAM record contains pointers to INDI
         # records but sub_tag knows how to follow the pointers and return
         # the referenced records instead.
         husband, wife = fam.sub_tag("HUSB"), fam.sub_tag("WIFE")
-        if husband: 
+        if husband:
             print(f"    husband: {husband.name.format()}")
-        if wife: 
+        if wife:
             print(f"    wife: {wife.name.format()}")
 
         # Get _value_ of the MARR/DATE tag

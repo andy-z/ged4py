@@ -1,5 +1,4 @@
-"""Internal module for parsing names in gedcom format.
-"""
+"""Internal module for parsing names in gedcom format."""
 
 
 def split_name(name):
@@ -88,17 +87,17 @@ def parse_name_altree(record):
     ALTREE also replaces empty names with question mark, we undo that too.
     """
     name_tuple = split_name(record.value)
-    if name_tuple[1] == '?':
-        name_tuple = (name_tuple[0], '', name_tuple[2])
+    if name_tuple[1] == "?":
+        name_tuple = (name_tuple[0], "", name_tuple[2])
     maiden = record.sub_tag_value("SURN")
     if maiden:
         # strip "(maiden)" from family name
-        ending = '(' + maiden + ')'
+        ending = "(" + maiden + ")"
         surname = name_tuple[1]
         if surname.endswith(ending):
-            surname = surname[:-len(ending)].rstrip()
-            if surname == '?':
-                surname = ''
+            surname = surname[: -len(ending)].rstrip()
+            if surname == "?":
+                surname = ""
         name_tuple = (name_tuple[0], surname, name_tuple[2], maiden)
     return name_tuple
 
@@ -149,10 +148,7 @@ def parse_name_myher(record):
     married = record.sub_tag_value("_MARNM")
     if married:
         maiden = name_tuple[1]
-        name_tuple = (name_tuple[0],
-                      married,
-                      name_tuple[2],
-                      maiden)
+        name_tuple = (name_tuple[0], married, name_tuple[2], maiden)
     return name_tuple
 
 

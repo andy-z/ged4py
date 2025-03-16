@@ -6,19 +6,34 @@
 import unittest
 
 from ged4py.calendar import (
-    CalendarType, CalendarDate, FrenchDate, GregorianDate, HebrewDate, JulianDate,
-    CalendarDateVisitor
+    CalendarType,
+    CalendarDate,
+    FrenchDate,
+    GregorianDate,
+    HebrewDate,
+    JulianDate,
+    CalendarDateVisitor,
 )
 from ged4py.date import (
-    DateValue, DateValueAbout, DateValueAfter, DateValueBefore, DateValueCalculated,
-    DateValueEstimated, DateValueFrom, DateValueInterpreted, DateValuePeriod,
-    DateValuePhrase, DateValueRange, DateValueSimple, DateValueTo, DateValueTypes,
-    DateValueVisitor
+    DateValue,
+    DateValueAbout,
+    DateValueAfter,
+    DateValueBefore,
+    DateValueCalculated,
+    DateValueEstimated,
+    DateValueFrom,
+    DateValueInterpreted,
+    DateValuePeriod,
+    DateValuePhrase,
+    DateValueRange,
+    DateValueSimple,
+    DateValueTo,
+    DateValueTypes,
+    DateValueVisitor,
 )
 
 
 class TestDateVisitor(CalendarDateVisitor, DateValueVisitor):
-
     def visitGregorian(self, date):
         if not isinstance(date, GregorianDate):
             raise TypeError(str(type(date)))
@@ -341,14 +356,12 @@ class TestDetailDate(unittest.TestCase):
     def test_007_cal_date_hash(self):
         """Test date.CalendarDate hash."""
 
-        self.assertEqual(hash(GregorianDate(2017, "OCT", 9)),
-                         hash(GregorianDate(2017, "OCT", 9)))
-        self.assertEqual(hash(GregorianDate(2017, "OCT", 9, bc=True)),
-                         hash(GregorianDate(2017, "OCT", 9, bc=True)))
-        self.assertEqual(hash(FrenchDate(1, "VEND", 1)),
-                         hash(FrenchDate(1, "VEND", 1)))
-        self.assertEqual(hash(FrenchDate(1)),
-                         hash(FrenchDate(1)))
+        self.assertEqual(hash(GregorianDate(2017, "OCT", 9)), hash(GregorianDate(2017, "OCT", 9)))
+        self.assertEqual(
+            hash(GregorianDate(2017, "OCT", 9, bc=True)), hash(GregorianDate(2017, "OCT", 9, bc=True))
+        )
+        self.assertEqual(hash(FrenchDate(1, "VEND", 1)), hash(FrenchDate(1, "VEND", 1)))
+        self.assertEqual(hash(FrenchDate(1)), hash(FrenchDate(1)))
 
     def test_010_date_no_date(self):
         """Test date.DateValue class."""
@@ -420,14 +433,16 @@ class TestDetailDate(unittest.TestCase):
     def test_014_date_parse_approx(self):
         """Test date.DateValue class."""
 
-        dates = {"500 B.C.": GregorianDate(500, bc=True),
-                 "JAN 2017": GregorianDate(2017, "JAN"),
-                 "31 JAN 2017": GregorianDate(2017, "JAN", 31)}
+        dates = {
+            "500 B.C.": GregorianDate(500, bc=True),
+            "JAN 2017": GregorianDate(2017, "JAN"),
+            "31 JAN 2017": GregorianDate(2017, "JAN", 31),
+        }
 
         approx = [
             ("ABT", "ABOUT", DateValueAbout, DateValueTypes.ABOUT),
             ("CAL", "CALCULATED", DateValueCalculated, DateValueTypes.CALCULATED),
-            ("EST", "ESTIMATED", DateValueEstimated, DateValueTypes.ESTIMATED)
+            ("EST", "ESTIMATED", DateValueEstimated, DateValueTypes.ESTIMATED),
         ]
 
         for appr, fmt, klass, typeEnum in approx:
@@ -509,12 +524,17 @@ class TestDetailDate(unittest.TestCase):
         self.assertTrue(DateValue.parse("1 JAN 2000") < DateValue.parse("FROM 1 JAN 2000"))
 
         # comparing ranges
-        self.assertEqual(DateValue.parse("FROM 1 JAN 2000 TO 1 JAN 2001"),
-                         DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001"))
-        self.assertTrue(DateValue.parse("FROM 1 JAN 1999 TO 1 JAN 2001") <
-                        DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001"))
-        self.assertTrue(DateValue.parse("FROM 1 JAN 2000 TO 1 JAN 2002") >
-                        DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001"))
+        self.assertEqual(
+            DateValue.parse("FROM 1 JAN 2000 TO 1 JAN 2001"), DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001")
+        )
+        self.assertTrue(
+            DateValue.parse("FROM 1 JAN 1999 TO 1 JAN 2001")
+            < DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001")
+        )
+        self.assertTrue(
+            DateValue.parse("FROM 1 JAN 2000 TO 1 JAN 2002")
+            > DateValue.parse("BET 1 JAN 2000 AND 1 JAN 2001")
+        )
 
         # Less specific date compares later than more specific
         self.assertTrue(DateValue.parse("2000") > DateValue.parse("31 DEC 2000"))

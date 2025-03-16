@@ -1,8 +1,6 @@
-"""Module containing methods for parsing GEDCOM files.
-"""
+"""Module containing methods for parsing GEDCOM files."""
 
-__all__ = ['GedcomReader', 'ParserError', 'CodecError', 'IntegrityError',
-           'guess_codec', 'GedcomLine']
+__all__ = ["GedcomReader", "ParserError", "CodecError", "IntegrityError", "guess_codec", "GedcomLine"]
 
 import codecs
 import io
@@ -16,14 +14,17 @@ from . import model
 _log = logging.getLogger(__name__)
 
 # records are bytes, regex is for bytes too
-_re_GedcomLine = re.compile(br"""
+_re_GedcomLine = re.compile(
+    rb"""
         ^
         [ ]*(?P<level>\d+)                       # integer level number
         (?:[ ]*(?P<xref>@[A-Z-a-z0-9][^@]*@))?    # optional @xref@
         [ ]*(?P<tag>[A-Z-a-z0-9_]+)               # tag name
         (?:[ ](?P<value>.*))?                    # optional value
         $
-""", re.X)
+""",
+    re.X,
+)
 
 
 class GedcomLine(NamedTuple):
@@ -42,6 +43,7 @@ class GedcomLine(NamedTuple):
     value : `bytes`, possibly empty or ``None``
     offset : `int`
     """
+
     level: int
     """Record level number (`int`)"""
 
@@ -59,8 +61,8 @@ class GedcomLine(NamedTuple):
 
 
 class ParserError(Exception):
-    """Class for exceptions raised for parsing errors.
-    """
+    """Class for exceptions raised for parsing errors."""
+
     pass
 
 
@@ -68,12 +70,13 @@ class IntegrityError(Exception):
     """Class for exceptions raised for structural errors, e.g. when record
     level nesting is inconsistent.
     """
+
     pass
 
 
 class CodecError(ParserError):
-    """Class for exceptions raised for codec-related errors.
-    """
+    """Class for exceptions raised for codec-related errors."""
+
     pass
 
 
@@ -128,7 +131,7 @@ def guess_codec(file, errors="strict", require_char=False, warn=True):
     }
     # set of ambiguous (and illegal) encodings
     ambiguous_encodings = {
-        'ibmpc': 'cp437',
+        "ibmpc": "cp437",
         "ibm": "cp437",
         "ibm-pc": "cp437",
         "oem": "cp437",
@@ -151,12 +154,11 @@ def guess_codec(file, errors="strict", require_char=False, warn=True):
     # check BOM first
     bom_codec = check_bom(file)
     bom_size = file.tell()
-    codec = bom_codec or 'gedcom'
+    codec = bom_codec or "gedcom"
 
     # scan header until CHAR or end of header
     lineno = 0
     while True:
-
         lineno += 1
 
         # this stops at '\n'
@@ -183,20 +185,22 @@ def guess_codec(file, errors="strict", require_char=False, warn=True):
                 enc = b" ".join(words[2:]).decode(codec, errors)
                 encoding = gedcom_char_to_codec.get(enc.lower(), enc.lower())
                 if enc.lower() in illegal_encodings and warn:
-                    _log.error("Line %d: \"%s\" - \"%s\" is not a legal "
-                               "character set or encoding.", lineno, line, enc)
+                    _log.error(
+                        'Line %d: "%s" - "%s" is not a legal character set or encoding.', lineno, line, enc
+                    )
                     if enc.lower() in ambiguous_encodings:
-                        _log.warning("Character set (\"%s\") is ambiguous, it "
-                                     "will be interpreted as \"%s\"",
-                                     enc, encoding)
+                        _log.warning(
+                            'Character set ("%s") is ambiguous, it will be interpreted as "%s"', enc, encoding
+                        )
                 new_codec = codecs.lookup(encoding).name
             except LookupError:
                 raise CodecError("Unknown codec name '{0}'".format(enc))
             if bom_codec is None:
                 codec = new_codec
             elif new_codec != bom_codec:
-                raise CodecError("CHAR codec {0} is different from BOM "
-                                 "codec {1}".format(new_codec, bom_codec))
+                raise CodecError(
+                    "CHAR codec {0} is different from BOM codec {1}".format(new_codec, bom_codec)
+                )
             break
 
     return codec, bom_size
@@ -238,20 +242,19 @@ class GedcomReader:
 
     """
 
-    def __init__(self, file, encoding=None, errors="strict",
-                 require_char=False):
+    def __init__(self, file, encoding=None, errors="strict", require_char=False):
         self._encoding = encoding
         self._errors = errors
         self._bom_size = 0
-        self._index0 = None   # list of level=0 record positions
-        self._xref0 = None    # maps xref_id to level=0 record position
+        self._index0 = None  # list of level=0 record positions
+        self._xref0 = None  # maps xref_id to level=0 record position
         self._header = None
         self._dialect = None
 
         # open the file
-        if hasattr(file, 'read'):
+        if hasattr(file, "read"):
             # assume it is a file already
-            if hasattr(file, 'seekable'):
+            if hasattr(file, "seekable"):
                 # check that it supports seek()
                 if not file.seekable():
                     raise IOError("Input file does not support seek.")
@@ -263,10 +266,9 @@ class GedcomReader:
 
         # check codec and BOM
         try:
-            encoding, self._bom_size = guess_codec(self._file,
-                                                   errors=self._errors,
-                                                   require_char=require_char,
-                                                   warn=self._encoding is None)
+            encoding, self._bom_size = guess_codec(
+                self._file, errors=self._errors, require_char=require_char, warn=self._encoding is None
+            )
         except Exception:
             self._file.close()
             raise
@@ -276,8 +278,7 @@ class GedcomReader:
 
     @property
     def index0(self):
-        """List of level=0 record positions and tag names (`list[(int, str)]`).
-        """
+        """List of level=0 record positions and tag names (`list[(int, str)]`)."""
         if self._index0 is None:
             self._init_index()
         return self._index0
@@ -293,8 +294,7 @@ class GedcomReader:
 
     @property
     def header(self):
-        """Header record (`ged4py.model.Record`).
-        """
+        """Header record (`ged4py.model.Record`)."""
         if self._index0 is None:
             self._init_index()
         return self._header
@@ -311,14 +311,13 @@ class GedcomReader:
                 if gline.xref_id:
                     self._xref0[gline.xref_id] = (gline.offset, gline.tag)
             _log.debug("  _init_index gline: done proc")
-        if self._index0 and self._index0[0][1] == 'HEAD':
+        if self._index0 and self._index0[0][1] == "HEAD":
             self._header = self.read_record(self._index0[0][0])
         _log.debug("_init_index done")
 
     @property
     def dialect(self):
-        """File dialect as one of `ged4py.model.Dialect` enums.
-        """
+        """File dialect as one of `ged4py.model.Dialect` enums."""
         if self._dialect is None:
             self._dialect = model.Dialect.DEFAULT
             if self.header:
@@ -372,7 +371,6 @@ class GedcomReader:
 
         prev_gline: Optional[GedcomLine] = None
         while True:
-
             offset = self._file.tell()
             line = self._file.readline()  # stops at \n
             if not line:
@@ -384,17 +382,16 @@ class GedcomReader:
                 self._file.seek(offset)
                 lineno = guess_lineno(self._file)
                 line = line.decode(self._encoding, "ignore")
-                raise ParserError("Invalid syntax at line "
-                                  "{0}: `{1}'".format(lineno, line))
+                raise ParserError("Invalid syntax at line {0}: `{1}'".format(lineno, line))
 
-            level = int(match.group('level'))
-            xref_id_bytes = match.group('xref')
+            level = int(match.group("level"))
+            xref_id_bytes = match.group("xref")
             xref_id: Optional[str]
             if xref_id_bytes:
                 xref_id = xref_id_bytes.decode(self._encoding, self._errors)
             else:
                 xref_id = None
-            tag = match.group('tag').decode(self._encoding, self._errors)
+            tag = match.group("tag").decode(self._encoding, self._errors)
 
             # simple structural integrity check
             if prev_gline is not None:
@@ -403,28 +400,27 @@ class GedcomReader:
                     self._file.seek(offset)
                     lineno = guess_lineno(self._file)
                     line = line.decode(self._encoding, "ignore")
-                    raise IntegrityError("Structural integrity - "
-                                         "illegal level nesting at line "
-                                         "{0}: `{1}'".format(lineno, line))
+                    raise IntegrityError(
+                        "Structural integrity - illegal level nesting at line {0}: `{1}'".format(lineno, line)
+                    )
                 if tag in ("CONT", "CONC"):
                     # CONT/CONC level must be +1 from preceding non-CONT/CONC
                     # record or the same as preceding CONT/CONC record
-                    if ((prev_gline.tag in ("CONT", "CONC") and
-                         level != prev_gline.level) or
-                        (prev_gline.tag not in ("CONT", "CONC") and
-                         level - prev_gline.level != 1)):
+                    if (prev_gline.tag in ("CONT", "CONC") and level != prev_gline.level) or (
+                        prev_gline.tag not in ("CONT", "CONC") and level - prev_gline.level != 1
+                    ):
                         self._file.seek(offset)
                         lineno = guess_lineno(self._file)
                         line = line.decode(self._encoding, "ignore")
-                        raise IntegrityError("Structural integrity -  illegal "
-                                             "CONC/CONT nesting at line "
-                                             "{0}: `{1}'".format(lineno, line))
+                        raise IntegrityError(
+                            "Structural integrity -  illegal CONC/CONT nesting at line {0}: `{1}'".format(
+                                lineno, line
+                            )
+                        )
 
-            gline = GedcomLine(level=level,
-                               xref_id=xref_id,
-                               tag=tag,
-                               value=match.group('value'),
-                               offset=offset)
+            gline = GedcomLine(
+                level=level, xref_id=xref_id, tag=tag, value=match.group("value"), offset=offset
+            )
             yield gline
 
             prev_gline = gline
@@ -499,11 +495,10 @@ class GedcomReader:
                 # decode bytes value into string
                 if rec:
                     if rec.value is not None:
-                        rec.value = rec.value.decode(self._encoding,
-                                                     self._errors)
+                        rec.value = rec.value.decode(self._encoding, self._errors)
                     rec.freeze()
-#                    _log.debug("    read_record, rec: %s", rec)
-            del stack[level + 1:]
+            #                    _log.debug("    read_record, rec: %s", rec)
+            del stack[level + 1 :]
 
             # extend stack to fit this level (and make parent levels if needed)
             stack.extend([None] * (level + 1 - len(stack)))
@@ -565,10 +560,16 @@ class GedcomReader:
         dialect = model.Dialect.DEFAULT
         if not (gline.level == 0 and gline.tag == "HEAD") and self._header:
             dialect = self.dialect
-        rec = model.make_record(level=gline.level, xref_id=gline.xref_id,
-                                tag=gline.tag, value=gline.value,
-                                sub_records=[], offset=gline.offset,
-                                dialect=dialect, parser=self)
+        rec = model.make_record(
+            level=gline.level,
+            xref_id=gline.xref_id,
+            tag=gline.tag,
+            value=gline.value,
+            sub_records=[],
+            offset=gline.offset,
+            dialect=dialect,
+            parser=self,
+        )
 
         # add to parent's sub-records list
         if parent:

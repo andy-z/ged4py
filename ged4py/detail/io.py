@@ -1,5 +1,4 @@
-"""Internal module for I/O related methods.
-"""
+"""Internal module for I/O related methods."""
 
 import codecs
 import io
@@ -20,17 +19,17 @@ def check_bom(file):
     lead = file.read(3)
     if len(lead) == 3 and lead == codecs.BOM_UTF8:
         # UTF-8, position is already OK, use canonical name
-        return codecs.lookup('utf-8').name
+        return codecs.lookup("utf-8").name
     elif len(lead) >= 2 and lead[:2] == codecs.BOM_UTF16_BE:
         # need to backup one character
         if len(lead) == 3:
             file.seek(-1, os.SEEK_CUR)
-        return codecs.lookup('utf-16-be').name
+        return codecs.lookup("utf-16-be").name
     elif len(lead) >= 2 and lead[:2] == codecs.BOM_UTF16_LE:
         # need to backup one character
         if len(lead) == 3:
             file.seek(-1, os.SEEK_CUR)
-        return codecs.lookup('utf-16-le').name
+        return codecs.lookup("utf-16-le").name
     else:
         # no BOM, rewind
         file.seek(-len(lead), os.SEEK_CUR)
@@ -70,7 +69,8 @@ class BinaryFileCR(io.BufferedReader):
     readline that only stops at LF (and hence CR-LF). This class adds a
     workaround for readline method to understand CR-delimited files.
     """
-    CR, LF = b'\r', b'\n'
+
+    CR, LF = b"\r", b"\n"
 
     def __init__(self, raw):
         io.BufferedReader.__init__(self, raw)

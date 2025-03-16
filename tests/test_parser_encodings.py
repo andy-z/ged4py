@@ -38,30 +38,32 @@ def test_001_standard():
     # UTF-16 is broken, do not use
 
 
-@pytest.mark.parametrize('enc,pyenc,ambig',
-                         [("IBMPC", "cp437", True),
-                          ("IBM", "cp437", True),
-                          ("IBM-PC", "cp437", True),
-                          ("OEM", "cp437", True),
-                          ("MSDOS", "cp850", True),
-                          ("IBM DOS", "cp850", True),
-                          ("MS-DOS", "cp850", True),
-                          ("ANSI", "cp1252", True),
-                          ("WINDOWS", "cp1252", True),
-                          ("IBM WINDOWS", "cp1252", True),
-                          ("IBM_WINDOWS", "cp1252", True),
-                          ("WINDOWS-1250", "cp1250", False),
-                          ("WINDOWS-1251", "cp1251", False),
-                          ("CP1252", "cp1252", False),
-                          ("ISO-8859-1", "iso8859-1", False),
-                          ("ISO8859-1", "iso8859-1", False),
-                          ("ISO8859", "iso8859-1", True),
-                          ("LATIN1", "iso8859-1", True),
-                          ("MACINTOSH", "mac-roman", True),
-                          ])
+@pytest.mark.parametrize(
+    "enc,pyenc,ambig",
+    [
+        ("IBMPC", "cp437", True),
+        ("IBM", "cp437", True),
+        ("IBM-PC", "cp437", True),
+        ("OEM", "cp437", True),
+        ("MSDOS", "cp850", True),
+        ("IBM DOS", "cp850", True),
+        ("MS-DOS", "cp850", True),
+        ("ANSI", "cp1252", True),
+        ("WINDOWS", "cp1252", True),
+        ("IBM WINDOWS", "cp1252", True),
+        ("IBM_WINDOWS", "cp1252", True),
+        ("WINDOWS-1250", "cp1250", False),
+        ("WINDOWS-1251", "cp1251", False),
+        ("CP1252", "cp1252", False),
+        ("ISO-8859-1", "iso8859-1", False),
+        ("ISO8859-1", "iso8859-1", False),
+        ("ISO8859", "iso8859-1", True),
+        ("LATIN1", "iso8859-1", True),
+        ("MACINTOSH", "mac-roman", True),
+    ],
+)
 def test_002_illegal(enc, pyenc, ambig, caplog):
-    """Test for illegal encodings.
-    """
+    """Test for illegal encodings."""
     caplog.set_level(logging.WARNING)
 
     # %s formatting works in py27 and py3
@@ -72,13 +74,13 @@ def test_002_illegal(enc, pyenc, ambig, caplog):
 
     # check logging
     assert len(caplog.records) == (2 if ambig else 1)
-    _check_log_rec(caplog.records[0], logging.ERROR,
-                   "is not a legal character set or encoding",
-                   (2, char, enc))
+    _check_log_rec(
+        caplog.records[0], logging.ERROR, "is not a legal character set or encoding", (2, char, enc)
+    )
     if ambig:
-        _check_log_rec(caplog.records[1], logging.WARNING,
-                       "is ambiguous, it will be interpreted as",
-                       (enc, pyenc))
+        _check_log_rec(
+            caplog.records[1], logging.WARNING, "is ambiguous, it will be interpreted as", (enc, pyenc)
+        )
 
 
 def test_003_codec_exceptions():

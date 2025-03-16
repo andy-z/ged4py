@@ -4,8 +4,8 @@ from ged4py.date import DateValueVisitor
 
 
 class DateFormatter(DateValueVisitor):
-    """Visitor class that produces string representation of dates.
-    """
+    """Visitor class that produces string representation of dates."""
+
     def visitSimple(self, date):
         return f"{date.date}"
 

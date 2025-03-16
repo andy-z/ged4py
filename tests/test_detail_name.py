@@ -5,8 +5,7 @@
 
 import unittest
 
-from ged4py.detail.name import (split_name, parse_name_altree,
-                                parse_name_myher, parse_name_ancestris)
+from ged4py.detail.name import split_name, parse_name_altree, parse_name_myher, parse_name_ancestris
 from ged4py import model
 
 
@@ -44,8 +43,7 @@ class TestDetailName(unittest.TestCase):
         self.assertEqual(nsplit, ("Жанна", "Иванова (Д'Арк)", ""))
 
     def test_002_parse_name_altree(self):
-        """Test parse_name_altree()
-        """
+        """Test parse_name_altree()"""
         rec = model.NameRec()
         rec.level = 1
         rec.tag = "NAME"
@@ -77,8 +75,7 @@ class TestDetailName(unittest.TestCase):
         self.assertEqual(name_tup, ("First", "Last", "", "Maiden"))
 
     def test_003_parse_name_myher(self):
-        """Test parse_name_myher()
-        """
+        """Test parse_name_myher()"""
         rec = model.NameRec()
         rec.level = 1
         rec.tag = "NAME"
