@@ -1,9 +1,13 @@
-"""Module for parsing and representing calendar dates in gedcom format.
-"""
+"""Module for parsing and representing calendar dates in gedcom format."""
 
 __all__ = [
-    "CalendarType", "CalendarDate", "FrenchDate", "GregorianDate",
-    "HebrewDate", "JulianDate", "CalendarDateVisitor",
+    "CalendarType",
+    "CalendarDate",
+    "FrenchDate",
+    "GregorianDate",
+    "HebrewDate",
+    "JulianDate",
+    "CalendarDateVisitor",
 ]
 
 import abc
@@ -15,12 +19,23 @@ import convertdate.gregorian
 import convertdate.hebrew
 import convertdate.julian
 
-MONTHS_GREG = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG',
-               'SEP', 'OCT', 'NOV', 'DEC']
-MONTHS_HEBR = ['TSH', 'CSH', 'KSL', 'TVT', 'SHV', 'ADR', 'ADS', 'NSN',
-               'IYR', 'SVN', 'TMZ', 'AAV', 'ELL']
-MONTHS_FREN = ['VEND', 'BRUM', 'FRIM', 'NIVO', 'PLUV', 'VENT', 'GERM',
-               'FLOR', 'PRAI', 'MESS', 'THER', 'FRUC', 'COMP']
+MONTHS_GREG = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
+MONTHS_HEBR = ["TSH", "CSH", "KSL", "TVT", "SHV", "ADR", "ADS", "NSN", "IYR", "SVN", "TMZ", "AAV", "ELL"]
+MONTHS_FREN = [
+    "VEND",
+    "BRUM",
+    "FRIM",
+    "NIVO",
+    "PLUV",
+    "VENT",
+    "GERM",
+    "FLOR",
+    "PRAI",
+    "MESS",
+    "THER",
+    "FRUC",
+    "COMP",
+]
 
 # DATE := [<DATE_CALENDAR_ESCAPE> | <NULL>] <DATE_CALENDAR>
 # <DATE_CALENDAR> := [<YEAR> | <MONTH> <YEAR> | <DAY> <MONTH> <YEAR>]
@@ -156,8 +171,7 @@ class CalendarDate(metaclass=abc.ABCMeta):
     @classmethod
     @abc.abstractmethod
     def months(self):
-        """Ordered list of month names (in GEDCOM format) defined in calendar.
-        """
+        """Ordered list of month names (in GEDCOM format) defined in calendar."""
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -242,7 +256,7 @@ class CalendarDate(metaclass=abc.ABCMeta):
                 return None
             if len(dual_year_str) >= len(year_str):
                 return int(dual_year_str)
-            dual_year_str = year_str[:len(year_str)-len(dual_year_str)] + dual_year_str
+            dual_year_str = year_str[: len(year_str) - len(dual_year_str)] + dual_year_str
             year = int(year_str)
             dual_year = int(dual_year_str)
             while dual_year < year:
@@ -299,8 +313,7 @@ class CalendarDate(metaclass=abc.ABCMeta):
         return hash(self.key())
 
     def __str__(self):
-        """Make printable representation out of this instance.
-        """
+        """Make printable representation out of this instance."""
         val = [self.day, self.month, self.year_str]
         if self.calendar != CalendarType.GREGORIAN:
             val = ["@#D{}@".format(self.calendar.value)] + val
@@ -333,6 +346,7 @@ class GregorianDate(CalendarDate):
     year number, though some implementations use 4 digits. This class expects
     actual year number (e.g. as if it was specified as "1699/1700").
     """
+
     def __init__(self, year, month=None, day=None, bc=False, original=None, dual_year=None):
         CalendarDate.__init__(self, year, month, day, bc, original)
         self.dual_year = dual_year
@@ -342,8 +356,7 @@ class GregorianDate(CalendarDate):
 
     @classmethod
     def months(self):
-        """Ordered list of month names (in GEDCOM format) defined in calendar.
-        """
+        """Ordered list of month names (in GEDCOM format) defined in calendar."""
         return MONTHS_GREG
 
     @property
@@ -352,36 +365,35 @@ class GregorianDate(CalendarDate):
         return CalendarType.GREGORIAN
 
     def key(self):
-        """Return ordering key for this instance.
-        """
+        """Return ordering key for this instance."""
         calendar = convertdate.gregorian
 
         # In dual dating use second year
         year = self.dual_year if self.dual_year is not None else self.year
         if self.bc:
-            year = - year
+            year = -year
         day = self.day
-        offset = 0.
+        offset = 0.0
         if self.month_num is None:
             # Take Jan 1 as next year
             year += 1
             month = 1
             day = 1
-            offset = 1.
+            offset = 1.0
         elif self.day is None:
             month = self.month_num + 1
             if month == 13:
                 month -= 12
                 year += 1
             day = 1
-            offset = 1.
+            offset = 1.0
         else:
             month = self.month_num
 
         dates = [
             (year, month, day, offset),
-            (year, month + 1, 1, 1.),
-            (year + 1, 1, 1, 1.),
+            (year, month + 1, 1, 1.0),
+            (year + 1, 1, 1, 1.0),
         ]
         for year, month, day, offset in dates:
             try:
@@ -410,8 +422,7 @@ class GregorianDate(CalendarDate):
         return year
 
     def __str__(self):
-        """Make printable representation out of this instance.
-        """
+        """Make printable representation out of this instance."""
         val = [self.day, self.month, self.year_str]
         return " ".join([str(item) for item in val if item is not None])
 
@@ -424,43 +435,42 @@ class JulianDate(CalendarDate):
 
     All parameters have the same meaning as in `CalendarDate` class.
     """
+
     def __init__(self, year, month=None, day=None, bc=False, original=None):
         CalendarDate.__init__(self, year, month, day, bc, original)
 
     @classmethod
     def months(self):
-        """Ordered list of month names (in GEDCOM format) defined in calendar.
-        """
+        """Ordered list of month names (in GEDCOM format) defined in calendar."""
         return MONTHS_GREG
 
     def key(self):
-        """Return ordering key for this instance.
-        """
+        """Return ordering key for this instance."""
         calendar = convertdate.julian
 
-        year = - self.year if self.bc else self.year
+        year = -self.year if self.bc else self.year
         day = self.day
-        offset = 0.
+        offset = 0.0
         if self.month_num is None:
             # Take Jan 1 as next year
             year += 1
             month = 1
             day = 1
-            offset = 1.
+            offset = 1.0
         elif self.day is None:
             month = self.month_num + 1
             if month == 13:
                 month -= 12
                 year += 1
             day = 1
-            offset = 1.
+            offset = 1.0
         else:
             month = self.month_num
 
         dates = [
             (year, month, day, offset),
-            (year, month + 1, 1, 1.),
-            (year + 1, 1, 1, 1.),
+            (year, month + 1, 1, 1.0),
+            (year + 1, 1, 1, 1.0),
         ]
         for year, month, day, offset in dates:
             try:
@@ -490,27 +500,26 @@ class HebrewDate(CalendarDate):
 
     All parameters have the same meaning as in `CalendarDate` class.
     """
+
     def __init__(self, year, month=None, day=None, bc=False, original=None):
         CalendarDate.__init__(self, year, month, day, bc, original)
 
     @classmethod
     def months(self):
-        """Ordered list of month names (in GEDCOM format) defined in calendar.
-        """
+        """Ordered list of month names (in GEDCOM format) defined in calendar."""
         return MONTHS_HEBR
 
     def key(self):
-        """Return ordering key for this instance.
-        """
+        """Return ordering key for this instance."""
         calendar = convertdate.hebrew
-        year = - self.year if self.bc else self.year
+        year = -self.year if self.bc else self.year
         month = self.month_num or calendar.year_months(year)
         day = self.day if self.day is not None else calendar.month_days(year, month)
 
         dates = [
-            (year, month, day, 0.),
-            (year, month + 1, 1, 1.),
-            (year + 1, 1, 1, 1.),
+            (year, month, day, 0.0),
+            (year, month + 1, 1, 1.0),
+            (year + 1, 1, 1, 1.0),
         ]
         for year, month, day, offset in dates:
             try:
@@ -540,20 +549,19 @@ class FrenchDate(CalendarDate):
 
     All parameters have the same meaning as in `CalendarDate` class.
     """
+
     def __init__(self, year, month=None, day=None, bc=False, original=None):
         CalendarDate.__init__(self, year, month, day, bc, original)
 
     @classmethod
     def months(self):
-        """Ordered list of month names (in GEDCOM format) defined in calendar.
-        """
+        """Ordered list of month names (in GEDCOM format) defined in calendar."""
         return MONTHS_FREN
 
     def key(self):
-        """Return ordering key for this instance.
-        """
+        """Return ordering key for this instance."""
         calendar = convertdate.french_republican
-        year = - self.year if self.bc else self.year
+        year = -self.year if self.bc else self.year
         month = self.month_num or 13
         day = self.day
         if day is None:
@@ -564,9 +572,9 @@ class FrenchDate(CalendarDate):
                 day = 30
 
         dates = [
-            (year, month, day, 0.),
-            (year, month + 1, 1, 1.),
-            (year + 1, 1, 1, 1.),
+            (year, month, day, 0.0),
+            (year, month + 1, 1, 1.0),
+            (year + 1, 1, 1, 1.0),
         ]
         for year, month, day, offset in dates:
             try:

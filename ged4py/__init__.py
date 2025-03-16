@@ -23,8 +23,9 @@ from .parser import GedcomReader  # noqa: F401
 
 # register ansel encoding
 import ansel as _ansel
+
 _ansel.register()
 
-__author__ = """Andy Salnikov"""
-__email__ = 'ged4py@py-dev.com'
-__version__ = '0.4.4'
+__author__ = "Andy Salnikov"
+__email__ = "ged4py@py-dev.com"
+__version__ = "0.4.4"

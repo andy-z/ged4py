@@ -107,7 +107,6 @@ class TestDetailIo(unittest.TestCase):
         self.assertEqual(file.tell(), 0)
 
     def test_003_BinaryFileCR(self):
-
         file = BinaryFileCR(io.BytesIO(b""))
         line = file.readline()
         self.assertEqual(len(line), 0)

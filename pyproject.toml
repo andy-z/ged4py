@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ged4py"
+version = "0.4.4"
+requires-python = ">=3.11.0"
+description = "GEDCOM tools for Python"
+readme = "README.rst"
+authors = [
+  {name = "Andy Salnikov", email = "ged4py@py-dev.com"}
+]
+maintainers = [
+  {name = "Andy Salnikov", email = "ged4py@py-dev.com"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3 :: Only',
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    'Topic :: Sociology :: Genealogy',
+]
+license = {text = "MIT license"}
+dependencies = [
+    "ansel",
+    "convertdate",
+]
+
+[project.optional-dependencies]
+dev = [
+    "coverage",  # testing
+    "mypy",  # linting
+    "pytest",  # testing
+    "ruff"  # linting
+]
+
+[project.urls]
+bugs = "https://github.com/andy-z/ged4py/issues"
+homepage = "https://ged4py.readthedocs.io/"
+
+[tool.setuptools]
+zip-safe = true
+license-files = ["LICENSE"]
+
+[tool.setuptools.package-data]
+"ged4py" = ["py.typed"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+exclude = [
+    "docs/conf.py",
+]
+
+[tool.bumpver]
+current_version = "0.4.4"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message = "Bump version: {old_version} → {new_version}"
+tag_message = "Bump version: {old_version} → {new_version}"
+tag_scope = "default"
+pre_commit_hook = ""
+post_commit_hook = ""
+commit = true
+tag = true
+push = false
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = [
+    '^current_version = "{version}"$',
+    '^version = "{version}"$',
+]
+"ged4py/__init__.py" = [
+    '^__version__ = "{version}"$',
+]

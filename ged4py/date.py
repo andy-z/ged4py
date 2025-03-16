@@ -1,12 +1,21 @@
-"""Module for parsing and representing dates in gedcom format.
-"""
+"""Module for parsing and representing dates in gedcom format."""
 
 __all__ = [
-    "DateValueTypes", "DateValue",
-    "DateValueAbout", "DateValueAfter", "DateValueBefore", "DateValueCalculated",
-    "DateValueEstimated", "DateValueFrom", "DateValueInterpreted", "DateValuePeriod",
-    "DateValuePhrase", "DateValueRange", "DateValueSimple", "DateValueTo",
-    "DateValueVisitor"
+    "DateValueTypes",
+    "DateValue",
+    "DateValueAbout",
+    "DateValueAfter",
+    "DateValueBefore",
+    "DateValueCalculated",
+    "DateValueEstimated",
+    "DateValueFrom",
+    "DateValueInterpreted",
+    "DateValuePeriod",
+    "DateValuePhrase",
+    "DateValueRange",
+    "DateValueSimple",
+    "DateValueTo",
+    "DateValueVisitor",
 ]
 
 import abc
@@ -27,14 +36,12 @@ from .calendar import CalendarDate, GregorianDate, DATE
 # DATE_PERIOD:= [ FROM <DATE> | TO <DATE> | FROM <DATE> TO <DATE> ]
 DATE_PERIOD_FROM = r"^FROM\s+(?P<date>" + DATE + ")$"
 DATE_PERIOD_TO = r"^TO\s+(?P<date>" + DATE + ")$"
-DATE_PERIOD = r"^FROM\s+(?P<date1>" + DATE + r")\s+TO\s+(?P<date2>" + \
-              DATE + ")$"
+DATE_PERIOD = r"^FROM\s+(?P<date1>" + DATE + r")\s+TO\s+(?P<date2>" + DATE + ")$"
 
 # DATE_RANGE:= [ BEF <DATE> | AFT <DATE> | BET <DATE> AND <DATE> ]
 DATE_RANGE_BEFORE = r"^BEF\s+(?P<date>" + DATE + ")$"
 DATE_RANGE_AFTER = r"^AFT\s+(?P<date>" + DATE + ")$"
-DATE_RANGE = r"^BET\s+(?P<date1>" + DATE + r")\s+AND\s+(?P<date2>" + \
-             DATE + ")$"
+DATE_RANGE = r"^BET\s+(?P<date1>" + DATE + r")\s+AND\s+(?P<date2>" + DATE + ")$"
 
 # DATE_APPROXIMATED := [ ABT <DATE> | CAL <DATE> | EST <DATE> ]
 DATE_APPROX_ABOUT = r"^ABT\s+(?P<date>" + DATE + ")$"
@@ -158,6 +165,7 @@ class DateValue(metaclass=abc.ABCMeta):
     - double dispatch (visitor pattern) by implementing
       `DateValueVisitor` interface.
     """
+
     def __init__(self, key):
         self._key = key
 
@@ -188,7 +196,7 @@ class DateValue(metaclass=abc.ABCMeta):
             if m is not None:
                 groups = {}
                 for key, val in m.groupdict().items():
-                    if key != 'phrase':
+                    if key != "phrase":
                         val = CalendarDate.parse(val)
                     groups[key] = val
                 return klass(**groups)
@@ -280,6 +288,7 @@ class DateValueSimple(DateValue):
     date : `~ged4py.calendar.CalendarDate`
         Corresponding date.
     """
+
     def __init__(self, date):
         DateValue.__init__(self, (date, date))
         self._date = date
@@ -315,6 +324,7 @@ class DateValueFrom(DateValue):
     date : `~ged4py.calendar.CalendarDate`
         Corresponding date.
     """
+
     def __init__(self, date):
         DateValue.__init__(self, (date, _END_OF_TIME))
         self._date = date
@@ -350,6 +360,7 @@ class DateValueTo(DateValue):
     date : `~ged4py.calendar.CalendarDate`
         Corresponding date.
     """
+
     def __init__(self, date):
         DateValue.__init__(self, (_START_OF_TIME, date))
         self._date = date
@@ -387,6 +398,7 @@ class DateValuePeriod(DateValue):
     date2 : `~ged4py.calendar.CalendarDate`
         TO date.
     """
+
     def __init__(self, date1, date2):
         DateValue.__init__(self, (date1, date2))
         self._date1 = date1
@@ -428,6 +440,7 @@ class DateValueBefore(DateValue):
     date : `~ged4py.calendar.CalendarDate`
         Corresponding date.
     """
+
     def __init__(self, date):
         DateValue.__init__(self, (_START_OF_TIME, date))
         self._date = date
@@ -463,6 +476,7 @@ class DateValueAfter(DateValue):
     date : `~ged4py.calendar.CalendarDate`
         Corresponding date.
     """
+
     def __init__(self, date):
         DateValue.__init__(self, (date, _END_OF_TIME))
         self._date = date
@@ -500,6 +514,7 @@ class DateValueRange(DateValue):
     date2 : `~ged4py.calendar.CalendarDate`
         Second date.
     """
+
     def __init__(self, date1, date2):
         DateValue.__init__(self, (date1, date2))
         self._date1 = date1
@@ -541,6 +556,7 @@ class DateValueAbout(DateValue):
     date : `~ged4py.calendar.CalendarDate`
         Corresponding date.
     """
+
     def __init__(self, date):
         DateValue.__init__(self, (date, date))
         self._date = date
@@ -576,6 +592,7 @@ class DateValueCalculated(DateValue):
     date : `~ged4py.calendar.CalendarDate`
         Corresponding date.
     """
+
     def __init__(self, date):
         DateValue.__init__(self, (date, date))
         self._date = date
@@ -611,6 +628,7 @@ class DateValueEstimated(DateValue):
     date : `~ged4py.calendar.CalendarDate`
         Corresponding date.
     """
+
     def __init__(self, date):
         DateValue.__init__(self, (date, date))
         self._date = date
@@ -648,6 +666,7 @@ class DateValueInterpreted(DateValue):
     phrase : `str`
         Phrase string associated with this date.
     """
+
     def __init__(self, date, phrase):
         DateValue.__init__(self, (date, date))
         self._date = date
@@ -667,8 +686,7 @@ class DateValueInterpreted(DateValue):
 
     @property
     def phrase(self):
-        """Phrase associated with this date (`str`)
-        """
+        """Phrase associated with this date (`str`)"""
         return self._phrase
 
     def accept(self, visitor):
@@ -690,6 +708,7 @@ class DateValuePhrase(DateValue):
     phrase : `str`
         Phrase string associated with this date.
     """
+
     def __init__(self, phrase):
         DateValue.__init__(self, None)
         self._phrase = phrase
@@ -703,8 +722,7 @@ class DateValuePhrase(DateValue):
 
     @property
     def phrase(self):
-        """Phrase associated with this date (`str`)
-        """
+        """Phrase associated with this date (`str`)"""
         return self._phrase
 
     def accept(self, visitor):

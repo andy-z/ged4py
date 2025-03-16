@@ -1,12 +1,13 @@
 pip>=9.0.0
-bumpversion
+ansel
+convertdate
+bumpver
 wheel
-watchdog
-flake8
-tox
 coverage
 Sphinx>=3.0
 cryptography
 PyYAML
 pytest
 numpydoc
+build
+twine

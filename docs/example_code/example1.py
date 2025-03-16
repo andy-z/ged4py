@@ -9,11 +9,11 @@ with GedcomReader(sys.argv[1]) as parser:
         print(f"{i}: {indi.name.format()}")
 
         father = indi.father
-        if father: 
+        if father:
             print(f"    father: {father.name.format()}")
 
         mother = indi.mother
-        if mother: 
+        if mother:
             print(f"    mother: {mother.name.format()}")
 
         # Get _value_ of the BIRT/DATE tag

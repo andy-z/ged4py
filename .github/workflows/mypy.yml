@@ -1,0 +1,43 @@
+name: Run mypy
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  mypy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install mypy
+        run: |
+          pip install uv
+          uv pip install --system mypy
+
+      - name: Install types dependencies
+        run: |
+          if [ -e types.txt ]
+          then
+            uv pip install --system -r types.txt
+          fi
+
+      - name: Install dependencies
+        run: |
+          if [ -e requirements.txt ]
+          then
+            uv pip install --system -r requirements.txt
+          fi
+
+      - name: Run mypy
+        run: |
+          mypy ged4py tests

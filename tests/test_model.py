@@ -22,13 +22,18 @@ class TestModel(unittest.TestCase):
         """Test Record class."""
 
         rec = model.Record()
-        self.assertEqual(vars(rec), {'dialect': None,
-                                     'xref_id': None,
-                                     'level': None,
-                                     'value': None,
-                                     'tag': None,
-                                     'sub_records': None,
-                                     'offset': None})
+        self.assertEqual(
+            vars(rec),
+            {
+                "dialect": None,
+                "xref_id": None,
+                "level": None,
+                "value": None,
+                "tag": None,
+                "sub_records": None,
+                "offset": None,
+            },
+        )
 
         rec.level = 0
         rec.xref_id = "@x@"
@@ -54,9 +59,8 @@ class TestModel(unittest.TestCase):
         rec.offset = 1000
         rec.dialect = model.Dialect.DEFAULT
 
-        for subtag in ['SUBA', 'SUBB', 'SUBC']:
+        for subtag in ["SUBA", "SUBB", "SUBC"]:
             for i in range(3):
-
                 sub = model.Record()
                 sub.level = 1
                 sub.tag = subtag
@@ -68,7 +72,7 @@ class TestModel(unittest.TestCase):
                 subsub = model.Record()
                 subsub.level = 2
                 subsub.tag = "SUB"
-                subsub.value = 'VALUE'
+                subsub.value = "VALUE"
                 subsub.sub_records = []
                 subsub.dialect = model.Dialect.DEFAULT
                 subsub.freeze()
@@ -80,7 +84,7 @@ class TestModel(unittest.TestCase):
 
         # direct sub-tags
         rec.freeze()
-        for subtag in ['SUBA', 'SUBB', 'SUBC']:
+        for subtag in ["SUBA", "SUBB", "SUBC"]:
             self.assertEqual(rec.sub_tag(subtag).tag, subtag)
             self.assertEqual(len(rec.sub_tags(subtag)), 3)
 
@@ -95,22 +99,22 @@ class TestModel(unittest.TestCase):
         self.assertEqual(rec.sub_tag_value("SUBB/SUB"), "VALUE")
 
         subs = rec.sub_tags()
-        self.assertCountEqual([sub.tag for sub in subs], ['SUBA', 'SUBB', 'SUBC'] * 3)
+        self.assertCountEqual([sub.tag for sub in subs], ["SUBA", "SUBB", "SUBC"] * 3)
         subs = rec.sub_tags("SUBA")
-        self.assertCountEqual([sub.tag for sub in subs], ['SUBA'] * 3)
+        self.assertCountEqual([sub.tag for sub in subs], ["SUBA"] * 3)
         subs = rec.sub_tags("SUBB", "SUBC")
-        self.assertCountEqual([sub.tag for sub in subs], ['SUBB', 'SUBC'] * 3)
+        self.assertCountEqual([sub.tag for sub in subs], ["SUBB", "SUBC"] * 3)
 
         subs = rec.sub_tags("SUBA/SUB")
-        self.assertCountEqual([sub.tag for sub in subs], ['SUB'] * 3)
+        self.assertCountEqual([sub.tag for sub in subs], ["SUB"] * 3)
         subs = rec.sub_tags("SUBB/SUB", "SUBC/SUB")
-        self.assertCountEqual([sub.tag for sub in subs], ['SUB'] * 6)
+        self.assertCountEqual([sub.tag for sub in subs], ["SUB"] * 6)
         subs = rec.sub_tags("SUBB/SUB", "SUBA")
-        self.assertCountEqual([sub.tag for sub in subs], ['SUB', 'SUBA'] * 3)
+        self.assertCountEqual([sub.tag for sub in subs], ["SUB", "SUBA"] * 3)
         subs = rec.sub_tags("SUBA", "SUBA")
-        self.assertCountEqual([sub.tag for sub in subs], ['SUBA'] * 3)
+        self.assertCountEqual([sub.tag for sub in subs], ["SUBA"] * 3)
         subs = rec.sub_tags("SUBA/SUB", "SUBA/SUB")
-        self.assertCountEqual([sub.tag for sub in subs], ['SUB'] * 3)
+        self.assertCountEqual([sub.tag for sub in subs], ["SUB"] * 3)
         subs = rec.sub_tags("SUBA/SUB/SUBB")
         self.assertEqual(len(subs), 0)
 
@@ -275,8 +279,10 @@ class TestModel(unittest.TestCase):
         self.assertEqual(name.format(), ("John"))
 
         name_type = model.make_record(2, None, "TYPE", "maiden", [], 0, dialect).freeze()
-        names = [model.make_record(1, None, "NAME", "/Sawyer/", [name_type], 0, dialect).freeze(),
-                 model.make_record(1, None, "NAME", "Jane /Smith/ A.", [], 0, dialect).freeze()]
+        names = [
+            model.make_record(1, None, "NAME", "/Sawyer/", [name_type], 0, dialect).freeze(),
+            model.make_record(1, None, "NAME", "Jane /Smith/ A.", [], 0, dialect).freeze(),
+        ]
         name = model.Name(names, dialect)
 
         self.assertTrue(name._primary is names[1])
@@ -374,8 +380,7 @@ class TestModel(unittest.TestCase):
 
         class Parser(object):
             def __init__(self):
-                self.xref0 = {b"@pointer0@": (0, "TAG0"),
-                              b"@pointer1@": (1, "TAG1")}
+                self.xref0 = {b"@pointer0@": (0, "TAG0"), b"@pointer1@": (1, "TAG1")}
 
             def read_record(self, offset):
                 return str(offset)
@@ -398,8 +403,7 @@ class TestModel(unittest.TestCase):
 
         class Parser(object):
             def __init__(self):
-                self.xref0 = {b"@pointer0@": (0, "TAG0"),
-                              b"@pointer1@": (1, "TAG1")}
+                self.xref0 = {b"@pointer0@": (0, "TAG0"), b"@pointer1@": (1, "TAG1")}
 
             def read_record(self, offset):
                 return str(offset)
@@ -444,8 +448,7 @@ class TestModel(unittest.TestCase):
     def test_900_make_record(self):
         """Test make_record method()"""
 
-        rec = model.make_record(0, "@xref@", "TAG", "value", [], 1000,
-                                model.Dialect.DEFAULT)
+        rec = model.make_record(0, "@xref@", "TAG", "value", [], 1000, model.Dialect.DEFAULT)
         rec.freeze()
         self.assertTrue(type(rec) is model.Record)
         self.assertEqual(rec.level, 0)
@@ -456,8 +459,7 @@ class TestModel(unittest.TestCase):
         self.assertEqual(rec.offset, 1000)
         self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
-        rec = model.make_record(1, None, "NAME", "Joe", [], 1000,
-                                model.Dialect.ALTREE)
+        rec = model.make_record(1, None, "NAME", "Joe", [], 1000, model.Dialect.ALTREE)
         rec.freeze()
         self.assertTrue(type(rec) is model.NameRec)
         self.assertEqual(rec.level, 1)
@@ -468,8 +470,7 @@ class TestModel(unittest.TestCase):
         self.assertEqual(rec.offset, 1000)
         self.assertEqual(rec.dialect, model.Dialect.ALTREE)
 
-        rec = model.make_record(0, "@I1@", "INDI", None, [], 1000,
-                                model.Dialect.MYHERITAGE)
+        rec = model.make_record(0, "@I1@", "INDI", None, [], 1000, model.Dialect.MYHERITAGE)
         rec.freeze()
         self.assertTrue(type(rec) is model.Individual)
         self.assertEqual(rec.level, 0)
