@@ -44,17 +44,6 @@ dev = [
 bugs = "https://github.com/andy-z/ged4py/issues"
 homepage = "https://ged4py.readthedocs.io/"
 
-[tool.setuptools]
-packages = ["ged4py"]
-
-[tool.mypy]
-files = "."
-
-# Use strict defaults
-strict = true
-warn_unreachable = true
-warn_no_return = true
-
 [tool.ruff]
 line-length = 110
 target-version = "py312"

@@ -53,7 +53,7 @@ test: ## run tests quickly with the default Python
 	pytest
 
 coverage: ## check code coverage quickly with the default Python
-	coverage run --source ged4py setup.py test
+	coverage run --source ged4py -m pytest tests
 	coverage report -m
 	coverage html
 	$(BROWSER) htmlcov/index.html
@@ -66,8 +66,7 @@ servedocs: docs ## compile the docs watching for changes
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
 
 release: clean ## package and upload a release
-	python setup.py sdist upload
-	python setup.py bdist_wheel upload
+	twine upload dist/*
 
 dist: clean ## builds source and wheel package
 	python3 -m build --sdist
