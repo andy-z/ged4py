@@ -6,17 +6,18 @@
 import io
 import logging
 import pytest
+from typing import Any
 
 from ged4py.parser import GedcomReader, CodecError
 
 
-def _check_log_rec(rec, level, msg, args):
+def _check_log_rec(rec: logging.LogRecord, level: int, msg: str, args: Any) -> None:
     assert rec.levelno == level
     assert msg in rec.msg
     assert rec.args == args
 
 
-def test_001_standard():
+def test_001_standard() -> None:
     """Test standard encodings."""
 
     file = io.BytesIO(b"0 HEAD\n1 CHAR ASCII\n0 TRLR")
@@ -62,7 +63,7 @@ def test_001_standard():
         ("MACINTOSH", "mac-roman", True),
     ],
 )
-def test_002_illegal(enc, pyenc, ambig, caplog):
+def test_002_illegal(enc: str, pyenc: str, ambig: bool, caplog: pytest.LogCaptureFixture) -> None:
     """Test for illegal encodings."""
     caplog.set_level(logging.WARNING)
 
@@ -83,7 +84,7 @@ def test_002_illegal(enc, pyenc, ambig, caplog):
         )
 
 
-def test_003_codec_exceptions():
+def test_003_codec_exceptions() -> None:
     """Test codecs-related exceptions."""
 
     # unknown codec name

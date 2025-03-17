@@ -3,18 +3,19 @@
 
 """Tests for `ged4py.parser` module."""
 
-from contextlib import contextmanager
 import io
 import tempfile
 import os
 import unittest
+from collections.abc import Iterator
+from contextlib import contextmanager
 
 from ged4py import model, parser
 from ged4py.detail.io import BinaryFileCR
 
 
 @contextmanager
-def _temp_file(data):
+def _temp_file(data: bytes) -> Iterator[str]:
     """Create file with unique name and store some data in it.
 
     Returns file name.
@@ -26,7 +27,7 @@ def _temp_file(data):
     os.unlink(fname)
 
 
-def _make_file_object(data):
+def _make_file_object(data: bytes) -> BinaryFileCR:
     """AMke file object from a byte string"""
     return BinaryFileCR(io.BytesIO(data))
 
@@ -34,7 +35,7 @@ def _make_file_object(data):
 class TestParser(unittest.TestCase):
     """Tests for `ged4py.parser` module."""
 
-    def test_002_guess_codec(self):
+    def test_002_guess_codec(self) -> None:
         """Test guess_codec()."""
 
         file = _make_file_object(b"0 HEAD\n1 CHAR ASCII\n0 TRLR")
@@ -69,7 +70,7 @@ class TestParser(unittest.TestCase):
     #         file = _make_file_object(b"\xfe\xff\0\x30\0 \0H\0E\0A\0D")
     #         self.assertEqual(parser.guess_codec(file), "utf-16")
 
-    def test_003_codec_exceptions(self):
+    def test_003_codec_exceptions(self) -> None:
         """Test codecs-related exceptions."""
 
         # unknown codec name
@@ -80,7 +81,7 @@ class TestParser(unittest.TestCase):
         file = _make_file_object(b"\xef\xbb\xbf0 HEAD\n1 CHAR ANSEL\n0 TRLR")
         self.assertRaises(parser.CodecError, parser.guess_codec, file)
 
-    def test_010_open(self):
+    def test_010_open(self) -> None:
         """Test gedcom_open() method."""
 
         data = b"0 HEAD\n1 CHAR ANSEL\n0 TRLR"
@@ -115,13 +116,13 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(reader._bom_size, 3)
 
         data = b"0 HEAD\n1 CHAR ASCII\n0 TRLR"
-        with _make_file_object(data) as file:
+        with io.BytesIO(data) as file:
             with parser.GedcomReader(file) as reader:
                 self.assertEqual(reader._encoding, "ascii")
                 self.assertEqual(reader._bom_size, 0)
 
         data = b"\xef\xbb\xbf0 HEAD\n1 CHAR UTF-8\n0 TRLR"
-        with _make_file_object(data) as file:
+        with io.BytesIO(data) as file:
             with parser.GedcomReader(file) as reader:
                 self.assertEqual(reader._encoding, "utf-8")
                 self.assertEqual(reader._bom_size, 3)
@@ -138,7 +139,7 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(reader._encoding, "utf-8")
                 self.assertEqual(reader._bom_size, 3)
 
-    def test_011_open_errors(self):
+    def test_011_open_errors(self) -> None:
         """Test gedcom_open() method."""
 
         # no HEAD
@@ -161,7 +162,7 @@ class TestParser(unittest.TestCase):
         with _temp_file(data) as fname:
             self.assertRaises(parser.CodecError, parser.GedcomReader, fname)
 
-    def test_015_init_index(self):
+    def test_015_init_index(self) -> None:
         """Test _init_index() method."""
 
         data = b"0 HEAD\n0 @i1@ INDI\n0 @i2@ INDI\n0 @i3@ INDI\n0 TRLR"
@@ -177,7 +178,7 @@ class TestParser(unittest.TestCase):
                     reader._xref0, {"@i1@": (7, "INDI"), "@i2@": (19, "INDI"), "@i3@": (31, "INDI")}
                 )
 
-    def test_017_dialect(self):
+    def test_017_dialect(self) -> None:
         """Test dialect property."""
 
         data = b"0 HEAD\n0 TRLR"
@@ -210,7 +211,7 @@ class TestParser(unittest.TestCase):
             with parser.GedcomReader(fname) as reader:
                 self.assertEqual(reader.dialect, model.Dialect.DEFAULT)
 
-    def test_020_GedcomLines(self):
+    def test_020_GedcomLines(self) -> None:
         """Test GedcomLines method"""
 
         # simple content
@@ -252,7 +253,7 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(lines, expect)
 
         data = b"\xef\xbb\xbf0 HEAD\r\n1 CHAR UTF-8\r\n0 OK \xc2\xb5"
-        with _make_file_object(data) as file:
+        with io.BytesIO(data) as file:
             with parser.GedcomReader(file) as reader:
                 lines = list(reader.GedcomLines(3))
                 expect = [
@@ -290,7 +291,7 @@ class TestParser(unittest.TestCase):
                 ]
                 self.assertEqual(lines, expect)
 
-    def test_021_GedcomLines_errors(self):
+    def test_021_GedcomLines_errors(self) -> None:
         """Test for exceptions raised by GedcomLines method"""
 
         # tag name is only letters and digits
@@ -331,19 +332,21 @@ class TestParser(unittest.TestCase):
                     itr = reader.GedcomLines(0)
                     self.assertRaises(parser.IntegrityError, list, itr)
 
-    def test_030_read_record(self):
+    def test_030_read_record(self) -> None:
         """Test read_record method"""
 
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n0 INDI B"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
                 rec = reader.read_record(20)
+                assert rec is not None
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "INDI")
                 self.assertEqual(rec.value, "A")
                 self.assertEqual(rec.sub_records, [])
 
                 rec = reader.read_record(29)
+                assert rec is not None
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "INDI")
                 self.assertEqual(rec.value, "B")
@@ -353,71 +356,80 @@ class TestParser(unittest.TestCase):
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
                 rec = reader.read_record(20)
+                assert rec is not None
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "INDI")
                 self.assertEqual(rec.value, "A")
-                self.assertEqual(len(rec.sub_records), 3)
+                self.assertEqual(len(rec.sub_records), 3)  # type: ignore
 
-                suba = rec.sub_records[0]
+                suba = rec.sub_records[0]  # type: ignore
+                assert suba is not None
                 self.assertEqual(suba.level, 1)
                 self.assertEqual(suba.tag, "SUBA")
                 self.assertEqual(suba.value, "A")
-                self.assertEqual(len(suba.sub_records), 0)
+                self.assertEqual(len(suba.sub_records), 0)  # type: ignore
 
-                subb = rec.sub_records[1]
+                subb = rec.sub_records[1]  # type: ignore
+                assert subb is not None
                 self.assertEqual(subb.level, 1)
                 self.assertEqual(subb.tag, "SUBB")
                 self.assertEqual(subb.value, "B")
-                self.assertEqual(len(subb.sub_records), 1)
+                self.assertEqual(len(subb.sub_records), 1)  # type: ignore
 
-                subc = subb.sub_records[0]
+                subc = subb.sub_records[0]  # type: ignore
+                assert subc is not None
                 self.assertEqual(subc.level, 2)
                 self.assertEqual(subc.tag, "SUBC")
                 self.assertEqual(subc.value, "C")
-                self.assertEqual(len(subc.sub_records), 0)
+                self.assertEqual(len(subc.sub_records), 0)  # type: ignore
 
-                subd = rec.sub_records[2]
+                subd = rec.sub_records[2]  # type: ignore
+                assert subd is not None
                 self.assertEqual(subd.level, 1)
                 self.assertEqual(subd.tag, "SUBD")
                 self.assertEqual(subd.value, "D")
-                self.assertEqual(len(subd.sub_records), 0)
+                self.assertEqual(len(subd.sub_records), 0)  # type: ignore
 
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n1 NOTE A\n2 CONC B\n2 CONT C\n2 CONC D"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
                 rec = reader.read_record(20)
+                assert rec is not None
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "INDI")
                 self.assertEqual(rec.value, "A")
-                self.assertEqual(len(rec.sub_records), 1)
+                self.assertEqual(len(rec.sub_records), 1)  # type: ignore
 
-                note = rec.sub_records[0]
+                note = rec.sub_records[0]  # type: ignore
+                assert note is not None
                 self.assertEqual(note.level, 1)
                 self.assertEqual(note.tag, "NOTE")
                 self.assertEqual(note.value, "AB\nCD")
-                self.assertEqual(len(note.sub_records), 0)
+                self.assertEqual(len(note.sub_records), 0)  # type: ignore
 
         # Space-aware concatenation
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n1 NOTE\n2 CONC B\n2 CONT C\n2 CONC  D"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
                 note = reader.read_record(29)
+                assert note is not None
                 self.assertEqual(note.level, 1)
                 self.assertEqual(note.tag, "NOTE")
                 self.assertEqual(note.value, "B\nC D")
-                self.assertEqual(len(note.sub_records), 0)
+                self.assertEqual(len(note.sub_records), 0)  # type: ignore
 
         # BLOB
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n1 BLOB\n2 CONT A\n2 CONT B"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
                 note = reader.read_record(29)
+                assert note is not None
                 self.assertEqual(note.level, 1)
                 self.assertEqual(note.tag, "BLOB")
                 self.assertIsNone(note.value)
-                self.assertEqual(len(note.sub_records), 0)
+                self.assertEqual(len(note.sub_records), 0)  # type: ignore
 
-    def test_031_read_record_conc(self):
+    def test_031_read_record_conc(self) -> None:
         # encoded string
         data = (
             b"0 HEAD\n1 CHAR UTF8\n"
@@ -427,6 +439,7 @@ class TestParser(unittest.TestCase):
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
                 note = reader.read_record(19)
+                assert note is not None
                 self.assertEqual(note.level, 0)
                 self.assertEqual(note.tag, "TAG")
                 self.assertEqual(note.value, "Иван Иванович")
@@ -440,6 +453,7 @@ class TestParser(unittest.TestCase):
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
                 note = reader.read_record(19)
+                assert note is not None
                 self.assertEqual(note.level, 0)
                 self.assertEqual(note.tag, "TAG")
                 self.assertEqual(note.value, "Иван Иванович")
@@ -453,6 +467,7 @@ class TestParser(unittest.TestCase):
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
                 note = reader.read_record(19)
+                assert note is not None
                 self.assertEqual(note.level, 0)
                 self.assertEqual(note.tag, "TAG")
                 self.assertEqual(note.value, "Иван Иванович")
@@ -462,6 +477,7 @@ class TestParser(unittest.TestCase):
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
                 note = reader.read_record(19)
+                assert note is not None
                 self.assertEqual(note.level, 0)
                 self.assertEqual(note.tag, "TAG")
                 self.assertEqual(note.value, "Pål")
@@ -472,11 +488,12 @@ class TestParser(unittest.TestCase):
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
                 note = reader.read_record(20)
+                assert note is not None
                 self.assertEqual(note.level, 0)
                 self.assertEqual(note.tag, "TAG")
                 self.assertEqual(note.value, "Pål")
 
-    def test_035_read_record_errors(self):
+    def test_035_read_record_errors(self) -> None:
         """Test read_record method"""
 
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n0 INDI B"
@@ -489,11 +506,11 @@ class TestParser(unittest.TestCase):
                 # Random location
                 self.assertRaises(parser.ParserError, reader.read_record, 26)
 
-    def test_040_records0(self):
+    def test_040_records0(self) -> None:
         """Test records0 method"""
 
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n1 SUBA A\n1 SUBB B\n2 SUBC C\n1 SUBD D\n0 STOP"
-        with _make_file_object(data) as file:
+        with io.BytesIO(data) as file:
             with parser.GedcomReader(file) as reader:
                 recs = list(reader.records0())
                 self.assertEqual(len(recs), 3)
@@ -502,43 +519,44 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "HEAD")
                 self.assertEqual(rec.value, None)
-                self.assertEqual(len(rec.sub_records), 1)
+                self.assertEqual(len(rec.sub_records), 1)  # type: ignore
                 self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
                 rec = recs[1]
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "INDI")
                 self.assertEqual(rec.value, "A")
-                self.assertEqual(len(rec.sub_records), 3)
+                self.assertEqual(len(rec.sub_records), 3)  # type: ignore
                 self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
                 rec = recs[2]
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "STOP")
                 self.assertEqual(rec.value, None)
-                self.assertEqual(len(rec.sub_records), 0)
+                self.assertEqual(len(rec.sub_records), 0)  # type: ignore
                 self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
-    def test_041_header(self):
+    def test_041_header(self) -> None:
         """Test header property."""
 
         data = b"0 HEAD\n1 SOUR ALTREE\n0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
                 rec = reader.header
+                assert rec is not None
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "HEAD")
                 self.assertEqual(rec.value, None)
-                self.assertEqual(len(rec.sub_records), 1)
+                self.assertEqual(len(rec.sub_records), 1)  # type: ignore
                 self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
-    def test_042_rec_dialect(self):
+    def test_042_rec_dialect(self) -> None:
         """Test records0 method"""
 
         data = (
             b"0 HEAD\n1 CHAR ASCII\n1 SOUR ALTREE\n0 INDI A\n1 SUBA A\n1 SUBB B\n2 SUBC C\n1 SUBD D\n0 STOP"
         )
-        with _make_file_object(data) as file:
+        with io.BytesIO(data) as file:
             with parser.GedcomReader(file) as reader:
                 recs = list(reader.records0())
                 self.assertEqual(len(recs), 3)
@@ -547,19 +565,19 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "HEAD")
                 self.assertEqual(rec.value, None)
-                self.assertEqual(len(rec.sub_records), 2)
+                self.assertEqual(len(rec.sub_records), 2)  # type: ignore
                 self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
                 rec = recs[1]
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "INDI")
                 self.assertEqual(rec.value, "A")
-                self.assertEqual(len(rec.sub_records), 3)
+                self.assertEqual(len(rec.sub_records), 3)  # type: ignore
                 self.assertEqual(rec.dialect, model.Dialect.ALTREE)
 
                 rec = recs[2]
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "STOP")
                 self.assertEqual(rec.value, None)
-                self.assertEqual(len(rec.sub_records), 0)
+                self.assertEqual(len(rec.sub_records), 0)  # type: ignore
                 self.assertEqual(rec.dialect, model.Dialect.ALTREE)
