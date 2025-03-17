@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ged4py"
-version = "0.4.4"
+version = "0.5.0"
 requires-python = ">=3.11.0"
 description = "GEDCOM tools for Python"
 readme = "README.rst"
@@ -59,7 +59,7 @@ exclude = [
 ]
 
 [tool.bumpver]
-current_version = "0.4.4"
+current_version = "0.5.0"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "Bump version: {old_version} → {new_version}"
 tag_message = "Bump version: {old_version} → {new_version}"
