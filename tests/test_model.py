@@ -380,22 +380,22 @@ class TestModel(unittest.TestCase):
 
         class Parser(object):
             def __init__(self):
-                self.xref0 = {b"@pointer0@": (0, "TAG0"), b"@pointer1@": (1, "TAG1")}
+                self.xref0 = {"@pointer0@": (0, "TAG0"), "@pointer1@": (1, "TAG1")}
 
             def read_record(self, offset):
                 return str(offset)
 
         pointer = model.Pointer(Parser())
-        pointer.value = b"@pointer0@"
+        pointer.value = "@pointer0@"
         pointer.freeze()
 
-        self.assertEqual(pointer.value, b"@pointer0@")
+        self.assertEqual(pointer.value, "@pointer0@")
         self.assertEqual(pointer.ref, "0")
 
         dialect = model.Dialect.MYHERITAGE
-        pointer = model.make_record(1, None, "FAMC", b"@pointer1@", [], 0, dialect, Parser()).freeze()
+        pointer = model.make_record(1, None, "FAMC", "@pointer1@", [], 0, dialect, Parser()).freeze()
         self.assertIsInstance(pointer, model.Pointer)
-        self.assertEqual(pointer.value, b"@pointer1@")
+        self.assertEqual(pointer.value, "@pointer1@")
         self.assertEqual(pointer.ref, "1")
 
     def test_041_Pointer_sub(self):
@@ -403,15 +403,15 @@ class TestModel(unittest.TestCase):
 
         class Parser(object):
             def __init__(self):
-                self.xref0 = {b"@pointer0@": (0, "TAG0"), b"@pointer1@": (1, "TAG1")}
+                self.xref0 = {"@pointer0@": (0, "TAG0"), "@pointer1@": (1, "TAG1")}
 
             def read_record(self, offset):
                 return str(offset)
 
         dialect = model.Dialect.MYHERITAGE
         parser = Parser()
-        husb = model.make_record(1, None, "HUSB", b"@pointer0@", [], 0, dialect, parser).freeze()
-        wife = model.make_record(1, None, "WIFE", b"@pointer1@", [], 0, dialect, parser).freeze()
+        husb = model.make_record(1, None, "HUSB", "@pointer0@", [], 0, dialect, parser).freeze()
+        wife = model.make_record(1, None, "WIFE", "@pointer1@", [], 0, dialect, parser).freeze()
         fam = model.make_record(0, None, "FAM", "", [husb, wife], 0, dialect, parser).freeze()
 
         rec = fam.sub_tag("HUSB", follow=True)
@@ -439,7 +439,7 @@ class TestModel(unittest.TestCase):
 
         dialect = model.Dialect.MYHERITAGE
         parser = Parser()
-        famc = model.make_record(1, None, "FAMC", b"@pointer@", [], 100, dialect, parser).freeze()
+        famc = model.make_record(1, None, "FAMC", "@pointer@", [], 100, dialect, parser).freeze()
         indi = model.make_record(0, "@I1@", "INDI", None, [famc], 1000, dialect).freeze()
 
         self.assertIsNone(indi.father)

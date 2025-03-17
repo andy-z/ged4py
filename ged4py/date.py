@@ -1,5 +1,7 @@
 """Module for parsing and representing dates in gedcom format."""
 
+from __future__ import annotations
+
 __all__ = [
     "DateValueTypes",
     "DateValue",
@@ -21,6 +23,7 @@ __all__ = [
 import abc
 import enum
 import re
+from typing import Any
 
 from .calendar import CalendarDate, GregorianDate, DATE
 
@@ -166,11 +169,11 @@ class DateValue(metaclass=abc.ABCMeta):
       `DateValueVisitor` interface.
     """
 
-    def __init__(self, key):
+    def __init__(self, key: tuple[CalendarDate, CalendarDate] | None):
         self._key = key
 
     @classmethod
-    def parse(cls, datestr):
+    def parse(cls, datestr: str | None) -> DateValue:
         """Parse string <DATE_VALUE> string and make `DateValue`
         instance out of it.
 
@@ -199,19 +202,19 @@ class DateValue(metaclass=abc.ABCMeta):
                     if key != "phrase":
                         val = CalendarDate.parse(val)
                     groups[key] = val
-                return klass(**groups)
+                return klass(**groups)  # type: ignore
         # if cannot parse string assume it is a phrase
         return DateValuePhrase(datestr)
 
     @property
     @abc.abstractmethod
-    def kind(self):
+    def kind(self) -> DateValueTypes:
         """The type of GEDCOM date, one of the `DateValueTypes` enums
         (`DateValueTypes`).
         """
         raise NotImplementedError()
 
-    def key(self):
+    def key(self) -> tuple[CalendarDate, CalendarDate]:
         """Return ordering key for this instance.
 
         If this instance has a range of dates associated with it then this
@@ -231,29 +234,41 @@ class DateValue(metaclass=abc.ABCMeta):
             return _END_OF_TIME, _END_OF_TIME
         return self._key
 
-    def __lt__(self, other):
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, DateValue):
+            return NotImplemented
         return self.key() < other.key()
 
-    def __le__(self, other):
+    def __le__(self, other: object) -> bool:
+        if not isinstance(other, DateValue):
+            return NotImplemented
         return self.key() <= other.key()
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, DateValue):
+            return NotImplemented
         return self.key() == other.key()
 
-    def __ne__(self, other):
+    def __ne__(self, other: object) -> bool:
+        if not isinstance(other, DateValue):
+            return NotImplemented
         return self.key() != other.key()
 
-    def __gt__(self, other):
+    def __gt__(self, other: object) -> bool:
+        if not isinstance(other, DateValue):
+            return NotImplemented
         return self.key() > other.key()
 
-    def __ge__(self, other):
+    def __ge__(self, other: object) -> bool:
+        if not isinstance(other, DateValue):
+            return NotImplemented
         return self.key() >= other.key()
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.key())
 
     @abc.abstractmethod
-    def accept(self, visitor):
+    def accept(self, visitor: DateValueVisitor) -> Any:
         """Implementation of visitor pattern.
 
         Each concrete sub-class will implement this method by dispatching the
@@ -272,11 +287,11 @@ class DateValue(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def __str__(self):
+    def __str__(self) -> str:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def __repr__(self):
+    def __repr__(self) -> str:
         raise NotImplementedError()
 
 
@@ -289,31 +304,31 @@ class DateValueSimple(DateValue):
         Corresponding date.
     """
 
-    def __init__(self, date):
+    def __init__(self, date: CalendarDate):
         DateValue.__init__(self, (date, date))
         self._date = date
 
     @property
-    def kind(self):
+    def kind(self) -> DateValueTypes:
         """For DateValueSimple class this is always
         `DateValueTypes.SIMPLE`.
         """
         return DateValueTypes.SIMPLE
 
     @property
-    def date(self):
+    def date(self) -> CalendarDate:
         "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
-    def accept(self, visitor):
+    def accept(self, visitor: DateValueVisitor) -> Any:
         # docstring inherited from DateValue class
         return visitor.visitSimple(self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.date)
 
-    def __repr__(self):
-        return "{}(date={})".format(self.__class__.__name__, self.date)
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(date={self.date})"
 
 
 class DateValueFrom(DateValue):
@@ -325,31 +340,31 @@ class DateValueFrom(DateValue):
         Corresponding date.
     """
 
-    def __init__(self, date):
+    def __init__(self, date: CalendarDate):
         DateValue.__init__(self, (date, _END_OF_TIME))
         self._date = date
 
     @property
-    def kind(self):
+    def kind(self) -> DateValueTypes:
         """For DateValueFrom class this is always
         `DateValueTypes.FROM`.
         """
         return DateValueTypes.FROM
 
     @property
-    def date(self):
+    def date(self) -> CalendarDate:
         "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
-    def accept(self, visitor):
+    def accept(self, visitor: DateValueVisitor) -> Any:
         # docstring inherited from DateValue class
         return visitor.visitFrom(self)
 
-    def __str__(self):
-        return "FROM {}".format(self.date)
+    def __str__(self) -> str:
+        return f"FROM {self.date}"
 
-    def __repr__(self):
-        return "{}(date={})".format(self.__class__.__name__, self.date)
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(date={self.date})"
 
 
 class DateValueTo(DateValue):
@@ -361,31 +376,31 @@ class DateValueTo(DateValue):
         Corresponding date.
     """
 
-    def __init__(self, date):
+    def __init__(self, date: CalendarDate):
         DateValue.__init__(self, (_START_OF_TIME, date))
         self._date = date
 
     @property
-    def kind(self):
+    def kind(self) -> DateValueTypes:
         """For DateValueTo class this is always
         `DateValueTypes.TO`.
         """
         return DateValueTypes.TO
 
     @property
-    def date(self):
+    def date(self) -> CalendarDate:
         "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
-    def accept(self, visitor):
+    def accept(self, visitor: DateValueVisitor) -> Any:
         # docstring inherited from DateValue class
         return visitor.visitTo(self)
 
-    def __str__(self):
-        return "TO {}".format(self.date)
+    def __str__(self) -> str:
+        return f"TO {self.date}"
 
-    def __repr__(self):
-        return "{}(date={})".format(self.__class__.__name__, self.date)
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(date={self.date})"
 
 
 class DateValuePeriod(DateValue):
@@ -399,37 +414,37 @@ class DateValuePeriod(DateValue):
         TO date.
     """
 
-    def __init__(self, date1, date2):
+    def __init__(self, date1: CalendarDate, date2: CalendarDate):
         DateValue.__init__(self, (date1, date2))
         self._date1 = date1
         self._date2 = date2
 
     @property
-    def kind(self):
+    def kind(self) -> DateValueTypes:
         """For DateValuePeriod class this is always
         `DateValueTypes.PERIOD`.
         """
         return DateValueTypes.PERIOD
 
     @property
-    def date1(self):
+    def date1(self) -> CalendarDate:
         "First Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date1
 
     @property
-    def date2(self):
+    def date2(self) -> CalendarDate:
         "Second Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date2
 
-    def accept(self, visitor):
+    def accept(self, visitor: DateValueVisitor) -> Any:
         # docstring inherited from DateValue class
         return visitor.visitPeriod(self)
 
-    def __str__(self):
-        return "FROM {} TO {}".format(self.date1, self.date2)
+    def __str__(self) -> str:
+        return f"FROM {self.date1} TO {self.date2}"
 
-    def __repr__(self):
-        return "{}(date1={}, date2={})".format(self.__class__.__name__, self.date1, self.date2)
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(date1={self.date1}, date2={self.date2})"
 
 
 class DateValueBefore(DateValue):
@@ -441,31 +456,31 @@ class DateValueBefore(DateValue):
         Corresponding date.
     """
 
-    def __init__(self, date):
+    def __init__(self, date: CalendarDate):
         DateValue.__init__(self, (_START_OF_TIME, date))
         self._date = date
 
     @property
-    def kind(self):
+    def kind(self) -> DateValueTypes:
         """For DateValueBefore class this is always
         `DateValueTypes.BEFORE`.
         """
         return DateValueTypes.BEFORE
 
     @property
-    def date(self):
+    def date(self) -> CalendarDate:
         "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
-    def accept(self, visitor):
+    def accept(self, visitor: DateValueVisitor) -> Any:
         # docstring inherited from DateValue class
         return visitor.visitBefore(self)
 
-    def __str__(self):
-        return "BEFORE {}".format(self.date)
+    def __str__(self) -> str:
+        return f"BEFORE {self.date}"
 
-    def __repr__(self):
-        return "{}(date={})".format(self.__class__.__name__, self.date)
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(date={self.date})"
 
 
 class DateValueAfter(DateValue):
@@ -477,31 +492,31 @@ class DateValueAfter(DateValue):
         Corresponding date.
     """
 
-    def __init__(self, date):
+    def __init__(self, date: CalendarDate):
         DateValue.__init__(self, (date, _END_OF_TIME))
         self._date = date
 
     @property
-    def kind(self):
+    def kind(self) -> DateValueTypes:
         """For DateValueAfter class this is always
         `DateValueTypes.AFTER`.
         """
         return DateValueTypes.AFTER
 
     @property
-    def date(self):
+    def date(self) -> CalendarDate:
         "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
-    def accept(self, visitor):
+    def accept(self, visitor: DateValueVisitor) -> Any:
         # docstring inherited from DateValue class
         return visitor.visitAfter(self)
 
-    def __str__(self):
-        return "AFTER {}".format(self.date)
+    def __str__(self) -> str:
+        return f"AFTER {self.date}"
 
-    def __repr__(self):
-        return "{}(date={})".format(self.__class__.__name__, self.date)
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(date={self.date})"
 
 
 class DateValueRange(DateValue):
@@ -515,37 +530,37 @@ class DateValueRange(DateValue):
         Second date.
     """
 
-    def __init__(self, date1, date2):
+    def __init__(self, date1: CalendarDate, date2: CalendarDate):
         DateValue.__init__(self, (date1, date2))
         self._date1 = date1
         self._date2 = date2
 
     @property
-    def kind(self):
+    def kind(self) -> DateValueTypes:
         """For DateValueRange class this is always
         `DateValueTypes.RANGE`.
         """
         return DateValueTypes.RANGE
 
     @property
-    def date1(self):
+    def date1(self) -> CalendarDate:
         "First Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date1
 
     @property
-    def date2(self):
+    def date2(self) -> CalendarDate:
         "Second Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date2
 
-    def accept(self, visitor):
+    def accept(self, visitor: DateValueVisitor) -> Any:
         # docstring inherited from DateValue class
         return visitor.visitRange(self)
 
-    def __str__(self):
-        return "BETWEEN {} AND {}".format(self.date1, self.date2)
+    def __str__(self) -> str:
+        return f"BETWEEN {self.date1} AND {self.date2}"
 
-    def __repr__(self):
-        return "{}(date1={}, date2={})".format(self.__class__.__name__, self.date1, self.date2)
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(date1={self.date1}, date2={self.date2})"
 
 
 class DateValueAbout(DateValue):
@@ -557,31 +572,31 @@ class DateValueAbout(DateValue):
         Corresponding date.
     """
 
-    def __init__(self, date):
+    def __init__(self, date: CalendarDate):
         DateValue.__init__(self, (date, date))
         self._date = date
 
     @property
-    def kind(self):
+    def kind(self) -> DateValueTypes:
         """For DateValueAbout class this is always
         `DateValueTypes.ABOUT`.
         """
         return DateValueTypes.ABOUT
 
     @property
-    def date(self):
+    def date(self) -> CalendarDate:
         "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
-    def accept(self, visitor):
+    def accept(self, visitor: DateValueVisitor) -> Any:
         # docstring inherited from DateValue class
         return visitor.visitAbout(self)
 
-    def __str__(self):
-        return "ABOUT {}".format(self.date)
+    def __str__(self) -> str:
+        return f"ABOUT {self.date}"
 
-    def __repr__(self):
-        return "{}(date={})".format(self.__class__.__name__, self.date)
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(date={self.date})"
 
 
 class DateValueCalculated(DateValue):
@@ -593,31 +608,31 @@ class DateValueCalculated(DateValue):
         Corresponding date.
     """
 
-    def __init__(self, date):
+    def __init__(self, date: CalendarDate):
         DateValue.__init__(self, (date, date))
         self._date = date
 
     @property
-    def kind(self):
+    def kind(self) -> DateValueTypes:
         """For DateValueCalculated class this is always
         `DateValueTypes.CALCULATED`.
         """
         return DateValueTypes.CALCULATED
 
     @property
-    def date(self):
+    def date(self) -> CalendarDate:
         "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
-    def accept(self, visitor):
+    def accept(self, visitor: DateValueVisitor) -> Any:
         # docstring inherited from DateValue class
         return visitor.visitCalculated(self)
 
-    def __str__(self):
-        return "CALCULATED {}".format(self.date)
+    def __str__(self) -> str:
+        return f"CALCULATED {self.date}"
 
-    def __repr__(self):
-        return "{}(date={})".format(self.__class__.__name__, self.date)
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(date={self.date})"
 
 
 class DateValueEstimated(DateValue):
@@ -629,31 +644,31 @@ class DateValueEstimated(DateValue):
         Corresponding date.
     """
 
-    def __init__(self, date):
+    def __init__(self, date: CalendarDate):
         DateValue.__init__(self, (date, date))
         self._date = date
 
     @property
-    def kind(self):
+    def kind(self) -> DateValueTypes:
         """For DateValueEstimated class this is always
         `DateValueTypes.ESTIMATED`.
         """
         return DateValueTypes.ESTIMATED
 
     @property
-    def date(self):
+    def date(self) -> CalendarDate:
         "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
-    def accept(self, visitor):
+    def accept(self, visitor: DateValueVisitor) -> Any:
         # docstring inherited from DateValue class
         return visitor.visitEstimated(self)
 
-    def __str__(self):
-        return "ESTIMATED {}".format(self.date)
+    def __str__(self) -> str:
+        return f"ESTIMATED {self.date}"
 
-    def __repr__(self):
-        return "{}(date={})".format(self.__class__.__name__, self.date)
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(date={self.date})"
 
 
 class DateValueInterpreted(DateValue):
@@ -667,37 +682,37 @@ class DateValueInterpreted(DateValue):
         Phrase string associated with this date.
     """
 
-    def __init__(self, date, phrase):
+    def __init__(self, date: CalendarDate, phrase: str):
         DateValue.__init__(self, (date, date))
         self._date = date
         self._phrase = phrase
 
     @property
-    def kind(self):
+    def kind(self) -> DateValueTypes:
         """For DateValueInterpreted class this is always
         `DateValueTypes.INTERPRETED`.
         """
         return DateValueTypes.INTERPRETED
 
     @property
-    def date(self):
+    def date(self) -> CalendarDate:
         "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
         return self._date
 
     @property
-    def phrase(self):
+    def phrase(self) -> str:
         """Phrase associated with this date (`str`)"""
         return self._phrase
 
-    def accept(self, visitor):
+    def accept(self, visitor: DateValueVisitor) -> Any:
         # docstring inherited from DateValue class
         return visitor.visitInterpreted(self)
 
-    def __str__(self):
-        return "INTERPRETED {} ({})".format(self.date, self.phrase)
+    def __str__(self) -> str:
+        return f"INTERPRETED {self.date} ({self.phrase})"
 
-    def __repr__(self):
-        return "{}(date={}, phrase={})".format(self.__class__.__name__, self.date, self.phrase)
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(date={self.date}, phrase={self.phrase})"
 
 
 class DateValuePhrase(DateValue):
@@ -709,34 +724,34 @@ class DateValuePhrase(DateValue):
         Phrase string associated with this date.
     """
 
-    def __init__(self, phrase):
+    def __init__(self, phrase: str | None):
         DateValue.__init__(self, None)
         self._phrase = phrase
 
     @property
-    def kind(self):
+    def kind(self) -> DateValueTypes:
         """For DateValuePhrase class this is always
         `DateValueTypes.PHRASE`.
         """
         return DateValueTypes.PHRASE
 
     @property
-    def phrase(self):
+    def phrase(self) -> str | None:
         """Phrase associated with this date (`str`)"""
         return self._phrase
 
-    def accept(self, visitor):
+    def accept(self, visitor: DateValueVisitor) -> Any:
         # docstring inherited from DateValue class
         return visitor.visitPhrase(self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.phrase is None:
             return ""
         else:
             return "({})".format(self.phrase)
 
-    def __repr__(self):
-        return "{}(phrase={})".format(self.__class__.__name__, self.phrase)
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(phrase={self.phrase})"
 
 
 DATES = (
@@ -778,7 +793,7 @@ class DateValueVisitor(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def visitSimple(self, date):
+    def visitSimple(self, date: DateValueSimple) -> Any:
         """Visit an instance of `DateValueSimple` type.
 
         Parameters
@@ -795,7 +810,7 @@ class DateValueVisitor(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def visitPeriod(self, date):
+    def visitPeriod(self, date: DateValuePeriod) -> Any:
         """Visit an instance of `DateValuePeriod` type.
 
         Parameters
@@ -812,7 +827,7 @@ class DateValueVisitor(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def visitFrom(self, date):
+    def visitFrom(self, date: DateValueFrom) -> Any:
         """Visit an instance of `DateValueFrom` type.
 
         Parameters
@@ -829,7 +844,7 @@ class DateValueVisitor(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def visitTo(self, date):
+    def visitTo(self, date: DateValueTo) -> Any:
         """Visit an instance of `DateValueTo` type.
 
         Parameters
@@ -846,7 +861,7 @@ class DateValueVisitor(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def visitRange(self, date):
+    def visitRange(self, date: DateValueRange) -> Any:
         """Visit an instance of `DateValueRange` type.
 
         Parameters
@@ -863,7 +878,7 @@ class DateValueVisitor(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def visitBefore(self, date):
+    def visitBefore(self, date: DateValueBefore) -> Any:
         """Visit an instance of `DateValueBefore` type.
 
         Parameters
@@ -880,7 +895,7 @@ class DateValueVisitor(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def visitAfter(self, date):
+    def visitAfter(self, date: DateValueAfter) -> Any:
         """Visit an instance of `DateValueAfter` type.
 
         Parameters
@@ -897,7 +912,7 @@ class DateValueVisitor(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def visitAbout(self, date):
+    def visitAbout(self, date: DateValueAbout) -> Any:
         """Visit an instance of `DateValueAbout` type.
 
         Parameters
@@ -914,7 +929,7 @@ class DateValueVisitor(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def visitCalculated(self, date):
+    def visitCalculated(self, date: DateValueCalculated) -> Any:
         """Visit an instance of `DateValueCalculated` type.
 
         Parameters
@@ -931,7 +946,7 @@ class DateValueVisitor(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def visitEstimated(self, date):
+    def visitEstimated(self, date: DateValueEstimated) -> Any:
         """Visit an instance of `DateValueEstimated` type.
 
         Parameters
@@ -948,7 +963,7 @@ class DateValueVisitor(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def visitInterpreted(self, date):
+    def visitInterpreted(self, date: DateValueInterpreted) -> Any:
         """Visit an instance of `DateValueInterpreted` type.
 
         Parameters
@@ -965,7 +980,7 @@ class DateValueVisitor(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def visitPhrase(self, date):
+    def visitPhrase(self, date: DateValuePhrase) -> Any:
         """Visit an instance of `DateValuePhrase` type.
 
         Parameters

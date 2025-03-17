@@ -3,10 +3,10 @@
 import codecs
 import io
 import os
-from typing import List
+from typing import BinaryIO
 
 
-def check_bom(file):
+def check_bom(file: io.IOBase) -> str | None:
     """Determines file codec from from its BOM record.
 
     If file starts with BOM record encoded with UTF-8 or UTF-16(BE/LE)
@@ -36,7 +36,7 @@ def check_bom(file):
         return None
 
 
-def guess_lineno(file):
+def guess_lineno(file: io.IOBase) -> int:
     """Guess current line number in a file.
 
     Guessing is done in a very crude way - scanning file from beginning
@@ -72,19 +72,22 @@ class BinaryFileCR(io.BufferedReader):
 
     CR, LF = b"\r", b"\n"
 
-    def __init__(self, raw):
-        io.BufferedReader.__init__(self, raw)
+    def __init__(self, raw: io.RawIOBase | BinaryIO):
+        # BufferedReader accepts RawIOBase, but for many tests we want to use
+        # BinaryIO, and there is no way to convert BinaryIO to RawIOBase, but
+        # it works for our purposes, so we just lie to mypy.
+        io.BufferedReader.__init__(self, raw)  # type: ignore[arg-type]
 
-    def readline(self, limit=-1):
+    def readline(self, limit: int | None = -1) -> bytes:
         if limit == 0:
             return b""
-        data: List[bytes] = []
+        data: list[bytes] = []
         while True:
             byte = self.read(1)
             if not byte:
                 return b"".join(data)
             data.append(byte)
-            if limit >= 0 and len(data) >= limit:
+            if not (limit is None or limit < 0) and len(data) >= limit:
                 return b"".join(data)
             elif byte == self.LF:
                 return b"".join(data)
