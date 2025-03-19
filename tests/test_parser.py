@@ -360,35 +360,35 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "INDI")
                 self.assertEqual(rec.value, "A")
-                self.assertEqual(len(rec.sub_records), 3)  # type: ignore
+                self.assertEqual(len(rec.sub_records), 3)
 
-                suba = rec.sub_records[0]  # type: ignore
+                suba = rec.sub_records[0]
                 assert suba is not None
                 self.assertEqual(suba.level, 1)
                 self.assertEqual(suba.tag, "SUBA")
                 self.assertEqual(suba.value, "A")
-                self.assertEqual(len(suba.sub_records), 0)  # type: ignore
+                self.assertEqual(len(suba.sub_records), 0)
 
-                subb = rec.sub_records[1]  # type: ignore
+                subb = rec.sub_records[1]
                 assert subb is not None
                 self.assertEqual(subb.level, 1)
                 self.assertEqual(subb.tag, "SUBB")
                 self.assertEqual(subb.value, "B")
-                self.assertEqual(len(subb.sub_records), 1)  # type: ignore
+                self.assertEqual(len(subb.sub_records), 1)
 
-                subc = subb.sub_records[0]  # type: ignore
+                subc = subb.sub_records[0]
                 assert subc is not None
                 self.assertEqual(subc.level, 2)
                 self.assertEqual(subc.tag, "SUBC")
                 self.assertEqual(subc.value, "C")
-                self.assertEqual(len(subc.sub_records), 0)  # type: ignore
+                self.assertEqual(len(subc.sub_records), 0)
 
-                subd = rec.sub_records[2]  # type: ignore
+                subd = rec.sub_records[2]
                 assert subd is not None
                 self.assertEqual(subd.level, 1)
                 self.assertEqual(subd.tag, "SUBD")
                 self.assertEqual(subd.value, "D")
-                self.assertEqual(len(subd.sub_records), 0)  # type: ignore
+                self.assertEqual(len(subd.sub_records), 0)
 
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n1 NOTE A\n2 CONC B\n2 CONT C\n2 CONC D"
         with _temp_file(data) as fname:
@@ -398,36 +398,34 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "INDI")
                 self.assertEqual(rec.value, "A")
-                self.assertEqual(len(rec.sub_records), 1)  # type: ignore
+                self.assertEqual(len(rec.sub_records), 1)
 
-                note = rec.sub_records[0]  # type: ignore
+                note = rec.sub_records[0]
                 assert note is not None
                 self.assertEqual(note.level, 1)
                 self.assertEqual(note.tag, "NOTE")
                 self.assertEqual(note.value, "AB\nCD")
-                self.assertEqual(len(note.sub_records), 0)  # type: ignore
+                self.assertEqual(len(note.sub_records), 0)
 
         # Space-aware concatenation
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n1 NOTE\n2 CONC B\n2 CONT C\n2 CONC  D"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                note = reader.read_record(29)
-                assert note is not None
+                note = reader.read_record(29)  # type: ignore
                 self.assertEqual(note.level, 1)
                 self.assertEqual(note.tag, "NOTE")
                 self.assertEqual(note.value, "B\nC D")
-                self.assertEqual(len(note.sub_records), 0)  # type: ignore
+                self.assertEqual(len(note.sub_records), 0)
 
         # BLOB
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n1 BLOB\n2 CONT A\n2 CONT B"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
-                note = reader.read_record(29)
-                assert note is not None
+                note = reader.read_record(29)  # type: ignore
                 self.assertEqual(note.level, 1)
                 self.assertEqual(note.tag, "BLOB")
                 self.assertIsNone(note.value)
-                self.assertEqual(len(note.sub_records), 0)  # type: ignore
+                self.assertEqual(len(note.sub_records), 0)
 
     def test_031_read_record_conc(self) -> None:
         # encoded string
@@ -519,21 +517,21 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "HEAD")
                 self.assertEqual(rec.value, None)
-                self.assertEqual(len(rec.sub_records), 1)  # type: ignore
+                self.assertEqual(len(rec.sub_records), 1)
                 self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
                 rec = recs[1]
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "INDI")
                 self.assertEqual(rec.value, "A")
-                self.assertEqual(len(rec.sub_records), 3)  # type: ignore
+                self.assertEqual(len(rec.sub_records), 3)
                 self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
                 rec = recs[2]
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "STOP")
                 self.assertEqual(rec.value, None)
-                self.assertEqual(len(rec.sub_records), 0)  # type: ignore
+                self.assertEqual(len(rec.sub_records), 0)
                 self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
     def test_041_header(self) -> None:
@@ -547,7 +545,7 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "HEAD")
                 self.assertEqual(rec.value, None)
-                self.assertEqual(len(rec.sub_records), 1)  # type: ignore
+                self.assertEqual(len(rec.sub_records), 1)
                 self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
     def test_042_rec_dialect(self) -> None:
@@ -565,19 +563,19 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "HEAD")
                 self.assertEqual(rec.value, None)
-                self.assertEqual(len(rec.sub_records), 2)  # type: ignore
+                self.assertEqual(len(rec.sub_records), 2)
                 self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
                 rec = recs[1]
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "INDI")
                 self.assertEqual(rec.value, "A")
-                self.assertEqual(len(rec.sub_records), 3)  # type: ignore
+                self.assertEqual(len(rec.sub_records), 3)
                 self.assertEqual(rec.dialect, model.Dialect.ALTREE)
 
                 rec = recs[2]
                 self.assertEqual(rec.level, 0)
                 self.assertEqual(rec.tag, "STOP")
                 self.assertEqual(rec.value, None)
-                self.assertEqual(len(rec.sub_records), 0)  # type: ignore
+                self.assertEqual(len(rec.sub_records), 0)
                 self.assertEqual(rec.dialect, model.Dialect.ALTREE)

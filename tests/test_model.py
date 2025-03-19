@@ -25,7 +25,7 @@ class TestModel(unittest.TestCase):
                 "level": None,
                 "value": None,
                 "tag": None,
-                "sub_records": None,
+                "sub_records": [],
                 "offset": None,
             },
         )

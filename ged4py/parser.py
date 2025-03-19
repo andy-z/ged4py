@@ -590,7 +590,7 @@ class GedcomReader:
         )
 
         # add to parent's sub-records list
-        if parent and parent.sub_records is not None:
+        if parent:
             parent.sub_records.append(rec)
 
         return rec

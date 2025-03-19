@@ -128,7 +128,7 @@ class Record:
         self.xref_id: str | None = None
         self.tag: str | None = None
         self.value: str | bytes | None = None
-        self.sub_records: list[Record] | None = None
+        self.sub_records: list[Record] = []
         self.offset: int | None = None
         self.dialect: Dialect | None = None
 
@@ -241,7 +241,6 @@ class Record:
         """
 
         def _sub_tags(record: Record, tag_matches: list[list[str]], my_tag: list[str]) -> Iterator[Record]:
-            assert record.sub_records is not None
             for rec in record.sub_records:
                 assert rec.tag is not None
                 sub_tag = my_tag + [rec.tag]
@@ -257,7 +256,6 @@ class Record:
                                 yield from _sub_tags(ref_rec, tag_matches, sub_tag)
                         break
 
-        assert self.sub_records is not None
         if not tags:
             # return all direct sub-tags
             records = [x for x in self.sub_records]
@@ -280,7 +278,7 @@ class Record:
         value = self.value
         if isinstance(value, str) and len(value) > 32:
             value = value[:32] + "..."
-        n_sub = 0 if self.sub_records is None else len(self.sub_records)
+        n_sub = len(self.sub_records)
         if self.xref_id:
             fmt = (
                 "{0}(level={1.level}, xref_id={1.xref_id}, tag={1.tag}, "
