@@ -1,16 +1,18 @@
-# -*- coding: utf-8 -*-
-
 """Module containing Python in-memory model for GEDCOM data."""
 
-# from __future__ import annotations
+from __future__ import annotations
 
-__all__ = ["make_record", "Record", "Pointer", "NameRec", "Name", "Date", "Individual"]
+__all__ = ["Date", "Individual", "Name", "NameRec", "Pointer", "Record", "make_record"]
 
 import enum
-from typing import Any, Iterator, List, Optional, Union
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Any, cast
 
-from .detail.name import split_name, parse_name_altree, parse_name_ancestris, parse_name_myher
 from .date import DateValue
+from .detail.name import parse_name_altree, parse_name_ancestris, parse_name_myher, split_name
+
+if TYPE_CHECKING:
+    from .parser import GedcomReader
 
 
 @enum.unique
@@ -119,17 +121,17 @@ class Record:
         GEDCOM source dialect, one of the `Dialect` enums.
     """
 
-    def __init__(self):
-        self.level = None
-        self.xref_id = None
-        self.tag = None
-        self.value = None
-        self.sub_records = None
-        self.offset = None
-        self.dialect = None
+    def __init__(self) -> None:
+        self.level: int | None = None
+        self.xref_id: str | None = None
+        self.tag: str | None = None
+        self.value: str | bytes | None = None
+        self.sub_records: list[Record] = []
+        self.offset: int | None = None
+        self.dialect: Dialect | None = None
 
-    def freeze(self) -> "Record":
-        """Method called by parser when updates to this record finish.
+    def freeze(self) -> Record:
+        """Finish all updates for this record, called by parser.
 
         Some sub-classes will override this method to implement conversion
         of record data to different representation.
@@ -141,8 +143,8 @@ class Record:
         """
         return self
 
-    def sub_tag(self, path, follow=True) -> Optional["Record"]:
-        """Finds and returns sub-record with given tag name.
+    def sub_tag(self, path: str, follow: bool = True) -> Record | None:
+        """Find and return sub-record with given tag name.
 
         Path can be a simple tag name, in which case the first direct
         sub-record of this record with the matching tag is returned. Path
@@ -173,20 +175,21 @@ class Record:
             if rec.tag != head:
                 continue
             # dereference pointers if needed
+            ref_rec: Record | None = rec
             if follow and isinstance(rec, Pointer):
-                rec = rec.ref
-            if rec is not None:
+                ref_rec = rec.ref
+            if ref_rec is not None:
                 if tail:
                     # recurse
-                    sub_tag = rec.sub_tag(tail, follow=follow)
+                    sub_tag = ref_rec.sub_tag(tail, follow=follow)
                     if sub_tag:
                         return sub_tag
                 else:
-                    return rec
+                    return ref_rec
         return None
 
-    def sub_tag_value(self, path, follow=True) -> Any:
-        """Returns value of a direct sub-record.
+    def sub_tag_value(self, path: str, follow: bool = True) -> Any:
+        """Return value of a direct sub-record.
 
         Works as `sub_tag()` but returns value of a sub-record instead of
         sub-record itself.
@@ -209,8 +212,8 @@ class Record:
             return rec.value
         return None
 
-    def sub_tags(self, *tags: str, follow: bool = True) -> List["Record"]:
-        """Returns a list of sub-records matching any tag name.
+    def sub_tags(self, *tags: str, follow: bool = True) -> list[Record]:
+        """Return a list of sub-records matching any tag name.
 
         If no positional arguments are provided then all direct sub-records of
         this record are returned, pointers are resolved if ``follow`` is True.
@@ -235,26 +238,28 @@ class Record:
             List of records, possibly empty.
         """
 
-        def _sub_tags(record: Record, tag_matches: List[List[str]], my_tag: List[str]) -> Iterator[Record]:
-            assert record.sub_records is not None
+        def _sub_tags(record: Record, tag_matches: list[list[str]], my_tag: list[str]) -> Iterator[Record]:
             for rec in record.sub_records:
+                assert rec.tag is not None
                 sub_tag = my_tag + [rec.tag]
                 for m in tag_matches:
                     if m[: len(sub_tag)] == sub_tag:
+                        ref_rec: Record | None = rec
                         if follow and isinstance(rec, Pointer):
-                            rec = rec.ref
-                        if len(sub_tag) == len(m):
-                            yield rec
-                        else:
-                            yield from _sub_tags(rec, tag_matches, sub_tag)
+                            ref_rec = rec.ref
+                        if ref_rec:
+                            if len(sub_tag) == len(m):
+                                yield ref_rec
+                            else:
+                                yield from _sub_tags(ref_rec, tag_matches, sub_tag)
                         break
 
-        assert self.sub_records is not None
         if not tags:
-            # return all direct sub-tgas
+            # return all direct sub-tags
             records = [x for x in self.sub_records]
             if follow:
-                records = [rec.ref if isinstance(rec, Pointer) else rec for rec in records]
+                refs = [rec.ref if isinstance(rec, Pointer) else rec for rec in records]
+                records = [rec for rec in refs if rec is not None]
         else:
             records = []
 
@@ -271,7 +276,7 @@ class Record:
         value = self.value
         if isinstance(value, str) and len(value) > 32:
             value = value[:32] + "..."
-        n_sub = 0 if self.sub_records is None else len(self.sub_records)
+        n_sub = len(self.sub_records)
         if self.xref_id:
             fmt = (
                 "{0}(level={1.level}, xref_id={1.xref_id}, tag={1.tag}, "
@@ -306,14 +311,15 @@ class Pointer(Record):
         Referenced GEDCOM record.
     """
 
-    def __init__(self, parser):
+    def __init__(self, parser: GedcomReader):
         Record.__init__(self)
         self.parser = parser
         self._value: Any = []  # use non-None to signify non-initialized
 
     @property
-    def ref(self):
+    def ref(self) -> Record | None:
         if self._value == []:
+            assert isinstance(self.value, str)
             offset, _ = self.parser.xref0.get(self.value, (None, None))
             if offset is None:
                 self._value = None
@@ -335,20 +341,20 @@ class NameRec(Record):
     all three fields of the tuple will be empty strings. Few examples::
 
         ("John", "Smith", "")
-        ("Mary Joan", "Smith", "", "Ivanova")    # maiden name
+        ("Mary Joan", "Smith", "", "Ivanova")  # maiden name
         ("", "Ivanov", "Ivan Ivanovich")
         ("John", "Smith", "Jr.")
-        ("", "", "")                             # empty NAME record
+        ("", "", "")  # empty NAME record
 
     Client code usually does not need to create instances of this class
     directly, `make_record()` should be used instead.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         Record.__init__(self)
 
-    def freeze(self):
-        """Method called by parser when updates to this record finish.
+    def freeze(self) -> NameRec:
+        """Finish all updates for this record, called by parser.
 
         Returns
         -------
@@ -365,21 +371,24 @@ class NameRec(Record):
         elif self.dialect in [Dialect.ANCESTRIS]:
             name_tuple = parse_name_ancestris(self)
         else:
-            name_tuple = split_name(self.value)
-        self.value = name_tuple
+            name_tuple = split_name(cast(str, self.value))
+        self.value = name_tuple  # type: ignore
         return self
 
     @property
-    def type(self):
+    def type(self) -> str | None:
         """Name type as defined in TYPE record. ``None`` if TYPE record is
         missing, otherwise string, e.g. "aka", "birth", "immigrant",
         "maiden", "married" (or anything else).
         """
         # +1 TYPE <NAME_TYPE> {0:1}
         rec = self.sub_tag("TYPE")
-        return rec.value if rec else None
+        if rec is None:
+            return None
+        assert isinstance(rec.value, str)
+        return rec.value
 
-    def __str__(self):
+    def __str__(self) -> str:
         return Record.__str__(self)
 
 
@@ -408,7 +417,7 @@ class Name:
       NAME record is used.
     """
 
-    def __init__(self, names, dialect):
+    def __init__(self, names: list[NameRec], dialect: Dialect):
         self._names = names
         self._dialect = dialect
         self._primary: Record  # "primary" name record
@@ -427,41 +436,41 @@ class Name:
                 self._primary = names[0]
 
     @property
-    def surname(self):
-        """Person surname (`str`)"""
+    def surname(self) -> str:
+        """Person surname (`str`)."""
         assert self._primary.value is not None
-        return self._primary.value[1]
+        return cast(str, self._primary.value[1])
 
     @property
-    def given(self):
-        """Given name could include both first and middle name (`str`)"""
+    def given(self) -> str:
+        """Given name could include both first and middle name (`str`)."""
         assert self._primary.value is not None
         if self._primary.value[0] and self._primary.value[2]:
-            return self._primary.value[0] + " " + self._primary.value[2]
-        return self._primary.value[0] or self._primary.value[2]
+            return cast(str, self._primary.value[0]) + " " + cast(str, self._primary.value[2])
+        return cast(str, self._primary.value[0]) or cast(str, self._primary.value[2])
 
     @property
-    def first(self):
-        """First name is the first part of a given name (drops middle name)"""
+    def first(self) -> str:
+        """First name is the first part of a given name (drops middle name)."""
         given = self.given
         if given:
             return given.split()[0]
         return given
 
     @property
-    def maiden(self):
-        """Maiden last name, can be ``None`` (`str`)"""
+    def maiden(self) -> str | None:
+        """Maiden last name, can be ``None`` (`str`)."""
         if self._dialect == Dialect.DEFAULT:
             # for default/unknown dialect try "maiden" name record first
             for name in self._names:
                 if name.type == "maiden":
-                    return name.value[1]
+                    return name.value[1]  # type: ignore
         # rely on NameRec extracting it from other source
         if self._primary and len(self._primary.value) > 3:  # type: ignore
             return self._primary.value[3]  # type: ignore
         return None
 
-    def order(self, order):
+    def order(self, order: NameOrder) -> tuple[str, str]:
         """Return name order key.
 
         Returns tuple with two strings that can be compared to other such
@@ -494,9 +503,9 @@ class Name:
         elif order in (NameOrder.GIVEN_SURNAME, NameOrder.GIVEN_MAIDEN):
             return (given, surname)
         else:
-            raise ValueError("unexpected order: {}".format(order))
+            raise ValueError(f"unexpected order: {order}")
 
-    def format(self):
+    def format(self) -> str:
         """Format name for output.
 
         There is no single correct way to represent name, values returned from
@@ -507,7 +516,7 @@ class Name:
         name : `str`
             Formatted name representation.
         """
-        name = self._primary.value[0]  # type: ignore
+        name: str = self._primary.value[0]  # type: ignore
         if self.surname:
             if name:
                 name += " "
@@ -518,9 +527,8 @@ class Name:
             name += self._primary.value[2]  # type: ignore
         return name
 
-    def __str__(self):
-        fmt = "{0}({1!r})"
-        return fmt.format(self.__class__.__name__, self.format())
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}({self.format()!r})"
 
 
 class Date(Record):
@@ -530,18 +538,18 @@ class Date(Record):
     instance of `ged4py.date.DateValue` class.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         Record.__init__(self)
 
-    def freeze(self):
-        """Method called by parser when updates to this record finish.
+    def freeze(self) -> Date:
+        """Finish all updates for this record, called by parser.
 
         Returns
         -------
         self : `Date`
             Finalized record instance.
         """
-        self.value = DateValue.parse(self.value)
+        self.value = DateValue.parse(self.value)  # type: ignore
         return self
 
 
@@ -556,38 +564,48 @@ class Individual(Record):
     directly, `make_record()` should be used instead.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         Record.__init__(self)
-        self._mother: Optional[Union[Record, List]] = []  # Non-None as uninitialized
-        self._father: Optional[Union[Record, List]] = []  # Non-None as uninitialized
+        # `self` here means undefined yet.
+        self._mother: Individual | None = self
+        self._father: Individual | None = self
 
     @property
-    def name(self):
+    def name(self) -> Name:
         """Person name (`Name`)."""
         # +1 <<PERSONAL_NAME_STRUCTURE>> {0:M}
-        return Name(self.sub_tags("NAME"), self.dialect)
+        return Name(cast(list[NameRec], self.sub_tags("NAME")), cast(Dialect, self.dialect))
 
     @property
-    def sex(self):
+    def sex(self) -> str:
         """Person sex, one of "M", "F", or "U" for unknown (`str`)."""
         # +1 SEX <SEX_VALUE>
         sex_rec = self.sub_tag("SEX")
         if sex_rec:
+            assert isinstance(sex_rec.value, str)
             return sex_rec.value
         return "U"
 
     @property
-    def mother(self):
-        """Parent of this individual (`Individual` or ``None``)"""
-        if self._mother == []:
-            self._mother = self.sub_tag("FAMC/WIFE")
+    def mother(self) -> Individual | None:
+        """Parent of this individual (`Individual` or ``None``)."""
+        if self._mother is self:
+            self._mother = None
+            mother = self.sub_tag("FAMC/WIFE")
+            if mother:
+                assert isinstance(mother, Individual)
+                self._mother = mother
         return self._mother
 
     @property
-    def father(self):
-        """Parent of this individual (`Individual` or ``None``)"""
-        if self._father == []:
-            self._father = self.sub_tag("FAMC/HUSB")
+    def father(self) -> Individual | None:
+        """Parent of this individual (`Individual` or ``None``)."""
+        if self._father is self:
+            self._father = None
+            father = self.sub_tag("FAMC/HUSB")
+            if father:
+                assert isinstance(father, Individual)
+                self._father = father
         return self._father
 
 
@@ -595,7 +613,16 @@ class Individual(Record):
 _tag_class = dict(INDI=Individual, NAME=NameRec, DATE=Date)
 
 
-def make_record(level, xref_id, tag, value, sub_records, offset, dialect, parser=None) -> Record:
+def make_record(
+    level: int,
+    xref_id: str | None,
+    tag: str,
+    value: str | bytes | None,
+    sub_records: list[Record],
+    offset: int,
+    dialect: Dialect,
+    parser: GedcomReader | None = None,
+) -> Record:
     """Create `Record` instance based on parameters.
 
     Parameters
@@ -650,6 +677,8 @@ def make_record(level, xref_id, tag, value, sub_records, offset, dialect, parser
         and ((value[0] == "@" and value[-1] == "@") or (value[0] == 64 and value[-1] == 64))
     ):
         # this looks like a <pointer>, make a Pointer record
+        if parser is None:
+            raise ValueError("Parser is required to construct Pointer records")
         rec = Pointer(parser)
     else:
         klass = _tag_class.get(tag, Record)

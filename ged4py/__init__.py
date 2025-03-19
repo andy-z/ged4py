@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """Top-level package for GEDCOM parser for Python.
 
 Most of the code in the s package is located in individual modules:
@@ -19,10 +17,10 @@ top-level package as::
 
 """
 
-from .parser import GedcomReader  # noqa: F401
-
 # register ansel encoding
 import ansel as _ansel
+
+from .parser import GedcomReader  # noqa: F401
 
 _ansel.register()
 

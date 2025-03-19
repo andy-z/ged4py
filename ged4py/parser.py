@@ -1,20 +1,23 @@
 """Module containing methods for parsing GEDCOM files."""
 
-__all__ = ["GedcomReader", "ParserError", "CodecError", "IntegrityError", "guess_codec", "GedcomLine"]
+from __future__ import annotations
+
+__all__ = ["CodecError", "GedcomLine", "GedcomReader", "IntegrityError", "ParserError", "guess_codec"]
 
 import codecs
 import io
 import logging
 import re
-from typing import List, NamedTuple, Optional
+from collections.abc import Iterator
+from typing import BinaryIO, NamedTuple, cast
 
-from .detail.io import check_bom, guess_lineno, BinaryFileCR
 from . import model
+from .detail.io import BinaryFileCR, check_bom, guess_lineno
 
 _log = logging.getLogger(__name__)
 
 # records are bytes, regex is for bytes too
-_re_GedcomLine = re.compile(
+_RE_GEDCOM_LINE = re.compile(
     rb"""
         ^
         [ ]*(?P<level>\d+)                       # integer level number
@@ -47,13 +50,13 @@ class GedcomLine(NamedTuple):
     level: int
     """Record level number (`int`)"""
 
-    xref_id: Optional[str]
+    xref_id: str | None
     """Reference for this record (`str` or ``None``)"""
 
     tag: str
     """Tag name (`str`)"""
 
-    value: bytes
+    value: bytes | None
     """Record value (`bytes`)"""
 
     offset: int
@@ -80,7 +83,9 @@ class CodecError(ParserError):
     pass
 
 
-def guess_codec(file, errors="strict", require_char=False, warn=True):
+def guess_codec(
+    file: io.IOBase, errors: str = "strict", require_char: bool = False, warn: bool = True
+) -> tuple[str, int]:
     """Look at file contents and guess its correct encoding.
 
     File must be open in binary mode and positioned at offset 0. If BOM
@@ -120,7 +125,6 @@ def guess_codec(file, errors="strict", require_char=False, warn=True):
         Raised if codec fails to decode input lines and `errors` is set to
         "strict" (default).
     """
-
     # set of illegal but unambiguous encodings and their corresponding codecs
     illegal_encodings = {
         "windows-1250": "cp1250",
@@ -164,7 +168,7 @@ def guess_codec(file, errors="strict", require_char=False, warn=True):
         # this stops at '\n'
         line = file.readline()
         if not line:
-            raise IOError("Unexpected EOF while reading GEDCOM header")
+            raise OSError("Unexpected EOF while reading GEDCOM header")
 
         # do not decode bytes to strings here, reason is that some
         # stupid apps split CONC record at byte level (in middle of
@@ -194,13 +198,11 @@ def guess_codec(file, errors="strict", require_char=False, warn=True):
                         )
                 new_codec = codecs.lookup(encoding).name
             except LookupError:
-                raise CodecError("Unknown codec name '{0}'".format(enc))
+                raise CodecError(f"Unknown codec name '{enc}'")
             if bom_codec is None:
                 codec = new_codec
             elif new_codec != bom_codec:
-                raise CodecError(
-                    "CHAR codec {0} is different from BOM codec {1}".format(new_codec, bom_codec)
-                )
+                raise CodecError(f"CHAR codec {new_codec} is different from BOM codec {bom_codec}")
             break
 
     return codec, bom_size
@@ -238,18 +240,23 @@ class GedcomReader:
         with GedcomReader(path) as parser:
             # iterate over each INDI record in a file
             for record in parser.records0("INDI"):
-                # do something with the record or navigate to other linked records
+                # do something with the record or navigate to linked records
 
     """
 
-    def __init__(self, file, encoding=None, errors="strict", require_char=False):
-        self._encoding = encoding
+    def __init__(
+        self,
+        file: str | BinaryIO,
+        encoding: str | None = None,
+        errors: str = "strict",
+        require_char: bool = False,
+    ):
         self._errors = errors
         self._bom_size = 0
-        self._index0 = None  # list of level=0 record positions
-        self._xref0 = None  # maps xref_id to level=0 record position
-        self._header = None
-        self._dialect = None
+        self._index0: list[tuple[int, str]] | None = None  # list of level=0 record positions
+        self._xref0: dict[str, tuple[int, str]] | None = None  # maps xref_id to level=0 record position
+        self._header: model.Record | None = None
+        self._dialect: model.Dialect | None = None
 
         # open the file
         if hasattr(file, "read"):
@@ -257,49 +264,53 @@ class GedcomReader:
             if hasattr(file, "seekable"):
                 # check that it supports seek()
                 if not file.seekable():
-                    raise IOError("Input file does not support seek.")
-            self._file = file
+                    raise OSError("Input file does not support seek.")
+            raw_file = cast(io.RawIOBase, file)
         else:
-            raw = io.FileIO(file)
-            self._file = io.BufferedReader(raw)
-        self._file = BinaryFileCR(self._file)
+            # Assume it is a string.
+            assert isinstance(file, str), "`file must be a file name"
+            raw_file = io.FileIO(file)
+        self._file = BinaryFileCR(raw_file)
 
         # check codec and BOM
         try:
-            encoding, self._bom_size = guess_codec(
-                self._file, errors=self._errors, require_char=require_char, warn=self._encoding is None
+            encoding_guess, self._bom_size = guess_codec(
+                self._file, errors=self._errors, require_char=require_char, warn=encoding is None
             )
         except Exception:
             self._file.close()
             raise
         self._file.seek(self._bom_size)
-        if not self._encoding:
-            self._encoding = encoding
+        self._encoding = encoding or encoding_guess
 
     @property
-    def index0(self):
-        """List of level=0 record positions and tag names (`list[(int, str)]`)."""
+    def index0(self) -> list[tuple[int, str]]:
+        """List of level=0 record positions and tag names
+        (`list[tuple[int, str]]`).
+        """
         if self._index0 is None:
             self._init_index()
+            assert self._index0 is not None
         return self._index0
 
     @property
-    def xref0(self):
+    def xref0(self) -> dict[str, tuple[int, str]]:
         """Dictionary which maps xref_id to level=0 record position and
         tag name (`dict[str, (int, str)]`).
         """
         if self._xref0 is None:
             self._init_index()
+            assert self._xref0 is not None
         return self._xref0
 
     @property
-    def header(self):
+    def header(self) -> model.Record | None:
         """Header record (`ged4py.model.Record`)."""
         if self._index0 is None:
             self._init_index()
         return self._header
 
-    def _init_index(self):
+    def _init_index(self) -> None:
         _log.debug("in _init_index")
         self._index0 = []
         self._xref0 = {}
@@ -316,7 +327,7 @@ class GedcomReader:
         _log.debug("_init_index done")
 
     @property
-    def dialect(self):
+    def dialect(self) -> model.Dialect:
         """File dialect as one of `ged4py.model.Dialect` enums."""
         if self._dialect is None:
             self._dialect = model.Dialect.DEFAULT
@@ -332,11 +343,11 @@ class GedcomReader:
         return self._dialect
 
     @dialect.setter
-    def dialect(self, value):
+    def dialect(self, value: model.Dialect) -> None:
         self._dialect = value
 
-    def GedcomLines(self, offset):
-        """Generator method for *gedcom lines*.
+    def GedcomLines(self, offset: int) -> Iterator[GedcomLine]:
+        """Iterate over *gedcom lines*.
 
         Parameters
         ----------
@@ -366,10 +377,9 @@ class GedcomReader:
         line into `GedcomLine` class. It is an implementation detail used by
         other methods, most clients will not need to use this method.
         """
-
         self._file.seek(offset)
 
-        prev_gline: Optional[GedcomLine] = None
+        prev_gline: GedcomLine | None = None
         while True:
             offset = self._file.tell()
             line = self._file.readline()  # stops at \n
@@ -377,16 +387,16 @@ class GedcomReader:
                 break
             line = line.lstrip().rstrip(b"\r\n")
 
-            match = _re_GedcomLine.match(line)
+            match = _RE_GEDCOM_LINE.match(line)
             if not match:
                 self._file.seek(offset)
                 lineno = guess_lineno(self._file)
-                line = line.decode(self._encoding, "ignore")
-                raise ParserError("Invalid syntax at line {0}: `{1}'".format(lineno, line))
+                line_str = line.decode(self._encoding, "ignore")
+                raise ParserError(f"Invalid syntax at line {lineno}: `{line_str}'")
 
             level = int(match.group("level"))
             xref_id_bytes = match.group("xref")
-            xref_id: Optional[str]
+            xref_id: str | None
             if xref_id_bytes:
                 xref_id = xref_id_bytes.decode(self._encoding, self._errors)
             else:
@@ -399,9 +409,9 @@ class GedcomReader:
                     # nested levels should be incremental (+1)
                     self._file.seek(offset)
                     lineno = guess_lineno(self._file)
-                    line = line.decode(self._encoding, "ignore")
+                    line_str = line.decode(self._encoding, "ignore")
                     raise IntegrityError(
-                        "Structural integrity - illegal level nesting at line {0}: `{1}'".format(lineno, line)
+                        f"Structural integrity - illegal level nesting at line {lineno}: `{line_str}'"
                     )
                 if tag in ("CONT", "CONC"):
                     # CONT/CONC level must be +1 from preceding non-CONT/CONC
@@ -411,11 +421,10 @@ class GedcomReader:
                     ):
                         self._file.seek(offset)
                         lineno = guess_lineno(self._file)
-                        line = line.decode(self._encoding, "ignore")
+                        line_str = line.decode(self._encoding, "ignore")
                         raise IntegrityError(
-                            "Structural integrity -  illegal CONC/CONT nesting at line {0}: `{1}'".format(
-                                lineno, line
-                            )
+                            f"Structural integrity -  illegal CONC/CONT nesting at line {lineno}: "
+                            f"`{line_str}'"
                         )
 
             gline = GedcomLine(
@@ -425,8 +434,8 @@ class GedcomReader:
 
             prev_gline = gline
 
-    def records0(self, tag=None):
-        """Iterator over level=0 records with given tag.
+    def records0(self, tag: str | None = None) -> Iterator[model.Record]:
+        """Iterate over level=0 records with given tag.
 
         This is the main method of this class. Clients access data in GEDCOM
         files by iterating over level=0 records and then navigating to
@@ -447,9 +456,10 @@ class GedcomReader:
         for offset, xtag in self.index0:
             _log.debug("    records0: offset: %s; xtag: %s", offset, xtag)
             if tag is None or tag == xtag:
-                yield self.read_record(offset)
+                if rec := self.read_record(offset):
+                    yield rec
 
-    def read_record(self, offset):
+    def read_record(self, offset: int) -> model.Record | None:
         """Read next complete record from a file starting at given position.
 
         Reads the record at given position and all its sub-records. Stops
@@ -476,8 +486,8 @@ class GedcomReader:
             for any parsing errors.
         """
         _log.debug("in read_record(%s)", offset)
-        stack: List[Optional[model.Record]] = []  # stores per-level current records
-        reclevel: Optional[int] = None
+        stack: list[model.Record | None] = []  # stores per-level current records
+        reclevel: int | None = None
         for gline in self.GedcomLines(offset):
             _log.debug("    read_record, gline: %s", gline)
             level = gline.level
@@ -495,6 +505,7 @@ class GedcomReader:
                 # decode bytes value into string
                 if rec:
                     if rec.value is not None:
+                        assert isinstance(rec.value, bytes)
                         rec.value = rec.value.decode(self._encoding, self._errors)
                     rec.freeze()
             #                    _log.debug("    read_record, rec: %s", rec)
@@ -513,6 +524,7 @@ class GedcomReader:
         for rec in reversed(stack[reclevel:]):
             if rec:
                 if rec.value is not None:
+                    assert isinstance(rec.value, bytes)
                     rec.value = rec.value.decode(self._encoding, self._errors)
                 rec.freeze()
                 _log.debug("    read_record, rec: %s", rec)
@@ -523,7 +535,7 @@ class GedcomReader:
         else:
             return None
 
-    def _make_record(self, parent, gline):
+    def _make_record(self, parent: model.Record | None, gline: GedcomLine) -> model.Record | None:
         """Process next record.
 
         This method created new record from the line read from file if
@@ -544,7 +556,6 @@ class GedcomReader:
         -------
         record : `ged4py.model.Record` or None
         """
-
         if parent and gline.tag in ("CONT", "CONC"):
             # concatenate, only for non-BLOBs
             if parent.tag != "BLOB":
@@ -553,7 +564,11 @@ class GedcomReader:
                 if gline.tag == "CONT":
                     value = b"\n" + (value or b"")
                 if value is not None:
-                    parent.value = (parent.value or b"") + value
+                    if parent.value is None:
+                        parent.value = value
+                    else:
+                        assert isinstance(parent.value, bytes)
+                        parent.value = parent.value + value
             return None
 
         # avoid infinite cycle
@@ -577,8 +592,8 @@ class GedcomReader:
 
         return rec
 
-    def __enter__(self):
+    def __enter__(self) -> GedcomReader:
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type: type, exc_value: object, traceback: object) -> None:
         self._file.close()

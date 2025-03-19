@@ -1,8 +1,15 @@
 """Internal module for parsing names in gedcom format."""
 
+from __future__ import annotations
 
-def split_name(name):
-    """Extracts pieces of name from full name string.
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..model import Record
+
+
+def split_name(name: str) -> tuple[str, str, str]:
+    """Extract pieces of name from full name string.
 
     Parameters
     ----------
@@ -43,7 +50,7 @@ def split_name(name):
     return given1.strip(), surname.strip(), given2.strip()
 
 
-def parse_name_altree(record):
+def parse_name_altree(record: Record) -> tuple[str, str, str] | tuple[str, str, str, str]:
     """Parse NAME structure assuming ALTREE dialect.
 
     Parameters
@@ -86,6 +93,8 @@ def parse_name_altree(record):
 
     ALTREE also replaces empty names with question mark, we undo that too.
     """
+    assert isinstance(record.value, str)
+    name_tuple: tuple[str, str, str] | tuple[str, str, str, str]
     name_tuple = split_name(record.value)
     if name_tuple[1] == "?":
         name_tuple = (name_tuple[0], "", name_tuple[2])
@@ -102,7 +111,7 @@ def parse_name_altree(record):
     return name_tuple
 
 
-def parse_name_myher(record):
+def parse_name_myher(record: Record) -> tuple[str, str, str] | tuple[str, str, str, str]:
     """Parse NAME structure assuming MYHERITAGE dialect.
 
     Parameters
@@ -119,7 +128,6 @@ def parse_name_myher(record):
 
     Notes
     -----
-
     In MYHERITAGE dialect married name (if present) is saved as _MARNM
     sub-record. Maiden name is stored in SURN record. Few examples:
 
@@ -144,6 +152,8 @@ def parse_name_myher(record):
 
 
     """
+    assert isinstance(record.value, str)
+    name_tuple: tuple[str, str, str] | tuple[str, str, str, str]
     name_tuple = split_name(record.value)
     married = record.sub_tag_value("_MARNM")
     if married:
@@ -152,7 +162,7 @@ def parse_name_myher(record):
     return name_tuple
 
 
-def parse_name_ancestris(record):
+def parse_name_ancestris(record: Record) -> tuple[str, str, str]:
     """Parse NAME structure assuming ANCESTRIS dialect.
 
     As far as I can tell Ancestris does not have any standard convention for
@@ -171,5 +181,6 @@ def parse_name_ancestris(record):
         the same as returned from `split_name` method, fourth element
         (if present) denotes maiden name.
     """
+    assert isinstance(record.value, str)
     name_tuple = split_name(record.value)
     return name_tuple

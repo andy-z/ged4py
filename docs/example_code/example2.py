@@ -1,4 +1,5 @@
 import sys
+
 from ged4py.parser import GedcomReader
 
 with GedcomReader(sys.argv[1]) as parser:
@@ -20,7 +21,7 @@ with GedcomReader(sys.argv[1]) as parser:
         if marr_date:
             print(f"    marriage date: {marr_date}")
 
-        # access all CHIL records, sub_tags method returns list (possibly empty)
+        # access all CHIL records, sub_tags method returns list, possibly empty
         children = fam.sub_tags("CHIL")
         for child in children:
             # print name and date of birth

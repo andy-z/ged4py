@@ -1,6 +1,7 @@
 import sys
-from ged4py.parser import GedcomReader
+
 from ged4py.date import DateValueVisitor
+from ged4py.parser import GedcomReader
 
 
 class DateFormatter(DateValueVisitor):

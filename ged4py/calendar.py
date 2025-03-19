@@ -1,18 +1,21 @@
 """Module for parsing and representing calendar dates in gedcom format."""
 
+from __future__ import annotations
+
 __all__ = [
-    "CalendarType",
     "CalendarDate",
+    "CalendarDateVisitor",
+    "CalendarType",
     "FrenchDate",
     "GregorianDate",
     "HebrewDate",
     "JulianDate",
-    "CalendarDateVisitor",
 ]
 
 import abc
 import enum
 import re
+from typing import Any
 
 import convertdate.french_republican
 import convertdate.gregorian
@@ -143,7 +146,14 @@ class CalendarDate(metaclass=abc.ABCMeta):
           `CalendarDateVisitor` interface.
     """
 
-    def __init__(self, year, month=None, day=None, bc=False, original=None):
+    def __init__(
+        self,
+        year: int,
+        month: str | None = None,
+        day: int | None = None,
+        bc: bool = False,
+        original: str | None = None,
+    ):
         self.year = year
         """Calendar year number (`int`)"""
         self.month = None if month is None else month.upper()
@@ -162,20 +172,23 @@ class CalendarDate(metaclass=abc.ABCMeta):
         """
 
         # determine month number
-        months = self.months()
-        try:
-            self.month_num = months.index(self.month) + 1
-        except ValueError:
-            pass
+        if self.month is not None:
+            months = self.months()
+            try:
+                self.month_num = months.index(self.month) + 1
+            except ValueError:
+                pass
 
     @classmethod
     @abc.abstractmethod
-    def months(self):
-        """Ordered list of month names (in GEDCOM format) defined in calendar."""
+    def months(cls) -> list[str]:
+        """Return ordered list of month names (in GEDCOM format) defined in
+        calendar.
+        """
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def key(self):
+    def key(self) -> tuple[float, int]:
         """Return ordering key for this instance.
 
         Returned key is a tuple with two numbers (jd, flag). ``jd`` is the
@@ -188,9 +201,9 @@ class CalendarDate(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @property
-    def year_str(self):
+    def year_str(self) -> str:
         """Calendar year in string representation, this can include dual year
-        and/or B.C. suffix (`str`)
+        and/or B.C. suffix (`str`).
         """
         year = str(self.year)
         if self.bc:
@@ -199,15 +212,15 @@ class CalendarDate(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def calendar(self):
+    def calendar(self) -> CalendarType:
         """Calendar used for this date, one of the `CalendarType` enums
-        (`CalendarType`)
+        (`CalendarType`).
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def accept(self, visitor):
-        """Implementation of visitor pattern.
+    def accept(self, visitor: CalendarDateVisitor) -> Any:
+        """Implement visitor pattern.
 
         Each concrete sub-class will implement this method by dispatching the
         call to corresponding visitor method.
@@ -225,7 +238,7 @@ class CalendarDate(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @classmethod
-    def parse(cls, datestr):
+    def parse(cls, datestr: str) -> CalendarDate:
         """Parse ``<DATE>`` string and make `CalendarDate` from it.
 
         Parameters
@@ -244,7 +257,7 @@ class CalendarDate(metaclass=abc.ABCMeta):
             Raised if parsing fails.
         """
 
-        def _dual_year(year_str, dual_year_str):
+        def _dual_year(year_str: str, dual_year_str: str | None) -> int | None:
             """Guess dual year, returns actual year number.
 
             In GEDCOM dual year uses last two digits of the year number
@@ -291,35 +304,47 @@ class CalendarDate(metaclass=abc.ABCMeta):
         else:
             raise ValueError("Unknown calendar: " + datestr)
 
-    def __lt__(self, other):
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, CalendarDate):
+            return NotImplemented
         return self.key() < other.key()
 
-    def __le__(self, other):
+    def __le__(self, other: object) -> bool:
+        if not isinstance(other, CalendarDate):
+            return NotImplemented
         return self.key() <= other.key()
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CalendarDate):
+            return NotImplemented
         return self.key() == other.key()
 
-    def __ne__(self, other):
+    def __ne__(self, other: object) -> bool:
+        if not isinstance(other, CalendarDate):
+            return NotImplemented
         return self.key() != other.key()
 
-    def __gt__(self, other):
+    def __gt__(self, other: object) -> bool:
+        if not isinstance(other, CalendarDate):
+            return NotImplemented
         return self.key() > other.key()
 
-    def __ge__(self, other):
+    def __ge__(self, other: object) -> bool:
+        if not isinstance(other, CalendarDate):
+            return NotImplemented
         return self.key() >= other.key()
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.key())
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Make printable representation out of this instance."""
-        val = [self.day, self.month, self.year_str]
+        val: list[Any] = [self.day, self.month, self.year_str]
         if self.calendar != CalendarType.GREGORIAN:
-            val = ["@#D{}@".format(self.calendar.value)] + val
+            val = [f"@#D{self.calendar.value}@"] + val
         return " ".join([str(item) for item in val if item is not None])
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
 
@@ -347,7 +372,15 @@ class GregorianDate(CalendarDate):
     actual year number (e.g. as if it was specified as "1699/1700").
     """
 
-    def __init__(self, year, month=None, day=None, bc=False, original=None, dual_year=None):
+    def __init__(
+        self,
+        year: int,
+        month: str | None = None,
+        day: int | None = None,
+        bc: bool = False,
+        original: str | None = None,
+        dual_year: int | None = None,
+    ):
         CalendarDate.__init__(self, year, month, day, bc, original)
         self.dual_year = dual_year
         """If not ``None`` then this number represent year in a calendar with
@@ -355,16 +388,18 @@ class GregorianDate(CalendarDate):
         """
 
     @classmethod
-    def months(self):
-        """Ordered list of month names (in GEDCOM format) defined in calendar."""
+    def months(cls) -> list[str]:
+        """Return ordered list of month names (in GEDCOM format) defined in
+        calendar.
+        """
         return MONTHS_GREG
 
     @property
-    def calendar(self):
+    def calendar(self) -> CalendarType:
         # docstring inherited from base class
         return CalendarType.GREGORIAN
 
-    def key(self):
+    def key(self) -> tuple[float, int]:
         """Return ordering key for this instance."""
         calendar = convertdate.gregorian
 
@@ -410,9 +445,9 @@ class GregorianDate(CalendarDate):
         return jd, flag
 
     @property
-    def year_str(self):
+    def year_str(self) -> str:
         """Calendar year in string representation, this can include dual year
-        and/or B.C. suffix (`str`)
+        and/or B.C. suffix (`str`).
         """
         year = str(self.year)
         if self.dual_year is not None:
@@ -421,12 +456,12 @@ class GregorianDate(CalendarDate):
             year += " B.C."
         return year
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Make printable representation out of this instance."""
         val = [self.day, self.month, self.year_str]
         return " ".join([str(item) for item in val if item is not None])
 
-    def accept(self, visitor):
+    def accept(self, visitor: CalendarDateVisitor) -> Any:
         return visitor.visitGregorian(self)
 
 
@@ -436,15 +471,24 @@ class JulianDate(CalendarDate):
     All parameters have the same meaning as in `CalendarDate` class.
     """
 
-    def __init__(self, year, month=None, day=None, bc=False, original=None):
+    def __init__(
+        self,
+        year: int,
+        month: str | None = None,
+        day: int | None = None,
+        bc: bool = False,
+        original: str | None = None,
+    ):
         CalendarDate.__init__(self, year, month, day, bc, original)
 
     @classmethod
-    def months(self):
-        """Ordered list of month names (in GEDCOM format) defined in calendar."""
+    def months(cls) -> list[str]:
+        """Return ordered list of month names (in GEDCOM format) defined in
+        calendar.
+        """
         return MONTHS_GREG
 
-    def key(self):
+    def key(self) -> tuple[float, int]:
         """Return ordering key for this instance."""
         calendar = convertdate.julian
 
@@ -487,11 +531,11 @@ class JulianDate(CalendarDate):
         return jd, flag
 
     @property
-    def calendar(self):
+    def calendar(self) -> CalendarType:
         # docstring inherited from base class
         return CalendarType.JULIAN
 
-    def accept(self, visitor):
+    def accept(self, visitor: CalendarDateVisitor) -> Any:
         return visitor.visitJulian(self)
 
 
@@ -501,15 +545,24 @@ class HebrewDate(CalendarDate):
     All parameters have the same meaning as in `CalendarDate` class.
     """
 
-    def __init__(self, year, month=None, day=None, bc=False, original=None):
+    def __init__(
+        self,
+        year: int,
+        month: str | None = None,
+        day: int | None = None,
+        bc: bool = False,
+        original: str | None = None,
+    ):
         CalendarDate.__init__(self, year, month, day, bc, original)
 
     @classmethod
-    def months(self):
-        """Ordered list of month names (in GEDCOM format) defined in calendar."""
+    def months(cls) -> list[str]:
+        """Return ordered list of month names (in GEDCOM format) defined in
+        calendar.
+        """
         return MONTHS_HEBR
 
-    def key(self):
+    def key(self) -> tuple[float, int]:
         """Return ordering key for this instance."""
         calendar = convertdate.hebrew
         year = -self.year if self.bc else self.year
@@ -536,11 +589,11 @@ class HebrewDate(CalendarDate):
         return jd, flag
 
     @property
-    def calendar(self):
+    def calendar(self) -> CalendarType:
         # docstring inherited from base class
         return CalendarType.HEBREW
 
-    def accept(self, visitor):
+    def accept(self, visitor: CalendarDateVisitor) -> Any:
         return visitor.visitHebrew(self)
 
 
@@ -550,15 +603,24 @@ class FrenchDate(CalendarDate):
     All parameters have the same meaning as in `CalendarDate` class.
     """
 
-    def __init__(self, year, month=None, day=None, bc=False, original=None):
+    def __init__(
+        self,
+        year: int,
+        month: str | None = None,
+        day: int | None = None,
+        bc: bool = False,
+        original: str | None = None,
+    ):
         CalendarDate.__init__(self, year, month, day, bc, original)
 
     @classmethod
-    def months(self):
-        """Ordered list of month names (in GEDCOM format) defined in calendar."""
+    def months(cls) -> list[str]:
+        """Return ordered list of month names (in GEDCOM format) defined in
+        calendar.
+        """
         return MONTHS_FREN
 
-    def key(self):
+    def key(self) -> tuple[float, int]:
         """Return ordering key for this instance."""
         calendar = convertdate.french_republican
         year = -self.year if self.bc else self.year
@@ -591,11 +653,11 @@ class FrenchDate(CalendarDate):
         return jd, flag
 
     @property
-    def calendar(self):
+    def calendar(self) -> CalendarType:
         # docstring inherited from base class
         return CalendarType.FRENCH_R
 
-    def accept(self, visitor):
+    def accept(self, visitor: CalendarDateVisitor) -> Any:
         return visitor.visitFrench(self)
 
 
@@ -609,11 +671,11 @@ class CalendarDateVisitor(metaclass=abc.ABCMeta):
     `CalendarDate.accept()` method, e.g.::
 
         class FormatterVisitor(CalendarDateVisitor):
-
             def visitGregorian(self, date):
                 return "Gregorian date:" + str(date)
 
             # and so on for each date type
+
 
         visitor = FormatterVisitor()
 
@@ -622,7 +684,7 @@ class CalendarDateVisitor(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def visitGregorian(self, date):
+    def visitGregorian(self, date: GregorianDate) -> Any:
         """Visit an instance of `GregorianDate` type.
 
         Parameters
@@ -639,7 +701,7 @@ class CalendarDateVisitor(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def visitJulian(self, date):
+    def visitJulian(self, date: JulianDate) -> Any:
         """Visit an instance of `JulianDate` type.
 
         Parameters
@@ -656,7 +718,7 @@ class CalendarDateVisitor(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def visitHebrew(self, date):
+    def visitHebrew(self, date: HebrewDate) -> Any:
         """Visit an instance of `HebrewDate` type.
 
         Parameters
@@ -673,7 +735,7 @@ class CalendarDateVisitor(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def visitFrench(self, date):
+    def visitFrench(self, date: FrenchDate) -> Any:
         """Visit an instance of `FrenchDate` type.
 
         Parameters

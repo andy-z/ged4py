@@ -1,42 +1,18 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """Tests for `ged4py.detail.io` module."""
 
-from contextlib import contextmanager
 import io
-import tempfile
-import os
 import unittest
 
-from ged4py.detail.io import check_bom, guess_lineno, BinaryFileCR
-
-
-@contextmanager
-def _temp_file(data):
-    """Create file with unique name and store some data in it.
-
-    Returns file name.
-    """
-    fd, fname = tempfile.mkstemp()
-    os.write(fd, data)
-    os.close(fd)
-    yield fname
-    os.unlink(fname)
+from ged4py.detail.io import BinaryFileCR, check_bom, guess_lineno
 
 
 class TestDetailIo(unittest.TestCase):
     """Tests for `ged4py.detail.io` module."""
 
-    def setUp(self):
-        """Set up test fixtures, if any."""
-
-    def tearDown(self):
-        """Tear down test fixtures, if any."""
-
-    def test_001_guess_bom_codec(self):
+    def test_001_guess_bom_codec(self) -> None:
         """Test detail.io.check_bom()."""
-
         file = io.BytesIO(b"0 HEAD")
         codec = check_bom(file)
         self.assertTrue(codec is None)
@@ -67,9 +43,8 @@ class TestDetailIo(unittest.TestCase):
         self.assertEqual(codec, "utf-16-be")
         self.assertEqual(file.tell(), 2)
 
-    def test_002_guess_lineno(self):
+    def test_002_guess_lineno(self) -> None:
         """Test detail.io.guess_lineno()."""
-
         file = io.BytesIO(b"line1\nline2\nline3\nline4\nline5\n")
         file.readline()
         self.assertEqual(file.tell(), 6)
@@ -106,7 +81,7 @@ class TestDetailIo(unittest.TestCase):
         self.assertEqual(guess_lineno(file), 1)
         self.assertEqual(file.tell(), 0)
 
-    def test_003_BinaryFileCR(self):
+    def test_003_BinaryFileCR(self) -> None:
         file = BinaryFileCR(io.BytesIO(b""))
         line = file.readline()
         self.assertEqual(len(line), 0)
