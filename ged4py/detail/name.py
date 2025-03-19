@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 def split_name(name: str) -> tuple[str, str, str]:
-    """Extracts pieces of name from full name string.
+    """Extract pieces of name from full name string.
 
     Parameters
     ----------
@@ -128,7 +128,6 @@ def parse_name_myher(record: Record) -> tuple[str, str, str] | tuple[str, str, s
 
     Notes
     -----
-
     In MYHERITAGE dialect married name (if present) is saved as _MARNM
     sub-record. Maiden name is stored in SURN record. Few examples:
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """Tests for `ged4py.model` module."""
 
@@ -15,7 +14,6 @@ class TestModel(unittest.TestCase):
 
     def test_001_record(self) -> None:
         """Test Record class."""
-
         rec = model.Record()
         self.assertEqual(
             vars(rec),
@@ -44,7 +42,6 @@ class TestModel(unittest.TestCase):
 
     def test_002_record_sub(self) -> None:
         """Test Record class with sub-records."""
-
         rec = model.Record()
         rec.level = 0
         rec.xref_id = "@x@"
@@ -114,8 +111,7 @@ class TestModel(unittest.TestCase):
         self.assertEqual(len(subs), 0)
 
     def test_003_record_nohash(self) -> None:
-        """Test that records are non-hashable"""
-
+        """Test that records are non-hashable."""
         rec = model.Record()
         with self.assertRaises(TypeError):
             d = {}
@@ -125,7 +121,6 @@ class TestModel(unittest.TestCase):
 
     def test_010_namerec_default(self) -> None:
         """Test NameRec class with default dialect."""
-
         rec = model.NameRec()
         rec.level = 1
         rec.tag = "NAME"
@@ -173,7 +168,6 @@ class TestModel(unittest.TestCase):
 
     def test_011_namerec_altree(self) -> None:
         """Test NameRec class with ALTREE dialect."""
-
         rec = model.NameRec()
         rec.level = 1
         rec.tag = "NAME"
@@ -206,7 +200,6 @@ class TestModel(unittest.TestCase):
 
     def test_012_namerec_myher(self) -> None:
         """Test NameRec class with MYHERITAGE dialect."""
-
         rec = model.NameRec()
         rec.level = 1
         rec.tag = "NAME"
@@ -241,7 +234,6 @@ class TestModel(unittest.TestCase):
 
     def test_020_name_default(self) -> None:
         """Test Name class with DEFAULT dialect."""
-
         dialect = model.Dialect.DEFAULT
         names = [
             cast(model.NameRec, model.make_record(1, None, "NAME", "John /Smith/", [], 0, dialect).freeze())
@@ -301,7 +293,6 @@ class TestModel(unittest.TestCase):
 
     def test_021_name_altree(self) -> None:
         """Test Name class with ALTREE dialect."""
-
         dialect = model.Dialect.ALTREE
         surn = model.make_record(2, None, "SURN", "Sawyer", [], 0, dialect).freeze()
         names = [
@@ -343,7 +334,6 @@ class TestModel(unittest.TestCase):
 
     def test_022_name_myher(self) -> None:
         """Test Name class with MYHERITAGE dialect."""
-
         dialect = model.Dialect.MYHERITAGE
         married = model.make_record(2, None, "_MARNM", "Smith", [], 0, dialect).freeze()
         names = [
@@ -368,7 +358,6 @@ class TestModel(unittest.TestCase):
 
     def test_030_date(self) -> None:
         """Test Date class."""
-
         dialect = model.Dialect.MYHERITAGE
         date = model.make_record(1, None, "DATE", "1970", [], 0, dialect).freeze()
         self.assertIsInstance(date, model.Date)
@@ -460,8 +449,7 @@ class TestModel(unittest.TestCase):
         self.assertIsNone(indi.mother)
 
     def test_900_make_record(self) -> None:
-        """Test make_record method()"""
-
+        """Test make_record method()."""
         rec = model.make_record(0, "@xref@", "TAG", "value", [], 1000, model.Dialect.DEFAULT)
         rec.freeze()
         self.assertTrue(type(rec) is model.Record)

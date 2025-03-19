@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """Tests for `ged4py.date` module."""
 
@@ -7,13 +6,13 @@ import unittest
 from typing import Any
 
 from ged4py.calendar import (
-    CalendarType,
     CalendarDate,
+    CalendarDateVisitor,
+    CalendarType,
     FrenchDate,
     GregorianDate,
     HebrewDate,
     JulianDate,
-    CalendarDateVisitor,
 )
 from ged4py.date import (
     DateValue,
@@ -35,6 +34,8 @@ from ged4py.date import (
 
 
 class TestDateVisitor(CalendarDateVisitor, DateValueVisitor):
+    """Data vistor class for testing."""
+
     def visitGregorian(self, date: GregorianDate) -> Any:
         if not isinstance(date, GregorianDate):
             raise TypeError(str(type(date)))
@@ -121,7 +122,6 @@ class TestDetailDate(unittest.TestCase):
 
     def test_001_cal_date(self) -> None:
         """Test date.CalendarDate class."""
-
         gdate = GregorianDate(2017, "OCT", 9)
         self.assertEqual(gdate.year, 2017)
         self.assertIsNone(gdate.dual_year)
@@ -181,7 +181,6 @@ class TestDetailDate(unittest.TestCase):
 
     def test_002_cal_date_key(self) -> None:
         """Test date.CalendarDate class."""
-
         gdate = GregorianDate(2017, "OCT", 9)
         self.assertEqual(gdate.key(), (2458035.5, 0))
 
@@ -199,7 +198,6 @@ class TestDetailDate(unittest.TestCase):
 
     def test_003_cal_date_cmp(self) -> None:
         """Test date.CalendarDate class."""
-
         self.assertTrue(GregorianDate(2016, "JAN", 1) < GregorianDate(2017, "JAN", 1))
         self.assertTrue(GregorianDate(2017, "JAN", 1) < GregorianDate(2017, "FEB", 1))
         self.assertTrue(GregorianDate(2017, "JAN", 1) < GregorianDate(2017, "JAN", 2))
@@ -210,10 +208,12 @@ class TestDetailDate(unittest.TestCase):
         self.assertTrue(GregorianDate(2017, "JAN", 1) == GregorianDate(2017, "JAN", 1))
         self.assertTrue(GregorianDate(2017, "JAN", 1) != GregorianDate(2017, "JAN", 2))
 
-        # missing day compares as "past" the last day of month, but before next month
+        # missing day compares as "past" the last day of month, but before
+        # next month
         self.assertTrue(GregorianDate(2017, "JAN") > GregorianDate(2017, "JAN", 31))
         self.assertTrue(GregorianDate(2017, "JAN") < GregorianDate(2017, "FEB", 1))
-        # missing month compares as "past" the last day of year, but before next year
+        # missing month compares as "past" the last day of year, but before
+        # next year
         self.assertTrue(GregorianDate(2017) > GregorianDate(2017, "DEC", 31))
         self.assertTrue(GregorianDate(2017) < GregorianDate(2018, "JAN", 1))
 
@@ -257,7 +257,6 @@ class TestDetailDate(unittest.TestCase):
 
     def test_005_cal_date_parse(self) -> None:
         """Test date.CalendarDate.parse method."""
-
         date = CalendarDate.parse("31 MAY 2020")
         assert isinstance(date, GregorianDate)
         self.assertIsInstance(date, GregorianDate)
@@ -338,7 +337,6 @@ class TestDetailDate(unittest.TestCase):
 
     def test_006_cal_date_visitor(self) -> None:
         """Test date.CalendarDate.accept method."""
-
         visitor = TestDateVisitor()
 
         gdate = GregorianDate(2017, "OCT", 9)
@@ -359,7 +357,6 @@ class TestDetailDate(unittest.TestCase):
 
     def test_007_cal_date_hash(self) -> None:
         """Test date.CalendarDate hash."""
-
         self.assertEqual(hash(GregorianDate(2017, "OCT", 9)), hash(GregorianDate(2017, "OCT", 9)))
         self.assertEqual(
             hash(GregorianDate(2017, "OCT", 9, bc=True)), hash(GregorianDate(2017, "OCT", 9, bc=True))
@@ -369,7 +366,6 @@ class TestDetailDate(unittest.TestCase):
 
     def test_010_date_no_date(self) -> None:
         """Test date.DateValue class."""
-
         date = DateValue.parse("not a date")
         assert isinstance(date, DateValuePhrase)
         self.assertIsInstance(date, DateValuePhrase)
@@ -379,7 +375,6 @@ class TestDetailDate(unittest.TestCase):
 
     def test_012_date_parse_period(self) -> None:
         """Test date.DateValue class."""
-
         date = DateValue.parse("FROM 1967")
         assert isinstance(date, DateValueFrom)
         self.assertIsInstance(date, DateValueFrom)
@@ -412,7 +407,6 @@ class TestDetailDate(unittest.TestCase):
 
     def test_013_date_parse_range(self) -> None:
         """Test date.DateValue class."""
-
         date = DateValue.parse("BEF 1967B.C.")
         assert isinstance(date, DateValueBefore)
         self.assertIsInstance(date, DateValueBefore)
@@ -445,7 +439,6 @@ class TestDetailDate(unittest.TestCase):
 
     def test_014_date_parse_approx(self) -> None:
         """Test date.DateValue class."""
-
         dates = {
             "500 B.C.": GregorianDate(500, bc=True),
             "JAN 2017": GregorianDate(2017, "JAN"),
@@ -458,18 +451,17 @@ class TestDetailDate(unittest.TestCase):
             ("EST", "ESTIMATED", DateValueEstimated, DateValueTypes.ESTIMATED),
         ]
 
-        for appr, fmt, klass, typeEnum in approx:
+        for appr, fmt, klass, type_enum in approx:
             for datestr, value in dates.items():
                 date = DateValue.parse(appr + " " + datestr)
                 assert isinstance(date, DateValueAbout | DateValueCalculated | DateValueEstimated)
                 self.assertIsInstance(date, klass)
-                self.assertEqual(date.kind, typeEnum)
+                self.assertEqual(date.kind, type_enum)
                 self.assertEqual(str(date), fmt + " " + datestr)
                 self.assertEqual(date.date, value)
 
     def test_015_date_parse_phrase(self) -> None:
         """Test date.DateValue class."""
-
         date = DateValue.parse("(some phrase)")
         assert isinstance(date, DateValuePhrase)
         self.assertIsInstance(date, DateValuePhrase)
@@ -494,7 +486,6 @@ class TestDetailDate(unittest.TestCase):
 
     def test_016_date_parse_simple(self) -> None:
         """Test date.DateValue class."""
-
         date = DateValue.parse("1967 B.C.")
         assert isinstance(date, DateValueSimple)
         self.assertIsInstance(date, DateValueSimple)
@@ -511,7 +502,6 @@ class TestDetailDate(unittest.TestCase):
 
     def test_017_date_cmp(self) -> None:
         """Test date.Date class."""
-
         dv = DateValue.parse("2016")
         self.assertIsInstance(dv.key(), tuple)
         self.assertEqual(dv.key(), (GregorianDate(2016), GregorianDate(2016)))
@@ -567,7 +557,6 @@ class TestDetailDate(unittest.TestCase):
 
     def test_018_date_parse_empty(self) -> None:
         """Test date.DateValue class."""
-
         for value in (None, ""):
             date = DateValue.parse(value)
             assert isinstance(date, DateValuePhrase)
@@ -578,7 +567,6 @@ class TestDetailDate(unittest.TestCase):
 
     def test_019_date_value_visitor(self) -> None:
         """Test date.DateValue class."""
-
         visitor = TestDateVisitor()
 
         date1 = GregorianDate(2017, "JAN", 1)
@@ -621,8 +609,7 @@ class TestDetailDate(unittest.TestCase):
         self.assertEqual(value, ("phrase", "phrase"))
 
     def test_020_date_hash(self) -> None:
-        """Test date.Date hash"""
-
+        """Test date.Date hash."""
         dv1 = DateValue.parse("2016")
         dv2 = DateValue.parse("2016")
         self.assertEqual(hash(dv1), hash(dv2))

@@ -7,14 +7,13 @@ from typing import BinaryIO
 
 
 def check_bom(file: io.IOBase) -> str | None:
-    """Determines file codec from from its BOM record.
+    """Determine file codec from from its BOM record.
 
     If file starts with BOM record encoded with UTF-8 or UTF-16(BE/LE)
     then corresponding encoding name is returned, otherwise None is returned.
     In both cases file current position is set to after-BOM bytes. The file
     must be open in binary mode and positioned at offset 0.
     """
-
     # try to read first three bytes
     lead = file.read(3)
     if len(lead) == 3 and lead == codecs.BOM_UTF8:

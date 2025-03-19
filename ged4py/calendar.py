@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 __all__ = [
-    "CalendarType",
     "CalendarDate",
+    "CalendarDateVisitor",
+    "CalendarType",
     "FrenchDate",
     "GregorianDate",
     "HebrewDate",
     "JulianDate",
-    "CalendarDateVisitor",
 ]
 
 import abc
@@ -181,8 +181,10 @@ class CalendarDate(metaclass=abc.ABCMeta):
 
     @classmethod
     @abc.abstractmethod
-    def months(self) -> list[str]:
-        """Ordered list of month names (in GEDCOM format) defined in calendar."""
+    def months(cls) -> list[str]:
+        """Return ordered list of month names (in GEDCOM format) defined in
+        calendar.
+        """
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -201,7 +203,7 @@ class CalendarDate(metaclass=abc.ABCMeta):
     @property
     def year_str(self) -> str:
         """Calendar year in string representation, this can include dual year
-        and/or B.C. suffix (`str`)
+        and/or B.C. suffix (`str`).
         """
         year = str(self.year)
         if self.bc:
@@ -212,13 +214,13 @@ class CalendarDate(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def calendar(self) -> CalendarType:
         """Calendar used for this date, one of the `CalendarType` enums
-        (`CalendarType`)
+        (`CalendarType`).
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
     def accept(self, visitor: CalendarDateVisitor) -> Any:
-        """Implementation of visitor pattern.
+        """Implement visitor pattern.
 
         Each concrete sub-class will implement this method by dispatching the
         call to corresponding visitor method.
@@ -386,8 +388,10 @@ class GregorianDate(CalendarDate):
         """
 
     @classmethod
-    def months(self) -> list[str]:
-        """Ordered list of month names (in GEDCOM format) defined in calendar."""
+    def months(cls) -> list[str]:
+        """Return ordered list of month names (in GEDCOM format) defined in
+        calendar.
+        """
         return MONTHS_GREG
 
     @property
@@ -443,7 +447,7 @@ class GregorianDate(CalendarDate):
     @property
     def year_str(self) -> str:
         """Calendar year in string representation, this can include dual year
-        and/or B.C. suffix (`str`)
+        and/or B.C. suffix (`str`).
         """
         year = str(self.year)
         if self.dual_year is not None:
@@ -478,8 +482,10 @@ class JulianDate(CalendarDate):
         CalendarDate.__init__(self, year, month, day, bc, original)
 
     @classmethod
-    def months(self) -> list[str]:
-        """Ordered list of month names (in GEDCOM format) defined in calendar."""
+    def months(cls) -> list[str]:
+        """Return ordered list of month names (in GEDCOM format) defined in
+        calendar.
+        """
         return MONTHS_GREG
 
     def key(self) -> tuple[float, int]:
@@ -550,8 +556,10 @@ class HebrewDate(CalendarDate):
         CalendarDate.__init__(self, year, month, day, bc, original)
 
     @classmethod
-    def months(self) -> list[str]:
-        """Ordered list of month names (in GEDCOM format) defined in calendar."""
+    def months(cls) -> list[str]:
+        """Return ordered list of month names (in GEDCOM format) defined in
+        calendar.
+        """
         return MONTHS_HEBR
 
     def key(self) -> tuple[float, int]:
@@ -606,8 +614,10 @@ class FrenchDate(CalendarDate):
         CalendarDate.__init__(self, year, month, day, bc, original)
 
     @classmethod
-    def months(self) -> list[str]:
-        """Ordered list of month names (in GEDCOM format) defined in calendar."""
+    def months(cls) -> list[str]:
+        """Return ordered list of month names (in GEDCOM format) defined in
+        calendar.
+        """
         return MONTHS_FREN
 
     def key(self) -> tuple[float, int]:
@@ -661,11 +671,11 @@ class CalendarDateVisitor(metaclass=abc.ABCMeta):
     `CalendarDate.accept()` method, e.g.::
 
         class FormatterVisitor(CalendarDateVisitor):
-
             def visitGregorian(self, date):
                 return "Gregorian date:" + str(date)
 
             # and so on for each date type
+
 
         visitor = FormatterVisitor()
 

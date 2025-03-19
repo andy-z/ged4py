@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 __all__ = [
-    "DateValueTypes",
     "DateValue",
     "DateValueAbout",
     "DateValueAfter",
@@ -17,6 +16,7 @@ __all__ = [
     "DateValueRange",
     "DateValueSimple",
     "DateValueTo",
+    "DateValueTypes",
     "DateValueVisitor",
 ]
 
@@ -25,7 +25,7 @@ import enum
 import re
 from typing import Any
 
-from .calendar import CalendarDate, GregorianDate, DATE
+from .calendar import DATE, CalendarDate, GregorianDate
 
 # DATE_VALUE := [
 #     <DATE> |
@@ -269,7 +269,7 @@ class DateValue(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def accept(self, visitor: DateValueVisitor) -> Any:
-        """Implementation of visitor pattern.
+        """Implement visitor pattern.
 
         Each concrete sub-class will implement this method by dispatching the
         call to corresponding visitor method.
@@ -317,7 +317,9 @@ class DateValueSimple(DateValue):
 
     @property
     def date(self) -> CalendarDate:
-        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
+        """Calendar date corresponding to this instance
+        (`~ged4py.calendar.CalendarDate`).
+        """
         return self._date
 
     def accept(self, visitor: DateValueVisitor) -> Any:
@@ -353,7 +355,9 @@ class DateValueFrom(DateValue):
 
     @property
     def date(self) -> CalendarDate:
-        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
+        """Calendar date corresponding to this instance
+        (`~ged4py.calendar.CalendarDate`).
+        """
         return self._date
 
     def accept(self, visitor: DateValueVisitor) -> Any:
@@ -389,7 +393,9 @@ class DateValueTo(DateValue):
 
     @property
     def date(self) -> CalendarDate:
-        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
+        """Calendar date corresponding to this instance
+        (`~ged4py.calendar.CalendarDate`).
+        """
         return self._date
 
     def accept(self, visitor: DateValueVisitor) -> Any:
@@ -428,12 +434,16 @@ class DateValuePeriod(DateValue):
 
     @property
     def date1(self) -> CalendarDate:
-        "First Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
+        """First Calendar date corresponding to this instance
+        (`~ged4py.calendar.CalendarDate`).
+        """
         return self._date1
 
     @property
     def date2(self) -> CalendarDate:
-        "Second Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
+        """Second Calendar date corresponding to this instance
+        (`~ged4py.calendar.CalendarDate`).
+        """
         return self._date2
 
     def accept(self, visitor: DateValueVisitor) -> Any:
@@ -469,7 +479,9 @@ class DateValueBefore(DateValue):
 
     @property
     def date(self) -> CalendarDate:
-        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
+        """Calendar date corresponding to this instance
+        (`~ged4py.calendar.CalendarDate`).
+        """
         return self._date
 
     def accept(self, visitor: DateValueVisitor) -> Any:
@@ -505,7 +517,9 @@ class DateValueAfter(DateValue):
 
     @property
     def date(self) -> CalendarDate:
-        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
+        """Calendar date corresponding to this instance
+        (`~ged4py.calendar.CalendarDate`).
+        """
         return self._date
 
     def accept(self, visitor: DateValueVisitor) -> Any:
@@ -544,12 +558,16 @@ class DateValueRange(DateValue):
 
     @property
     def date1(self) -> CalendarDate:
-        "First Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
+        """First Calendar date corresponding to this instance
+        (`~ged4py.calendar.CalendarDate`).
+        """
         return self._date1
 
     @property
     def date2(self) -> CalendarDate:
-        "Second Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
+        """Second Calendar date corresponding to this instance
+        (`~ged4py.calendar.CalendarDate`).
+        """
         return self._date2
 
     def accept(self, visitor: DateValueVisitor) -> Any:
@@ -585,7 +603,9 @@ class DateValueAbout(DateValue):
 
     @property
     def date(self) -> CalendarDate:
-        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
+        """Calendar date corresponding to this instance
+        (`~ged4py.calendar.CalendarDate`).
+        """
         return self._date
 
     def accept(self, visitor: DateValueVisitor) -> Any:
@@ -621,7 +641,9 @@ class DateValueCalculated(DateValue):
 
     @property
     def date(self) -> CalendarDate:
-        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
+        """Calendar date corresponding to this instance
+        (`~ged4py.calendar.CalendarDate`).
+        """
         return self._date
 
     def accept(self, visitor: DateValueVisitor) -> Any:
@@ -657,7 +679,9 @@ class DateValueEstimated(DateValue):
 
     @property
     def date(self) -> CalendarDate:
-        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
+        """Calendar date corresponding to this instance
+        (`~ged4py.calendar.CalendarDate`).
+        """
         return self._date
 
     def accept(self, visitor: DateValueVisitor) -> Any:
@@ -696,12 +720,14 @@ class DateValueInterpreted(DateValue):
 
     @property
     def date(self) -> CalendarDate:
-        "Calendar date corresponding to this instance (`~ged4py.calendar.CalendarDate`)"
+        """Calendar date corresponding to this instance
+        (`~ged4py.calendar.CalendarDate`).
+        """
         return self._date
 
     @property
     def phrase(self) -> str:
-        """Phrase associated with this date (`str`)"""
+        """Phrase associated with this date (`str`)."""
         return self._phrase
 
     def accept(self, visitor: DateValueVisitor) -> Any:
@@ -737,7 +763,7 @@ class DateValuePhrase(DateValue):
 
     @property
     def phrase(self) -> str | None:
-        """Phrase associated with this date (`str`)"""
+        """Phrase associated with this date (`str`)."""
         return self._phrase
 
     def accept(self, visitor: DateValueVisitor) -> Any:
@@ -748,7 +774,7 @@ class DateValuePhrase(DateValue):
         if self.phrase is None:
             return ""
         else:
-            return "({})".format(self.phrase)
+            return f"({self.phrase})"
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(phrase={self.phrase})"
@@ -780,11 +806,11 @@ class DateValueVisitor(metaclass=abc.ABCMeta):
     `DateValue.accept` method, e.g.::
 
         class FormatterVisitor(DateValueVisitor):
-
             def visitSimple(self, date):
                 return "Simple date: " + str(date.date)
 
             # and so on for each date type
+
 
         visitor = FormatterVisitor()
 

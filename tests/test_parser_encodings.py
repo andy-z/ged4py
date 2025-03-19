@@ -1,14 +1,14 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """Tests for ged4py encodings handling."""
 
 import io
 import logging
-import pytest
 from typing import Any
 
-from ged4py.parser import GedcomReader, CodecError
+import pytest
+
+from ged4py.parser import CodecError, GedcomReader
 
 
 def _check_log_rec(rec: logging.LogRecord, level: int, msg: str, args: Any) -> None:
@@ -19,7 +19,6 @@ def _check_log_rec(rec: logging.LogRecord, level: int, msg: str, args: Any) -> N
 
 def test_001_standard() -> None:
     """Test standard encodings."""
-
     file = io.BytesIO(b"0 HEAD\n1 CHAR ASCII\n0 TRLR")
     reader = GedcomReader(file)
     assert reader._encoding == "ascii"
@@ -86,7 +85,6 @@ def test_002_illegal(enc: str, pyenc: str, ambig: bool, caplog: pytest.LogCaptur
 
 def test_003_codec_exceptions() -> None:
     """Test codecs-related exceptions."""
-
     # unknown codec name
     file = io.BytesIO(b"0 HEAD\n1 CHAR NOTCODEC\n0 TRLR")
     with pytest.raises(CodecError):

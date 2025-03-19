@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__all__ = ["GedcomReader", "ParserError", "CodecError", "IntegrityError", "guess_codec", "GedcomLine"]
+__all__ = ["CodecError", "GedcomLine", "GedcomReader", "IntegrityError", "ParserError", "guess_codec"]
 
 import codecs
 import io
@@ -11,13 +11,13 @@ import re
 from collections.abc import Iterator
 from typing import BinaryIO, NamedTuple, cast
 
-from .detail.io import check_bom, guess_lineno, BinaryFileCR
 from . import model
+from .detail.io import BinaryFileCR, check_bom, guess_lineno
 
 _log = logging.getLogger(__name__)
 
 # records are bytes, regex is for bytes too
-_re_GedcomLine = re.compile(
+_RE_GEDCOM_LINE = re.compile(
     rb"""
         ^
         [ ]*(?P<level>\d+)                       # integer level number
@@ -125,7 +125,6 @@ def guess_codec(
         Raised if codec fails to decode input lines and `errors` is set to
         "strict" (default).
     """
-
     # set of illegal but unambiguous encodings and their corresponding codecs
     illegal_encodings = {
         "windows-1250": "cp1250",
@@ -169,7 +168,7 @@ def guess_codec(
         # this stops at '\n'
         line = file.readline()
         if not line:
-            raise IOError("Unexpected EOF while reading GEDCOM header")
+            raise OSError("Unexpected EOF while reading GEDCOM header")
 
         # do not decode bytes to strings here, reason is that some
         # stupid apps split CONC record at byte level (in middle of
@@ -199,13 +198,11 @@ def guess_codec(
                         )
                 new_codec = codecs.lookup(encoding).name
             except LookupError:
-                raise CodecError("Unknown codec name '{0}'".format(enc))
+                raise CodecError(f"Unknown codec name '{enc}'")
             if bom_codec is None:
                 codec = new_codec
             elif new_codec != bom_codec:
-                raise CodecError(
-                    "CHAR codec {0} is different from BOM codec {1}".format(new_codec, bom_codec)
-                )
+                raise CodecError(f"CHAR codec {new_codec} is different from BOM codec {bom_codec}")
             break
 
     return codec, bom_size
@@ -243,7 +240,7 @@ class GedcomReader:
         with GedcomReader(path) as parser:
             # iterate over each INDI record in a file
             for record in parser.records0("INDI"):
-                # do something with the record or navigate to other linked records
+                # do something with the record or navigate to linked records
 
     """
 
@@ -267,7 +264,7 @@ class GedcomReader:
             if hasattr(file, "seekable"):
                 # check that it supports seek()
                 if not file.seekable():
-                    raise IOError("Input file does not support seek.")
+                    raise OSError("Input file does not support seek.")
             raw_file = cast(io.RawIOBase, file)
         else:
             # Assume it is a string.
@@ -288,7 +285,9 @@ class GedcomReader:
 
     @property
     def index0(self) -> list[tuple[int, str]]:
-        """List of level=0 record positions and tag names (`list[(int, str)]`)."""
+        """List of level=0 record positions and tag names
+        (`list[tuple[int, str]]`).
+        """
         if self._index0 is None:
             self._init_index()
             assert self._index0 is not None
@@ -348,7 +347,7 @@ class GedcomReader:
         self._dialect = value
 
     def GedcomLines(self, offset: int) -> Iterator[GedcomLine]:
-        """Generator method for *gedcom lines*.
+        """Iterate over *gedcom lines*.
 
         Parameters
         ----------
@@ -378,7 +377,6 @@ class GedcomReader:
         line into `GedcomLine` class. It is an implementation detail used by
         other methods, most clients will not need to use this method.
         """
-
         self._file.seek(offset)
 
         prev_gline: GedcomLine | None = None
@@ -389,7 +387,7 @@ class GedcomReader:
                 break
             line = line.lstrip().rstrip(b"\r\n")
 
-            match = _re_GedcomLine.match(line)
+            match = _RE_GEDCOM_LINE.match(line)
             if not match:
                 self._file.seek(offset)
                 lineno = guess_lineno(self._file)
@@ -437,7 +435,7 @@ class GedcomReader:
             prev_gline = gline
 
     def records0(self, tag: str | None = None) -> Iterator[model.Record]:
-        """Iterator over level=0 records with given tag.
+        """Iterate over level=0 records with given tag.
 
         This is the main method of this class. Clients access data in GEDCOM
         files by iterating over level=0 records and then navigating to
@@ -558,7 +556,6 @@ class GedcomReader:
         -------
         record : `ged4py.model.Record` or None
         """
-
         if parent and gline.tag in ("CONT", "CONC"):
             # concatenate, only for non-BLOBs
             if parent.tag != "BLOB":

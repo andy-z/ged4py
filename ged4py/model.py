@@ -1,17 +1,15 @@
-# -*- coding: utf-8 -*-
-
 """Module containing Python in-memory model for GEDCOM data."""
 
 from __future__ import annotations
 
-__all__ = ["make_record", "Record", "Pointer", "NameRec", "Name", "Date", "Individual"]
+__all__ = ["Date", "Individual", "Name", "NameRec", "Pointer", "Record", "make_record"]
 
 import enum
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, cast
 
-from .detail.name import split_name, parse_name_altree, parse_name_ancestris, parse_name_myher
 from .date import DateValue
+from .detail.name import parse_name_altree, parse_name_ancestris, parse_name_myher, split_name
 
 if TYPE_CHECKING:
     from .parser import GedcomReader
@@ -133,7 +131,7 @@ class Record:
         self.dialect: Dialect | None = None
 
     def freeze(self) -> Record:
-        """Method called by parser when updates to this record finish.
+        """Finish all updates for this record, called by parser.
 
         Some sub-classes will override this method to implement conversion
         of record data to different representation.
@@ -146,7 +144,7 @@ class Record:
         return self
 
     def sub_tag(self, path: str, follow: bool = True) -> Record | None:
-        """Finds and returns sub-record with given tag name.
+        """Find and return sub-record with given tag name.
 
         Path can be a simple tag name, in which case the first direct
         sub-record of this record with the matching tag is returned. Path
@@ -191,7 +189,7 @@ class Record:
         return None
 
     def sub_tag_value(self, path: str, follow: bool = True) -> Any:
-        """Returns value of a direct sub-record.
+        """Return value of a direct sub-record.
 
         Works as `sub_tag()` but returns value of a sub-record instead of
         sub-record itself.
@@ -215,7 +213,7 @@ class Record:
         return None
 
     def sub_tags(self, *tags: str, follow: bool = True) -> list[Record]:
-        """Returns a list of sub-records matching any tag name.
+        """Return a list of sub-records matching any tag name.
 
         If no positional arguments are provided then all direct sub-records of
         this record are returned, pointers are resolved if ``follow`` is True.
@@ -343,10 +341,10 @@ class NameRec(Record):
     all three fields of the tuple will be empty strings. Few examples::
 
         ("John", "Smith", "")
-        ("Mary Joan", "Smith", "", "Ivanova")    # maiden name
+        ("Mary Joan", "Smith", "", "Ivanova")  # maiden name
         ("", "Ivanov", "Ivan Ivanovich")
         ("John", "Smith", "Jr.")
-        ("", "", "")                             # empty NAME record
+        ("", "", "")  # empty NAME record
 
     Client code usually does not need to create instances of this class
     directly, `make_record()` should be used instead.
@@ -356,7 +354,7 @@ class NameRec(Record):
         Record.__init__(self)
 
     def freeze(self) -> NameRec:
-        """Method called by parser when updates to this record finish.
+        """Finish all updates for this record, called by parser.
 
         Returns
         -------
@@ -439,13 +437,13 @@ class Name:
 
     @property
     def surname(self) -> str:
-        """Person surname (`str`)"""
+        """Person surname (`str`)."""
         assert self._primary.value is not None
         return cast(str, self._primary.value[1])
 
     @property
     def given(self) -> str:
-        """Given name could include both first and middle name (`str`)"""
+        """Given name could include both first and middle name (`str`)."""
         assert self._primary.value is not None
         if self._primary.value[0] and self._primary.value[2]:
             return cast(str, self._primary.value[0]) + " " + cast(str, self._primary.value[2])
@@ -453,7 +451,7 @@ class Name:
 
     @property
     def first(self) -> str:
-        """First name is the first part of a given name (drops middle name)"""
+        """First name is the first part of a given name (drops middle name)."""
         given = self.given
         if given:
             return given.split()[0]
@@ -461,7 +459,7 @@ class Name:
 
     @property
     def maiden(self) -> str | None:
-        """Maiden last name, can be ``None`` (`str`)"""
+        """Maiden last name, can be ``None`` (`str`)."""
         if self._dialect == Dialect.DEFAULT:
             # for default/unknown dialect try "maiden" name record first
             for name in self._names:
@@ -505,7 +503,7 @@ class Name:
         elif order in (NameOrder.GIVEN_SURNAME, NameOrder.GIVEN_MAIDEN):
             return (given, surname)
         else:
-            raise ValueError("unexpected order: {}".format(order))
+            raise ValueError(f"unexpected order: {order}")
 
     def format(self) -> str:
         """Format name for output.
@@ -544,7 +542,7 @@ class Date(Record):
         Record.__init__(self)
 
     def freeze(self) -> Date:
-        """Method called by parser when updates to this record finish.
+        """Finish all updates for this record, called by parser.
 
         Returns
         -------
@@ -590,7 +588,7 @@ class Individual(Record):
 
     @property
     def mother(self) -> Individual | None:
-        """Parent of this individual (`Individual` or ``None``)"""
+        """Parent of this individual (`Individual` or ``None``)."""
         if self._mother is self:
             self._mother = None
             mother = self.sub_tag("FAMC/WIFE")
@@ -601,7 +599,7 @@ class Individual(Record):
 
     @property
     def father(self) -> Individual | None:
-        """Parent of this individual (`Individual` or ``None``)"""
+        """Parent of this individual (`Individual` or ``None``)."""
         if self._father is self:
             self._father = None
             father = self.sub_tag("FAMC/HUSB")

@@ -1,4 +1,5 @@
 import sys
+
 from ged4py.parser import GedcomReader
 
 # open GEDCOM file

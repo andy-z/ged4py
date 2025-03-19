@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """Tests for `ged4py.parser` module."""
 
 import io
-import tempfile
 import os
+import tempfile
 import unittest
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -28,7 +27,7 @@ def _temp_file(data: bytes) -> Iterator[str]:
 
 
 def _make_file_object(data: bytes) -> BinaryFileCR:
-    """AMke file object from a byte string"""
+    """Make file object from a byte string."""
     return BinaryFileCR(io.BytesIO(data))
 
 
@@ -37,7 +36,6 @@ class TestParser(unittest.TestCase):
 
     def test_002_guess_codec(self) -> None:
         """Test guess_codec()."""
-
         file = _make_file_object(b"0 HEAD\n1 CHAR ASCII\n0 TRLR")
         self.assertEqual(parser.guess_codec(file), ("ascii", 0))
 
@@ -63,7 +61,10 @@ class TestParser(unittest.TestCase):
 
     #         UTF-16 is broken
     #         # utf-16-le
-    #         file = _make_file_object(b"\xff\xfe0\0 \0H\0E\0A\0D\n\0\x31\0 \0C\0H\0A\0R\0 \0U\0T\0F\0-\01\06\0")
+    #         file = _make_file_object(
+    #             b"\xff\xfe0\0 \0H\0E\0A\0D\n\0\x31\0"
+    #             b" \0C\0H\0A\0R\0 \0U\0T\0F\0-\01\06\0"
+    #         )
     #         self.assertEqual(parser.guess_codec(file), "utf-16")
     #
     #         # utf-16-be
@@ -72,7 +73,6 @@ class TestParser(unittest.TestCase):
 
     def test_003_codec_exceptions(self) -> None:
         """Test codecs-related exceptions."""
-
         # unknown codec name
         file = _make_file_object(b"0 HEAD\n1 CHAR NOTCODEC\n0 TRLR")
         self.assertRaises(parser.CodecError, parser.guess_codec, file)
@@ -83,7 +83,6 @@ class TestParser(unittest.TestCase):
 
     def test_010_open(self) -> None:
         """Test gedcom_open() method."""
-
         data = b"0 HEAD\n1 CHAR ANSEL\n0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
@@ -141,7 +140,6 @@ class TestParser(unittest.TestCase):
 
     def test_011_open_errors(self) -> None:
         """Test gedcom_open() method."""
-
         # no HEAD
         data = b"\xef\xbb\xbf0 HDR\n1 CHAR ANSEL\n0 TRLR"
         with _temp_file(data) as fname:
@@ -164,7 +162,6 @@ class TestParser(unittest.TestCase):
 
     def test_015_init_index(self) -> None:
         """Test _init_index() method."""
-
         data = b"0 HEAD\n0 @i1@ INDI\n0 @i2@ INDI\n0 @i3@ INDI\n0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
@@ -180,7 +177,6 @@ class TestParser(unittest.TestCase):
 
     def test_017_dialect(self) -> None:
         """Test dialect property."""
-
         data = b"0 HEAD\n0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
@@ -212,8 +208,7 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(reader.dialect, model.Dialect.DEFAULT)
 
     def test_020_GedcomLines(self) -> None:
-        """Test GedcomLines method"""
-
+        """Test GedcomLines method."""
         # simple content
         data = b"0 HEAD\n1 CHAR ASCII\n1 SOUR PIF PAF\n0 @i1@ INDI\n0 TRLR"
         with _temp_file(data) as fname:
@@ -292,8 +287,7 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(lines, expect)
 
     def test_021_GedcomLines_errors(self) -> None:
-        """Test for exceptions raised by GedcomLines method"""
-
+        """Test for exceptions raised by GedcomLines method."""
         # tag name is only letters and digits
         data = b"0 HEAD\n1 CHAR ASCII\n1 SO@UR PIF PAF"
         with _temp_file(data) as fname:
@@ -333,8 +327,7 @@ class TestParser(unittest.TestCase):
                     self.assertRaises(parser.IntegrityError, list, itr)
 
     def test_030_read_record(self) -> None:
-        """Test read_record method"""
-
+        """Test read_record method."""
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n0 INDI B"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
@@ -492,8 +485,7 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(note.value, "Pål")
 
     def test_035_read_record_errors(self) -> None:
-        """Test read_record method"""
-
+        """Test read_record method."""
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n0 INDI B"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
@@ -505,8 +497,7 @@ class TestParser(unittest.TestCase):
                 self.assertRaises(parser.ParserError, reader.read_record, 26)
 
     def test_040_records0(self) -> None:
-        """Test records0 method"""
-
+        """Test records0 method."""
         data = b"0 HEAD\n1 CHAR ASCII\n0 INDI A\n1 SUBA A\n1 SUBB B\n2 SUBC C\n1 SUBD D\n0 STOP"
         with io.BytesIO(data) as file:
             with parser.GedcomReader(file) as reader:
@@ -536,7 +527,6 @@ class TestParser(unittest.TestCase):
 
     def test_041_header(self) -> None:
         """Test header property."""
-
         data = b"0 HEAD\n1 SOUR ALTREE\n0 TRLR"
         with _temp_file(data) as fname:
             with parser.GedcomReader(fname) as reader:
@@ -549,8 +539,7 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(rec.dialect, model.Dialect.DEFAULT)
 
     def test_042_rec_dialect(self) -> None:
-        """Test records0 method"""
-
+        """Test records0 method."""
         data = (
             b"0 HEAD\n1 CHAR ASCII\n1 SOUR ALTREE\n0 INDI A\n1 SUBA A\n1 SUBB B\n2 SUBC C\n1 SUBD D\n0 STOP"
         )

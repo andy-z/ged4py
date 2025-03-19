@@ -1,12 +1,11 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """Tests for `ged4py.detail.name` module."""
 
 import unittest
 
-from ged4py.detail.name import split_name, parse_name_altree, parse_name_myher, parse_name_ancestris
 from ged4py import model
+from ged4py.detail.name import parse_name_altree, parse_name_ancestris, parse_name_myher, split_name
 
 
 class TestDetailName(unittest.TestCase):
@@ -14,7 +13,6 @@ class TestDetailName(unittest.TestCase):
 
     def test_001_split_name(self) -> None:
         """Test detail.name.split_name()."""
-
         nsplit = split_name("First Name Only")
         self.assertEqual(nsplit, ("First Name Only", "", ""))
 
@@ -37,7 +35,7 @@ class TestDetailName(unittest.TestCase):
         self.assertEqual(nsplit, ("Жанна", "Иванова (Д'Арк)", ""))
 
     def test_002_parse_name_altree(self) -> None:
-        """Test parse_name_altree()"""
+        """Test parse_name_altree()."""
         rec = model.NameRec()
         rec.level = 1
         rec.tag = "NAME"
@@ -69,7 +67,7 @@ class TestDetailName(unittest.TestCase):
         self.assertEqual(name_tup, ("First", "Last", "", "Maiden"))
 
     def test_003_parse_name_myher(self) -> None:
-        """Test parse_name_myher()"""
+        """Test parse_name_myher()."""
         rec = model.NameRec()
         rec.level = 1
         rec.tag = "NAME"
@@ -101,7 +99,7 @@ class TestDetailName(unittest.TestCase):
         self.assertEqual(name_tup, ("First", "Married", "", "Maiden"))
 
     def test_004_parse_name_ancestris(self) -> None:
-        """Test parse_name_ancestris()
+        """Test parse_name_ancestris().
 
         Ancestris dialect is just a split_name() which is tested separately,
         so the is not much testing needed for it.

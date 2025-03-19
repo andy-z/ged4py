@@ -1,12 +1,11 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """Tests for `ged4py.detail.io` module."""
 
 import io
 import unittest
 
-from ged4py.detail.io import check_bom, guess_lineno, BinaryFileCR
+from ged4py.detail.io import BinaryFileCR, check_bom, guess_lineno
 
 
 class TestDetailIo(unittest.TestCase):
@@ -14,7 +13,6 @@ class TestDetailIo(unittest.TestCase):
 
     def test_001_guess_bom_codec(self) -> None:
         """Test detail.io.check_bom()."""
-
         file = io.BytesIO(b"0 HEAD")
         codec = check_bom(file)
         self.assertTrue(codec is None)
@@ -47,7 +45,6 @@ class TestDetailIo(unittest.TestCase):
 
     def test_002_guess_lineno(self) -> None:
         """Test detail.io.guess_lineno()."""
-
         file = io.BytesIO(b"line1\nline2\nline3\nline4\nline5\n")
         file.readline()
         self.assertEqual(file.tell(), 6)
