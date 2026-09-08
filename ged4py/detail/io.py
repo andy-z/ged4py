@@ -75,7 +75,7 @@ class BinaryFileCR(io.BufferedReader):
         # BufferedReader accepts RawIOBase, but for many tests we want to use
         # BinaryIO, and there is no way to convert BinaryIO to RawIOBase, but
         # it works for our purposes, so we just lie to mypy.
-        io.BufferedReader.__init__(self, raw)  # type: ignore[arg-type]
+        super().__init__(raw)  # type: ignore[arg-type]
 
     def readline(self, limit: int | None = -1) -> bytes:
         if limit == 0:
