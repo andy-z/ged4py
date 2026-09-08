@@ -12,3 +12,4 @@ numpydoc
 build
 twine
 mypy
+pre_commit
