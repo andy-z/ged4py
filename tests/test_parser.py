@@ -568,3 +568,33 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(rec.value, None)
                 self.assertEqual(len(rec.sub_records), 0)
                 self.assertEqual(rec.dialect, model.Dialect.ALTREE)
+
+    def test_050_fam_records(self) -> None:
+        """Test family structure method."""
+        data = (
+            b"0 HEAD\n1 CHAR ASCII\n1 SOUR ALTREE\n"
+            b"0 @I01M@ INDI\n1 SEX M\n1 NAME /John FAM1/\n1 FAMS @F1@\n"
+            b"0 @I01F@ INDI\n1 SEX F\n1 NAME /Jane FAM1/\n1 FAMS @F1@\n"
+            b"0 @I11F@ INDI\n1 SEX F\n1 NAME /Ann FAM1/\n1 FAMC @F1@\n"
+            b"0 @I12F@ INDI\n1 SEX F\n1 NAME /Eve FAM1/\n1 FAMC @F1@\n"
+            b"0 @F1@ FAM\n1 HUSB @I01M@\n1 WIFE @I01F@\n1 CHIL @I11F@\n1 CHIL @I12F@\n1 NCHI 2\n"
+            b"0 @I02M@ INDI\n1 SEX M\n1 NAME /Dan FAM2/\n1 FAMS @F2@\n"
+            b"0 @I02F@ INDI\n1 SEX F\n1 NAME /Liz FAM2/\n1 FAMS @F2@\n"
+            b"0 @I21M@ INDI\n1 SEX M\n1 NAME /Eli FAM2/\n1 FAMC @F2@\n"
+            b"0 @I22M@ INDI\n1 SEX M\n1 NAME /Joe FAM2/\n1 FAMC @F2@\n"
+            b"0 @F2@ FAM\n1 HUSB @I02M@\n1 WIFE @I02F@\n1 CHIL @I21M@\n1 CHIL @I22M@\n1 NCHI 2\n"
+            b"0 STOP\n"
+        )
+        with io.BytesIO(data) as file:
+            with parser.GedcomReader(file) as reader:
+                individuals = list(rec for rec in reader.records0() if rec.tag == "INDI")
+                self.assertEqual(len(individuals), 8)
+
+                for idx, indi in enumerate(individuals):
+                    assert isinstance(indi, model.Individual)
+                    if idx in (0, 1, 4, 5):
+                        self.assertIsNone(indi.mother)
+                        self.assertIsNone(indi.father)
+                    else:
+                        self.assertIsNotNone(indi.mother)
+                        self.assertIsNotNone(indi.father)
