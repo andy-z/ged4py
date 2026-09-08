@@ -15,3 +15,7 @@ sphinx:
 
 formats:
   - pdf
+
+python:
+  install:
+    - requirements: requirements.txt
