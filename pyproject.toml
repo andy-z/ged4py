@@ -17,7 +17,6 @@ maintainers = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     'Programming Language :: Python :: 3',
     'Programming Language :: Python :: 3 :: Only',
@@ -27,7 +26,8 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     'Topic :: Sociology :: Genealogy',
 ]
-license = {text = "MIT license"}
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = [
     "ansel",
     "convertdate",
@@ -47,7 +47,6 @@ homepage = "https://ged4py.readthedocs.io/"
 
 [tool.setuptools]
 zip-safe = true
-license-files = ["LICENSE"]
 
 [tool.setuptools.package-data]
 "ged4py" = ["py.typed"]
