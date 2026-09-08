@@ -11,3 +11,4 @@ pytest
 numpydoc
 build
 twine
+mypy
